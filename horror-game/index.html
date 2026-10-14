@@ -79,6 +79,20 @@
   .row button.sel { color: #f44; border-color: #a00; }
   #nightScr h2 { font-size: clamp(44px, 10vw, 100px); }
   #rotate { position: fixed; left: 0; right: 0; bottom: 18px; z-index: 11; text-align: center; color: #888; font-size: 13px; pointer-events: none; }
+  #paper { position: fixed; inset: 0; z-index: 12; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.78); }
+  #paper .sheet { max-width: 540px; width: calc(100% - 60px); max-height: calc(100% - 30px); overflow: auto; box-sizing: border-box; padding: 22px 26px 16px;
+     background: radial-gradient(circle at 30% 20%, #e6d9b8 0, #cdbb91 55%, #a38c5a 100%); color: #2a1d10; border-radius: 3px;
+     box-shadow: 0 0 50px #000, inset 0 0 70px rgba(80,50,10,.55); font-family: "Segoe Print","Comic Sans MS",cursive,Georgia,serif;
+     font-size: 16px; line-height: 1.5; transform: rotate(-1.2deg); text-align: left; }
+  #paper .sheet h3 { margin: 0 0 10px; font-size: 17px; font-family: Georgia, serif; letter-spacing: 1px; }
+  #paper .sheet p { margin: 0 0 8px; color: #2a1d10; font-size: 16px; max-width: none; }
+  #paper button { margin-top: 8px; font-family: Georgia, serif; background: #2a1d10; color: #e8dcc0; border: 0; padding: 9px 24px; border-radius: 3px; letter-spacing: 2px; }
+  #intro { background: #000; cursor: pointer; }
+  #intro p { font-size: 21px; color: #bbb; max-width: 640px; opacity: 0; transition: opacity 1.2s; min-height: 3em; }
+  #intro .small { position: absolute; bottom: 18px; left: 0; right: 0; opacity: .5; font-size: 12px; transition: none; min-height: 0; margin: 0 auto; }
+  .lid { position: fixed; left: 0; right: 0; height: 0; background: #000; z-index: 8; pointer-events: none; }
+  #lidTop { top: 0; } #lidBot { bottom: 0; }
+  #notesHud { font-size: 15px; color: #c9b88a; margin-left: 10px; align-self: center; }
 </style>
 </head>
 <body>
@@ -96,6 +110,7 @@
     <div class="slot" style="color:#e04040">🗝</div>
     <div class="slot" style="color:#4a8cff">🗝</div>
     <div class="slot" style="color:#f0c040">🗝</div>
+    <div id="notesHud">📜 0/5</div>
   </div>
   <div id="night">НОЧЬ 1/3</div>
 </div>
@@ -108,16 +123,21 @@
 <button id="bRun" class="btn hidden">БЕГ</button>
 <button id="bLight" class="btn hidden">🔦</button>
 
+<div id="paper" class="hidden"><div class="sheet"><div id="paperText"></div><button id="paperClose">ЗАКРЫТЬ</button></div></div>
+<div id="intro" class="screen hidden"><p id="introText"></p><p class="small">нажми, чтобы пропустить</p></div>
+<div id="lidTop" class="lid"></div><div id="lidBot" class="lid"></div>
+
 <div id="menu" class="screen">
   <h1>ОН РЯДОМ</h1>
-  <p>Ты очнулся в чужой спальне на втором этаже старого дома. Двери скрипят, где-то тикают часы.
-     По дому ходит <b>Он</b> — высокий мужчина в шляпе. Он слышит каждый твой шаг.</p>
+  <p>Ноябрь 1994-го. После аварии на ночной трассе ты очнулся в доме семьи Вороновых — десять лет назад
+     они пропали без следа. По дому ходит <b>Он</b> — высокий мужчина в шляпе. Он слышит каждый твой шаг.</p>
   <p>Найди <b>три ключа</b> — красный, синий и золотой — и открой входную дверь на первом этаже.
-     У тебя есть <b>три ночи</b>. Прячься в шкафах и под кроватями. Выключенный фонарик делает тебя незаметнее.</p>
+     У тебя есть <b>три ночи</b>. Прячься в шкафах и под кроватями. Выключенный фонарик делает тебя незаметнее.
+     Собери <b>5 записок</b>, чтобы узнать, что здесь случилось.</p>
   <p class="small">Телефон: левая часть экрана — ходьба, правая — обзор. Кнопки: ДЕЙСТВИЕ, БЕГ, 🔦.<br>
      ПК: WASD, мышь, Shift — бег, E / клик — действие, F — фонарик. 🎧 Играй в наушниках.</p>
   <div class="row">Качество:
-    <button data-q="0">Низкое</button><button data-q="1">Среднее</button><button data-q="2">Высокое</button>
+    <button data-q="0">Низкое</button><button data-q="1">Среднее</button><button data-q="2">Ультра</button>
   </div>
   <button class="big" id="startBtn" disabled>ЗАГРУЗКА…</button>
 </div>
@@ -126,14 +146,14 @@
 
 <div id="lose" class="screen hidden">
   <h2>ОН ЗАБРАЛ ТЕБЯ</h2>
-  <p>Три ночи прошли. Из этого дома больше никто не выйдет.</p>
+  <p>Три ночи прошли. Утром в доме Вороновых снова будет тихо…<br>а на вешалке в прихожей появится ещё одно пальто.</p>
   <button class="big" data-restart>ЕЩЁ РАЗ</button>
 </div>
 
 <div id="win" class="screen hidden">
   <h2 style="color:#eee;text-shadow:0 0 14px #fff">ТЫ СБЕЖАЛ</h2>
   <p id="winTxt"></p>
-  <p class="small">…за спиной медленно закрылась дверь.</p>
+  <p id="endTxt"></p>
   <button class="big" data-restart>ЕЩЁ РАЗ</button>
 </div>
 <div id="rotate" class="hidden">Поверни телефон горизонтально</div>
@@ -227,11 +247,13 @@ const camera = new THREE.PerspectiveCamera(72, 1, 0.04, 60);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
 
+// post — своя постобработка (свечение, цвет, зерно), ao — затенение углов, tex — детализация текстур
 const QUALITY = [
-  { pr: 0.65, shadow: false, map: 512 },
-  { pr: 1.0, shadow: true, map: 512 },
-  { pr: 1.6, shadow: true, map: 1024 },
+  { pr: 0.7, shadow: false, map: 512, post: false, ao: false, tex: 1 },
+  { pr: 1.0, shadow: true, map: 1024, post: true, ao: false, tex: 1 },
+  { pr: 1.5, shadow: true, map: 2048, post: true, ao: true, tex: 2 },
 ];
+let TEXS = 1;
 let quality = 1;
 try { const q = localStorage.getItem('onryadom3d_q'); if (q !== null) quality = +q; } catch (e) {}
 function resize() {
@@ -239,6 +261,10 @@ function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
+  if (post) {
+    const v = renderer.getDrawingBufferSize(new THREE.Vector2());
+    post.rt.setSize(v.x, v.y); post.mat.uniforms.res.value.copy(v);
+  }
   $('rotate').classList.toggle('hidden', !(innerHeight > innerWidth && 'ontouchstart' in window));
 }
 addEventListener('resize', resize);
@@ -246,9 +272,9 @@ addEventListener('resize', resize);
 // =====================================================================
 //  Процедурные текстуры
 // =====================================================================
-function mkTex(w, h, draw, srgb = true) {
-  const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const g = c.getContext('2d'); draw(g, w, h);
+function mkTex(w, h, draw, srgb = true, scale = TEXS) {
+  const c = document.createElement('canvas'); c.width = w * scale; c.height = h * scale;
+  const g = c.getContext('2d'); g.scale(scale, scale); draw(g, w, h);
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   if (srgb) t.encoding = THREE.sRGBEncoding;
@@ -256,12 +282,32 @@ function mkTex(w, h, draw, srgb = true) {
   return t;
 }
 function addNoise(g, w, h, amt) {
-  const im = g.getImageData(0, 0, w, h), d = im.data;
+  const im = g.getImageData(0, 0, g.canvas.width, g.canvas.height), d = im.data;
   for (let i = 0; i < d.length; i += 4) {
     const n = (Math.random() - 0.5) * amt;
     d[i] = clamp(d[i] + n, 0, 255); d[i + 1] = clamp(d[i + 1] + n, 0, 255); d[i + 2] = clamp(d[i + 2] + n, 0, 255);
   }
   g.putImageData(im, 0, 0);
+}
+// карта нормалей из яркости (тёмное = углубление)
+function normalTex(src, strength) {
+  const w = src.width, h = src.height, sd = src.getContext('2d').getImageData(0, 0, w, h).data;
+  const L = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) L[i] = (sd[i * 4] * 0.3 + sd[i * 4 + 1] * 0.59 + sd[i * 4 + 2] * 0.11) / 255;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'), out = g.createImageData(w, h), o = out.data;
+  for (let y = 0; y < h; y++) {
+    const yu = ((y - 1 + h) % h) * w, yd = ((y + 1) % h) * w, yr = y * w;
+    for (let x = 0; x < w; x++) {
+      const xl = (x - 1 + w) % w, xr = (x + 1) % w;
+      const dx = (L[yr + xr] - L[yr + xl]) * strength, dy = (L[yd + x] - L[yu + x]) * strength;
+      const l = Math.hypot(dx, dy, 1), k = (yr + x) * 4;
+      o[k] = (-dx / l * 0.5 + 0.5) * 255; o[k + 1] = (dy / l * 0.5 + 0.5) * 255; o[k + 2] = (1 / l * 0.5 + 0.5) * 255; o[k + 3] = 255;
+    }
+  }
+  g.putImageData(out, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = Math.min(8, maxAniso);
+  return t;
 }
 function blotches(g, w, h, n, rgb, amin, amax, rmin, rmax) {
   for (let i = 0; i < n; i++) {
@@ -518,6 +564,53 @@ function buildTextures() {
   TX.sheet = fabric('#8f897a', 'rgba(0,0,0,0.06)');
   TX.blanket = fabric('#4c2320', 'rgba(0,0,0,0.12)');
   TX.sofa = fabric('#38432f', 'rgba(0,0,0,0.15)');
+  // фонарик: пятно с кольцами от отражателя
+  TX.cookie = mkTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#000'; g.fillRect(0, 0, w, h);
+    const gr = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    gr.addColorStop(0, '#ffffff'); gr.addColorStop(0.14, '#fbf6ea'); gr.addColorStop(0.2, '#a9a397'); gr.addColorStop(0.26, '#d8d1c2');
+    gr.addColorStop(0.31, '#8a857b'); gr.addColorStop(0.45, '#6a665e'); gr.addColorStop(0.75, '#2c2a27'); gr.addColorStop(1, '#000');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    blotches(g, w, h, 14, '0,0,0', 0.1, 0.25, 4, 14);
+    addNoise(g, w, h, 10);
+  }, true, 1);
+  TX.cookie.wrapS = TX.cookie.wrapT = THREE.ClampToEdgeWrapping;
+  TX.dot = mkTex(32, 32, (g, w) => {
+    const gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 32, 32);
+  }, true, 1);
+  // старая бумага с рукописью
+  TX.paper = mkTex(200, 270, (g, w, h) => {
+    g.fillStyle = '#d6c79f'; g.fillRect(0, 0, w, h);
+    blotches(g, w, h, 8, '120,90,40', 0.15, 0.35, 15, 60);
+    g.strokeStyle = 'rgba(30,20,40,0.75)'; g.lineWidth = 1;
+    for (let y = 24; y < h - 20; y += 11) {
+      let x = 14; g.beginPath(); g.moveTo(x, y);
+      while (x < w - 16 - rand(0, 40)) { x += rand(2, 5); g.lineTo(x, y + rand(-2.5, 2.5)); }
+      g.stroke();
+    }
+    addNoise(g, w, h, 18);
+  }, true, 1);
+  TX.news = mkTex(220, 290, (g, w, h) => {
+    g.fillStyle = '#bdb6a2'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#1a1a1a'; g.fillRect(12, 12, w - 24, 22);
+    g.fillStyle = 'rgba(20,20,20,0.7)';
+    for (let col = 0; col < 3; col++) for (let y = 46; y < h - 14; y += 5) if (Math.random() > 0.08) g.fillRect(12 + col * 68, y, rand(40, 62), 2);
+    g.fillStyle = '#3a3a3a'; g.fillRect(80, 60, 60, 70);
+    blotches(g, w, h, 6, '110,80,30', 0.2, 0.4, 15, 50);
+    addNoise(g, w, h, 22);
+  }, true, 1);
+  // складки ткани для пальто
+  TX.coatH = mkTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#808080'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 26; i++) {
+      const x = rand(0, w), wd = rand(4, 18), gr = g.createLinearGradient(x - wd, 0, x + wd, 0);
+      gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(0.5, `rgba(${Math.random() < 0.5 ? '0,0,0' : '255,255,255'},${rand(0.15, 0.35)})`); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(x - wd, 0, wd * 2, h);
+    }
+    for (let i = 0; i < w; i += 2) { g.fillStyle = `rgba(0,0,0,${rand(0.02, 0.08)})`; g.fillRect(0, i, w, 1); }
+    addNoise(g, w, h, 30);
+  }, false, 1);
   TX.crate = mkTex(128, 128, (g, w, h) => {
     g.fillStyle = '#7a5a36'; g.fillRect(0, 0, w, h);
     for (let i = 0; i < 4; i++) { g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(0, i * 32, w, 2); }
@@ -525,7 +618,18 @@ function buildTextures() {
     g.fillStyle = 'rgba(40,25,10,0.8)'; g.fillRect(0, 0, w, 8); g.fillRect(0, h - 8, w, 8); g.fillRect(0, 0, 8, h); g.fillRect(w - 8, 0, 8, h);
     addNoise(g, w, h, 20);
   });
+  TXN.wall = normalTex(TX.wall.image, 2.5);
+  TXN.wood = normalTex(TX.wood.image, 4);
+  TXN.tile = normalTex(TX.tile.image, 5);
+  TXN.ceil = normalTex(TX.ceil.image, 3);
+  TXN.door = normalTex(TX.door.image, 5);
+  TXN.dwood = normalTex(TX.dwood.image, 3);
+  TXN.fabric = normalTex(TX.sofa.image, 4);
+  TXN.face = normalTex(TX.face.image, 4);
+  TXN.coat = normalTex(TX.coatH.image, 3);
+  TXN.crate = normalTex(TX.crate.image, 4);
 }
+const TXN = {};
 
 // =====================================================================
 //  Материалы
@@ -533,24 +637,36 @@ function buildTextures() {
 const MT = {};
 const STD = (o) => new THREE.MeshStandardMaterial(o);
 function buildMaterials() {
-  MT.wall = STD({ map: TX.wall, bumpMap: TX.wall, bumpScale: 0.012, roughness: 0.93 });
-  MT.floor = STD({ map: TX.wood, bumpMap: TX.wood, bumpScale: 0.015, roughness: 0.5 });
-  MT.tile = STD({ map: TX.tile, bumpMap: TX.tile, bumpScale: 0.01, roughness: 0.22 });
-  MT.ceil = STD({ map: TX.ceil, bumpMap: TX.ceil, bumpScale: 0.01, roughness: 1 });
-  MT.dwood = STD({ map: TX.dwood, roughness: 0.58 });
-  MT.lwood = STD({ map: TX.dwood, color: 0xc9a27a, roughness: 0.62 });
-  MT.door = STD({ map: TX.door, bumpMap: TX.door, bumpScale: 0.02, roughness: 0.6 });
+  const nv = s => new THREE.Vector2(s, s);
+  MT.wall = STD({ map: TX.wall, normalMap: TXN.wall, normalScale: nv(0.8), roughness: 0.93 });
+  MT.floor = STD({ map: TX.wood, normalMap: TXN.wood, normalScale: nv(0.9), roughness: 0.42 });
+  MT.tile = STD({ map: TX.tile, normalMap: TXN.tile, normalScale: nv(1), roughness: 0.2 });
+  MT.ceil = STD({ map: TX.ceil, normalMap: TXN.ceil, normalScale: nv(0.7), roughness: 1 });
+  MT.dwood = STD({ map: TX.dwood, normalMap: TXN.dwood, normalScale: nv(0.6), roughness: 0.5 });
+  MT.lwood = STD({ map: TX.dwood, normalMap: TXN.dwood, normalScale: nv(0.6), color: 0xc9a27a, roughness: 0.55 });
+  MT.door = STD({ map: TX.door, normalMap: TXN.door, normalScale: nv(1), roughness: 0.55 });
   MT.brass = STD({ color: 0xa4823a, metalness: 0.9, roughness: 0.32 });
   MT.metal = STD({ color: 0x5a5a58, metalness: 0.85, roughness: 0.45 });
   MT.porcelain = STD({ color: 0xcfcabb, roughness: 0.18 });
   MT.enamel = STD({ color: 0xb9b19a, roughness: 0.35 });
   MT.black = STD({ color: 0x0a0a0a, roughness: 0.6 });
   MT.glass = STD({ color: 0x0b0e10, roughness: 0.05, metalness: 0.6 });
-  MT.sheet = STD({ map: TX.sheet, roughness: 1 });
-  MT.blanket = STD({ map: TX.blanket, roughness: 1 });
-  MT.sofa = STD({ map: TX.sofa, roughness: 1 });
-  MT.crate = STD({ map: TX.crate, roughness: 0.9 });
-  MT.window = STD({ map: TX.win, emissiveMap: TX.win, emissive: 0xffffff, emissiveIntensity: 0.6, roughness: 0.7 });
+  MT.sheet = STD({ map: TX.sheet, normalMap: TXN.fabric, normalScale: nv(0.5), roughness: 1 });
+  MT.blanket = STD({ map: TX.blanket, normalMap: TXN.fabric, normalScale: nv(0.7), roughness: 1 });
+  MT.sofa = STD({ map: TX.sofa, normalMap: TXN.fabric, normalScale: nv(0.8), roughness: 1 });
+  MT.crate = STD({ map: TX.crate, normalMap: TXN.crate, normalScale: nv(1), roughness: 0.9 });
+  MT.curtain = STD({ map: TX.blanket, color: 0x8a7a70, normalMap: TXN.fabric, normalScale: nv(0.6), roughness: 1, side: THREE.DoubleSide });
+  MT.paper = STD({ map: TX.paper, roughness: 0.95, side: THREE.DoubleSide });
+  MT.news = STD({ map: TX.news, roughness: 0.95, side: THREE.DoubleSide });
+  MT.wax = STD({ color: 0xd9cfb4, roughness: 0.6 });
+  MT.flame = new THREE.MeshBasicMaterial({ color: new THREE.Color(6, 2.6, 0.7) });
+  MT.bottle = STD({ color: 0x1d3a1a, roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.85 });
+  MT.puddle = STD({ color: 0x0c0806, roughness: 0.03, metalness: 0.4, transparent: true, opacity: 0.9, polygonOffset: true, polygonOffsetFactor: -2 });
+  MT.radiator = STD({ color: 0x8c8678, roughness: 0.55, metalness: 0.35 });
+  MT.leather = STD({ color: 0x0c0a08, roughness: 0.32 });
+  MT.band = STD({ color: 0x3a0c0a, roughness: 0.6 });
+  MT.toy = c => STD({ color: c, roughness: 0.6 });
+  MT.window = STD({ map: TX.win, emissiveMap: TX.win, emissive: 0xffffff, emissiveIntensity: 1.1, roughness: 0.7 });
   MT.portrait = STD({ map: TX.portrait, roughness: 0.7 });
   MT.landscape = STD({ map: TX.landscape, roughness: 0.7 });
   MT.frame = STD({ color: 0x5a4320, metalness: 0.6, roughness: 0.45 });
@@ -559,14 +675,14 @@ function buildMaterials() {
   MT.web = new THREE.MeshBasicMaterial({ map: TX.web, transparent: true, depthWrite: false, side: THREE.DoubleSide, opacity: 0.5 });
   MT.clock = STD({ map: TX.clock, roughness: 0.4 });
   MT.skin = STD({ color: 0xb4ab9b, roughness: 0.78 });
-  MT.face = STD({ map: TX.face, bumpMap: TX.face, bumpScale: 0.004, roughness: 0.7 });
-  MT.coat = STD({ color: 0x17130f, roughness: 0.95 });
+  MT.face = STD({ map: TX.face, normalMap: TXN.face, normalScale: nv(0.9), roughness: 0.62 });
+  MT.coat = STD({ color: 0x16120e, roughness: 0.93, normalMap: TXN.coat, normalScale: nv(1.2), side: THREE.DoubleSide });
   MT.pants = STD({ color: 0x0e0e10, roughness: 0.9 });
   MT.hat = STD({ color: 0x070707, roughness: 0.75 });
-  MT.eye = new THREE.MeshBasicMaterial({ color: 0xff2a1a, fog: false });
+  MT.eye = new THREE.MeshBasicMaterial({ color: new THREE.Color(5, 0.35, 0.15), fog: false });
   MT.socket = new THREE.MeshBasicMaterial({ color: 0x000000 });
   MT.ember = new THREE.MeshBasicMaterial({ color: 0xff5a14 });
-  MT.bulb = STD({ color: 0xffe0a0, emissive: 0xffb050, emissiveIntensity: 2 });
+  MT.bulb = STD({ color: 0xffe0a0, emissive: 0xffb050, emissiveIntensity: 3 });
   MT.hit = new THREE.MeshBasicMaterial({ visible: false });
 }
 
@@ -622,14 +738,15 @@ function buildHouse() {
   const lint = instanced(BOX(1, 0.7, 1), MT.wall, lintels);
   instanced(BOX(1, 0.13, 0.035), MT.dwood, skirt, false);
   occluders.push(walls, lint);
+  windowList = windows;
   for (const w of windows) {
     const g = group(w.f, w.x, w.z, w.rot);
     M(new THREE.PlaneGeometry(0.9, 1.55), MT.window, 0, 1.75, 0.001, g, false);
     bx(1.0, 0.06, 0.12, MT.dwood, 0, 0.95, 0.05, g);
     // занавески
-    const cur = STD({ map: TX.blanket, color: 0x777777, roughness: 1, side: THREE.DoubleSide });
-    M(new THREE.PlaneGeometry(0.28, 1.9), cur, -0.42, 1.6, 0.06, g, false).rotation.y = 0.15;
-    M(new THREE.PlaneGeometry(0.22, 1.9), cur, 0.44, 1.6, 0.06, g, false).rotation.y = -0.15;
+    M(curtainGeo(0.3, 2.0), MT.curtain, -0.43, 1.62, 0.07, g, false).rotation.y = 0.12;
+    M(curtainGeo(0.24, 2.0), MT.curtain, 0.45, 1.62, 0.07, g, false).rotation.y = -0.12;
+    bx(1.1, 0.025, 0.025, MT.brass, 0, 2.62, 0.08, g, false);
   }
 
   // ---- полы и потолки ----
@@ -708,6 +825,8 @@ function buildHouse() {
   });
 
   buildFurniture();
+  buildDetails();
+  buildNotes();
   buildLights();
 }
 
@@ -951,9 +1070,163 @@ function buildFurniture() {
 }
 
 // ---------------------------------------------------------------------
+//  Детали: лепнина, наличники, батареи, мелочи
+// ---------------------------------------------------------------------
+let windowList = [];
+const candles = [];
+function curtainGeo(w, h) {
+  const g = new THREE.PlaneGeometry(w, h, 16, 8), p = g.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), y = p.getY(i);
+    p.setZ(i, Math.sin((x / w + 0.5) * Math.PI * 5) * 0.03 + (0.5 - y / h) * 0.04 * Math.sin(x * 23));
+  }
+  g.computeVertexNormals(); return g;
+}
+function candle(f, x, y, z, h = 0.12) {
+  const b = f * FH + y;
+  M(new THREE.CylinderGeometry(0.017, 0.019, h, 10), MT.wax, x, b + h / 2, z, null, false);
+  const fl = M(new THREE.SphereGeometry(0.011, 8, 6), MT.flame, x, b + h + 0.022, z, null, false);
+  fl.scale.set(0.7, 1.9, 0.7); candles.push({ m: fl, x, z });
+}
+function plate(f, x, y, z) { M(new THREE.CylinderGeometry(0.11, 0.08, 0.018, 20), MT.porcelain, x, f * FH + y + 0.009, z, null, false); }
+function bottle(f, x, y, z, tipped) {
+  const g = group(f, x, z, rand(0, 6)); g.position.y += y;
+  M(new THREE.CylinderGeometry(0.035, 0.035, 0.2, 12), MT.bottle, 0, 0.1, 0, g, false);
+  M(new THREE.CylinderGeometry(0.012, 0.03, 0.08, 10), MT.bottle, 0, 0.24, 0, g, false);
+  if (tipped) { g.rotation.z = Math.PI / 2; g.position.y += 0.035; }
+}
+function floorPaper(f, x, z, news) {
+  const m = M(new THREE.PlaneGeometry(news ? 0.34 : 0.2, news ? 0.44 : 0.27), news ? MT.news : MT.paper, x, f * FH + 0.005, z, null, false);
+  m.rotation.set(-Math.PI / 2, 0, rand(0, 6));
+}
+function coatRack(f, x, z) {
+  const g = group(f, x, z, 0);
+  M(new THREE.CylinderGeometry(0.025, 0.03, 1.85, 10), MT.dwood, 0, 0.92, 0, g);
+  M(new THREE.CylinderGeometry(0.2, 0.22, 0.04, 16), MT.dwood, 0, 0.02, 0, g);
+  for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2; const h = bx(0.16, 0.02, 0.02, MT.dwood, Math.cos(a) * 0.08, 1.75, Math.sin(a) * 0.08, g); h.rotation.y = -a; h.rotation.z = 0.4; }
+  // висящее пальто и та самая шляпа
+  const c = M(new THREE.CylinderGeometry(0.12, 0.26, 1.15, 16, 1, true), MT.coat, 0.16, 1.12, 0, g); c.rotation.z = 0.05;
+  M(new THREE.CylinderGeometry(0.24, 0.24, 0.012, 24), MT.hat, -0.02, 1.86, 0.02, g);
+  M(new THREE.CylinderGeometry(0.12, 0.13, 0.17, 20), MT.hat, -0.02, 1.95, 0.02, g);
+}
+function buildDetails() {
+  const crownA = [], crownB = [], rail = [], jamb = [], head = [], ribs = [], pipes = [], plates = [];
+  for (let f = 0; f < 2; f++) for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) {
+    const c = cellAt(f, x, z);
+    if (c !== '#' && c !== 'W') continue;
+    for (const [dx, dz] of D4) {
+      const n = cellAt(f, x + dx, z + dz);
+      if (isWallish(n) || n === 'S') continue;
+      const rotY = dx !== 0 ? Math.PI / 2 : 0;
+      crownA.push([x + 0.5 + dx * 0.535, f * FH + CEIL - 0.035, z + 0.5 + dz * 0.535, 0, rotY]);
+      crownB.push([x + 0.5 + dx * 0.518, f * FH + CEIL - 0.1, z + 0.5 + dz * 0.518, 0, rotY]);
+      if (c === '#') rail.push([x + 0.5 + dx * 0.512, f * FH + 0.92, z + 0.5 + dz * 0.512, 0, rotY]);
+    }
+  }
+  instanced(BOX(1, 0.07, 0.07), MT.lwood, crownA, false);
+  instanced(BOX(1, 0.06, 0.035), MT.lwood, crownB, false);
+  instanced(BOX(1, 0.045, 0.024), MT.dwood, rail, false);
+  // наличники вокруг дверей
+  for (const d of doors) {
+    const y0 = d.f * FH;
+    for (const side of [0, 1]) {
+      const o = side ? 1.018 : -0.018;
+      if (d.base === 0) {
+        jamb.push([d.x + 0.045, y0 + 1.2, d.z + o], [d.x + 0.955, y0 + 1.2, d.z + o]); head.push([d.x + 0.5, y0 + 2.37, d.z + o]);
+        if (!side) plates.push([d.x - 0.12, y0 + 1.3, d.z - 0.006]);
+      } else {
+        jamb.push([d.x + o, y0 + 1.2, d.z + 0.045, 0, Math.PI / 2], [d.x + o, y0 + 1.2, d.z + 0.955, 0, Math.PI / 2]);
+        head.push([d.x + o, y0 + 2.37, d.z + 0.5, 0, Math.PI / 2]);
+        if (!side) plates.push([d.x - 0.006, y0 + 1.3, d.z - 0.12, 0, Math.PI / 2]);
+      }
+    }
+  }
+  jamb.push([8.045, 1.2, 12.982], [9.955, 1.2, 12.982]);
+  instanced(BOX(0.09, 2.4, 0.036), MT.lwood, jamb, false);
+  instanced(BOX(1.06, 0.1, 0.04), MT.lwood, head, false);
+  bx(2.06, 0.12, 0.04, MT.lwood, 9, 2.37, 12.98, null, false);
+  instanced(BOX(0.08, 0.12, 0.012), MT.enamel, plates, false);
+  // чугунные батареи под окнами
+  for (const w of windowList) {
+    const cs = Math.cos(w.rot), sn = Math.sin(w.rot), y = w.f * FH;
+    const at = (lx, lz) => [w.x + cs * lx + sn * lz, w.z - sn * lx + cs * lz];
+    for (let i = 0; i < 9; i++) { const [px, pz] = at(-0.36 + i * 0.09, 0.08); ribs.push([px, y + 0.42, pz, 0, w.rot]); }
+    for (const py of [0.18, 0.66]) { const [px, pz] = at(0, 0.08); pipes.push([px, y + py, pz, 0, w.rot]); }
+  }
+  instanced(BOX(0.06, 0.5, 0.08), MT.radiator, ribs, false);
+  instanced(BOX(0.82, 0.035, 0.035), MT.radiator, pipes, false);
+
+  // ---- мелочи по комнатам ----
+  plate(0, 3.5, 0.805, 3.3); plate(0, 2.4, 0.805, 3.75); candle(0, 3.0, 0.805, 3.5);
+  M(new THREE.CylinderGeometry(0.04, 0.035, 0.09, 12), MT.porcelain, 3.7, 0.85, 3.65, null, false);
+  bottle(0, 1.45, 0.91, 1.2); bottle(0, 1.6, 0.91, 1.3); bottle(0, 12.7, 0, 3.8, true);
+  for (let i = 0; i < 6; i++) { const sh = M(new THREE.CylinderGeometry(rand(0.02, 0.05), 0.02, 0.006, 3), MT.porcelain, 4.2 + rand(-0.25, 0.25), 0.004, 2.4 + rand(-0.25, 0.25), null, false); sh.rotation.y = rand(0, 6); }
+  candle(0, 2.85, 0.805, 8.6, 0.16); candle(0, 3.0, 0.805, 9.0, 0.2); candle(0, 3.15, 0.805, 9.4, 0.14);
+  plate(0, 2.6, 0.805, 8.3); plate(0, 3.4, 0.805, 9.7);
+  floorPaper(0, 15.4, 3.9, true); floorPaper(0, 4.5, 7.2, false); floorPaper(0, 13.2, 11.0, false);
+  coatRack(0, 10.55, 12.45); block(0, [10, 12]);
+  for (let i = 0; i < 5; i++) M(new THREE.SphereGeometry(rand(0.12, 0.2), 10, 8), i % 2 ? MT.blanket : MT.sheet, 4.6 + rand(-0.2, 0.2), FH + 0.08, 3.8 + rand(-0.2, 0.2), null, false).scale.y = 0.4;
+  const pud = M(new THREE.CircleGeometry(0.45, 24), MT.puddle, 13.5, FH + 0.004, 3.1, null, false); pud.rotation.x = -Math.PI / 2; pud.scale.set(1, 0.7, 1);
+  const towel = bx(0.35, 0.012, 0.5, MT.sheet, 14.2, FH + 0.61, 1.45, null, false); towel.rotation.z = 0.3;
+  const toyC = [0x8a1c1c, 0x1c4a8a, 0xa08a1c, 0x2a6a2a];
+  for (let i = 0; i < 7; i++) { const b = bx(0.07, 0.07, 0.07, MT.toy(pick(toyC)), 3.1 + rand(-0.4, 0.4), FH + 0.035, 8.3 + rand(-0.4, 0.4), null, false); b.rotation.y = rand(0, 6); }
+  M(new THREE.SphereGeometry(0.09, 16, 12), MT.toy(0x7a1414), 4.4, FH + 0.09, 9.6, null, false);
+  candle(1, 16.4, 0.785, 10.9, 0.1);
+  floorPaper(1, 14.8, 10.4, false); floorPaper(1, 15.2, 11.1, true);
+}
+
+// ---------------------------------------------------------------------
+//  Записки (сюжет)
+// ---------------------------------------------------------------------
+const NOTES = [
+  { pos: [1, 2.75, 0, 2.75], title: 'Записка, придавленная тапком',
+    text: 'Если ты это читаешь — значит, ты тоже проснулся в этой кровати.\nЯ не помню, как сюда попал. Помню только дорогу, дождь и свет фар.\nВходная дверь внизу заперта на три замка. Ключи он прячет по комнатам.\nНе бегай без нужды. Он слышит. — М.' },
+  { pos: [0, 2.55, 0.806, 3.35], title: 'Страница из дневника. 3 ноября 1984',
+    text: 'Григорий опять всю ночь ходил по дому. Говорит, что слышит, как кто-то зовёт его из стен.\nОн купил на барахолке эту шляпу и больше её не снимает. Даже спит в ней.\nДети прячутся от отца в шкафах. Я тоже. — Анна' },
+  { pos: [1, 3.0, 0, 10.5], title: 'Детский рисунок',
+    text: '(карандашом нарисован высокий человек в шляпе и маленькая кровать)\nПАПА СТАЛ ОЧЕНЬ ВЫСОКИЙ.\nПАПА НЕ ВИДИТ В ТЕМНОТЕ, ЕСЛИ НЕ СВЕТИТЬ.\nЯ ПРЯЧУСЬ ПОД КРОВАТЬЮ И НЕ ДЫШУ. МАМА СКАЗАЛА, ТАК ОН ПРОЙДЁТ МИМО. — Миша, 8 лет' },
+  { pos: [1, 16.45, 0.792, 10.2], title: 'Письмо доктора Ланского',
+    text: 'Уважаемая Анна Сергеевна!\nВаш муж скончался 14 ноября 1984 года. Причина смерти — остановка сердца.\nЯ понимаю ваше горе, но прошу: перестаньте писать мне, что он «до сих пор ходит по дому по ночам».\nЭто нервы. Уезжайте оттуда вместе с детьми. Хотя бы на три ночи.' },
+  { pos: [0, 13.75, 0.448, 2.5], news: true, title: '«Заречный вестник», 1985 год',
+    text: 'ПРОПАЛА СЕМЬЯ ВОРОНОВЫХ\nАнна Воронова и двое её детей не выходят на связь уже месяц. Дом на окраине заперт изнутри.\nЧерез окно соседи видели в прихожей только старую шляпу на вешалке.\nПолиция просит водителей не останавливаться у дома по ночам.' },
+];
+const notes = [];
+function buildNotes() {
+  NOTES.forEach((n, i) => {
+    const [f, x, y, z] = n.pos;
+    const m = M(new THREE.PlaneGeometry(n.news ? 0.3 : 0.19, n.news ? 0.4 : 0.26), n.news ? MT.news : MT.paper, x, f * FH + y + 0.006, z, null, false);
+    m.rotation.set(-Math.PI / 2, 0, rand(-0.6, 0.6));
+    const hit = M(new THREE.SphereGeometry(0.2, 8, 6), MT.hit, x, f * FH + y + 0.05, z, null, false);
+    const nt = { i, read: false };
+    hit.userData.inter = { type: 'note', note: nt };
+    interactables.push(hit); notes.push(nt);
+  });
+}
+function readNote(nt) {
+  const n = NOTES[nt.i];
+  if (!nt.read) { nt.read = true; G.notes++; $('notesHud').textContent = `📜 ${G.notes}/${NOTES.length}`; }
+  $('paperText').innerHTML = `<h3>${n.title}</h3>` + n.text.split('\n').map(l => `<p>${l}</p>`).join('');
+  $('paper').classList.remove('hidden');
+  G.state = 'read'; setControls(false);
+  noiseHit(0.15, 3000, 0.3, 0, 0, 'bandpass');
+}
+$('paperClose').addEventListener('click', () => {
+  $('paper').classList.add('hidden'); G.state = 'play'; setControls(true);
+  if (G.notes === NOTES.length) showMsg('Все записки собраны. Кто же такой «М.»?..', 4);
+});
+
+// ---------------------------------------------------------------------
 //  Свет
 // ---------------------------------------------------------------------
-let flashlight, flashTarget, fillLight, emberLight = null, tvScreen = null;
+let flashlight, flashTarget, fillLight, emberLight = null, tvScreen = null, beam, dust, dustGeo, dustVel, candleLight = null;
+const _v = new THREE.Vector3();
+// пылинка в случайной точке конуса фонарика (в мировых координатах)
+function respawnDust(i, any) {
+  const z = any ? rand(0.4, 4.5) : rand(0.4, 1.2) + Math.random() * 3.5, r = z * 0.4 * Math.sqrt(Math.random()), a = rand(0, 6.283);
+  _v.set(Math.cos(a) * r, Math.sin(a) * r, -z);
+  camera.localToWorld(_v);
+  const p = dustGeo.attributes.position.array; p[i * 3] = _v.x; p[i * 3 + 1] = _v.y; p[i * 3 + 2] = _v.z;
+}
 const clockObj = {};
 function hangingBulb(f, x, z) {
   const top = f * FH + CEIL;
@@ -970,6 +1243,22 @@ function buildLights() {
   flashlight.shadow.camera.near = 0.1; flashlight.shadow.camera.far = 17;
   flashTarget = new THREE.Object3D(); scene.add(flashTarget); flashlight.target = flashTarget;
   scene.add(flashlight);
+  // видимый луч в пыльном воздухе
+  const bg = new THREE.CylinderGeometry(0.025, 2.6, 6, 40, 1, true); bg.translate(0, -3, 0); bg.rotateX(-Math.PI / 2);
+  beam = new THREE.Mesh(bg, new THREE.ShaderMaterial({
+    uniforms: { k: { value: 0.05 }, col: { value: new THREE.Color(1, 0.94, 0.84) } },
+    vertexShader: 'varying float vL; varying vec3 vN; varying vec3 vV; void main(){ vL = position.z / 6.0; vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); vN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * mv; }',
+    fragmentShader: 'uniform float k; uniform vec3 col; varying float vL; varying vec3 vN; varying vec3 vV; void main(){ float e = pow(abs(dot(vN, vV)), 2.5); float a = k * e * pow(1.0 - vL, 1.6) * smoothstep(0.0, 0.06, vL); gl_FragColor = vec4(col * a, 1.0); }',
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
+  }));
+  beam.frustumCulled = false; scene.add(beam);
+  const N = 160, dp = new Float32Array(N * 3);
+  dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute('position', new THREE.BufferAttribute(dp, 3));
+  dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ size: 0.008, map: TX.dot, color: 0xfff0d8, transparent: true, opacity: 0.28, depthWrite: false, blending: THREE.AdditiveBlending }));
+  dust.frustumCulled = false; scene.add(dust);
+  dustVel = new Float32Array(N * 3).map(() => rand(-0.02, 0.02));
+  for (let i = 0; i < N; i++) respawnDust(i, true);
+  if (QUALITY[quality].post) { candleLight = new THREE.PointLight(0xff8a3a, 0.55, 3.5, 2); candleLight.position.set(3.0, 1.0, 3.5); scene.add(candleLight); }
   fillLight = new THREE.PointLight(0xffe8c8, 0.25, 3.5, 2); scene.add(fillLight);
   hangingBulb(0, 8.5, 3.0); hangingBulb(1, 9.5, 2.5); hangingBulb(0, 3.0, 9.0); hangingBulb(1, 14.5, 9.5);
   applyQuality();
@@ -978,14 +1267,16 @@ function applyQuality() {
   const q = QUALITY[quality];
   if (flashlight) {
     flashlight.castShadow = q.shadow;
+    flashlight.map = q.shadow ? TX.cookie : null;
     if (flashlight.shadow.mapSize.x !== q.map) {
       flashlight.shadow.mapSize.set(q.map, q.map);
       if (flashlight.shadow.map) { flashlight.shadow.map.dispose(); flashlight.shadow.map = null; }
     }
   }
   resize();
-  document.querySelectorAll('[data-q]').forEach(b => b.classList.toggle('sel', +b.dataset.q === quality));
+  applyQualityButtons();
 }
+function applyQualityButtons() { document.querySelectorAll('[data-q]').forEach(b => b.classList.toggle('sel', +b.dataset.q === quality)); }
 
 // =====================================================================
 //  Ключи
@@ -1036,33 +1327,56 @@ function buildEnemy() {
   const legs = [];
   for (const sx of [-1, 1]) {
     const hip = new THREE.Group(); hip.position.set(sx * 0.11, 0.98, 0); body.add(hip);
-    M(new THREE.CapsuleGeometry(0.068, 0.78, 4, 10), MT.pants, 0, -0.46, 0, hip);
-    bx(0.12, 0.08, 0.3, MT.black, 0, -0.93, 0.05, hip);
+    M(new THREE.CapsuleGeometry(0.066, 0.8, 6, 14), MT.pants, 0, -0.46, 0, hip);
+    const shoe = M(new THREE.CapsuleGeometry(0.052, 0.17, 6, 10), MT.leather, 0, -0.93, 0.06, hip); shoe.rotation.x = Math.PI / 2; shoe.scale.set(1.15, 1, 0.65);
     legs.push(hip);
   }
-  M(new THREE.CylinderGeometry(0.31, 0.38, 0.55, 18, 1, true), STD({ color: 0x17130f, roughness: 0.95, side: THREE.DoubleSide }), 0, 1.0, 0, body);
-  M(new THREE.CylinderGeometry(0.21, 0.31, 0.75, 18), MT.coat, 0, 1.5, 0, body);
-  const sh = M(new THREE.CapsuleGeometry(0.13, 0.36, 4, 10), MT.coat, 0, 1.86, 0, body); sh.rotation.z = Math.PI / 2;
-  M(new THREE.CylinderGeometry(0.055, 0.065, 0.14, 10), MT.skin, 0, 2.0, 0.01, body);
-  const head = new THREE.Group(); head.position.set(0, 2.15, 0.02); body.add(head); E.parts.head = head;
-  const skull = M(new THREE.SphereGeometry(0.13, 32, 24), MT.face, 0, 0, 0, head); skull.scale.set(0.95, 1.25, 1.05);
-  for (const sx of [-1, 1]) M(new THREE.SphereGeometry(0.009, 8, 6), MT.eye, sx * 0.043, -0.008, 0.128, head, false);
-  M(new THREE.SphereGeometry(0.02, 8, 6), MT.skin, 0, -0.02, 0.135, head).scale.set(0.8, 1.4, 0.8); // нос
-  const mouth = M(new THREE.SphereGeometry(0.04, 12, 8), MT.socket, 0, -0.085, 0.112, head, false); mouth.scale.set(1.2, 0.05, 0.4);
-  E.parts.mouth = mouth;
-  M(new THREE.CylinderGeometry(0.26, 0.26, 0.015, 24), MT.hat, 0, 0.13, 0, head);
-  M(new THREE.CylinderGeometry(0.135, 0.145, 0.2, 20), MT.hat, 0, 0.235, 0, head);
-  const arms = [];
+  // длинное пальто: профиль от плеч до колен
+  const prof = [[0.001, 2.0], [0.12, 1.995], [0.24, 1.94], [0.285, 1.85], [0.272, 1.64], [0.248, 1.4], [0.258, 1.15], [0.305, 0.86], [0.355, 0.58], [0.362, 0.55]];
+  const coat = M(new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 36), MT.coat, 0, 0, 0, body);
+  coat.scale.set(1, 1, 0.8); E.parts.coat = coat;
+  const rAt = y => { for (let i = 1; i < prof.length; i++) if (y >= prof[i][1]) { const [r0, y0] = prof[i - 1], [r1, y1] = prof[i]; return r1 + (r0 - r1) * (y - y1) / (y0 - y1); } return 0.36; };
+  for (let i = 0; i < 4; i++) { const y = 1.74 - i * 0.17; M(new THREE.SphereGeometry(0.013, 8, 6), MT.leather, 0.035, y, rAt(y) * 0.8 + 0.004, body, false); }
+  const lap = M(new THREE.PlaneGeometry(0.03, 0.75), MT.black, -0.005, 1.4, rAt(1.4) * 0.8 + 0.003, body, false);
+  M(new THREE.CylinderGeometry(0.095, 0.13, 0.12, 20, 1, true), MT.coat, 0, 2.0, 0.005, body); // воротник
+  M(new THREE.CylinderGeometry(0.048, 0.06, 0.13, 14), MT.skin, 0, 2.05, 0.01, body);
+  // голова
+  const head = new THREE.Group(); head.position.set(0, 2.19, 0.02); body.add(head); E.parts.head = head;
+  const skull = M(new THREE.SphereGeometry(0.13, 48, 36), MT.face, 0, 0, 0, head); skull.scale.set(0.9, 1.3, 1.0);
   for (const sx of [-1, 1]) {
-    const sh2 = new THREE.Group(); sh2.position.set(sx * 0.3, 1.86, 0); body.add(sh2);
-    M(new THREE.CapsuleGeometry(0.058, 0.72, 4, 10), MT.coat, 0, -0.42, 0, sh2);
-    const hand = M(new THREE.SphereGeometry(0.06, 10, 8), MT.skin, 0, -0.86, 0.01, sh2); hand.scale.set(0.8, 1.4, 0.6);
-    for (let k = 0; k < 4; k++) M(new THREE.CapsuleGeometry(0.009, 0.1, 2, 4), MT.skin, -0.03 + k * 0.02, -0.97, 0.015, sh2);
-    arms.push(sh2);
+    M(new THREE.SphereGeometry(0.009, 10, 8), MT.eye, sx * 0.041, -0.006, 0.124, head, false);
+    const ear = M(new THREE.SphereGeometry(0.03, 10, 8), MT.skin, sx * 0.118, 0.0, 0.0, head); ear.scale.set(0.35, 1.2, 0.8);
   }
-  // дубина в правой руке
-  const club = M(new THREE.CylinderGeometry(0.025, 0.045, 0.85, 10), MT.dwood, 0, -0.95, 0.25, arms[1]); club.rotation.x = 1.2;
-  E.parts.legs = legs; E.parts.arms = arms;
+  M(new THREE.SphereGeometry(0.02, 12, 10), MT.skin, 0, -0.022, 0.131, head).scale.set(0.75, 1.5, 0.85);
+  const mouth = M(new THREE.SphereGeometry(0.04, 14, 10), MT.socket, 0, -0.086, 0.106, head, false); mouth.scale.set(1.2, 0.05, 0.4);
+  E.parts.mouth = mouth;
+  // шляпа
+  M(new THREE.CylinderGeometry(0.26, 0.26, 0.012, 40), MT.hat, 0, 0.135, 0, head);
+  const rim = M(new THREE.TorusGeometry(0.26, 0.008, 6, 40), MT.hat, 0, 0.14, 0, head); rim.rotation.x = Math.PI / 2;
+  M(new THREE.CylinderGeometry(0.128, 0.142, 0.21, 32), MT.hat, 0, 0.245, 0, head);
+  M(new THREE.CylinderGeometry(0.144, 0.144, 0.038, 32, 1, true), MT.band, 0, 0.165, 0, head);
+  // руки: плечо → локоть → кисть с длинными пальцами
+  const arms = [], elbows = [];
+  for (const sx of [-1, 1]) {
+    const sh = new THREE.Group(); sh.position.set(sx * 0.275, 1.87, 0); body.add(sh);
+    M(new THREE.CapsuleGeometry(0.062, 0.36, 6, 12), MT.coat, 0, -0.22, 0, sh);
+    const el = new THREE.Group(); el.position.set(0, -0.45, 0); sh.add(el);
+    M(new THREE.CapsuleGeometry(0.054, 0.34, 6, 12), MT.coat, 0, -0.19, 0, el);
+    M(new THREE.CylinderGeometry(0.06, 0.062, 0.05, 14, 1, true), MT.coat, 0, -0.38, 0, el);
+    const hand = new THREE.Group(); hand.position.set(0, -0.43, 0.005); el.add(hand);
+    const palm = M(new THREE.SphereGeometry(0.045, 12, 10), MT.skin, 0, -0.03, 0, hand); palm.scale.set(0.85, 1.25, 0.45);
+    for (let k = 0; k < 4; k++) {
+      const fx = -0.027 + k * 0.018, len = [0.09, 0.105, 0.1, 0.08][k];
+      const f1 = new THREE.Group(); f1.position.set(fx, -0.08, 0); f1.rotation.x = 0.15; hand.add(f1);
+      M(new THREE.CapsuleGeometry(0.0085, len, 3, 6), MT.skin, 0, -len / 2, 0, f1);
+      const f2 = new THREE.Group(); f2.position.set(0, -len, 0); f2.rotation.x = 0.35; f1.add(f2);
+      M(new THREE.CapsuleGeometry(0.0075, len * 0.8, 3, 6), MT.skin, 0, -len * 0.4, 0, f2);
+    }
+    const th = M(new THREE.CapsuleGeometry(0.009, 0.06, 3, 6), MT.skin, sx * -0.04, -0.05, 0.02, hand); th.rotation.z = sx * 0.6;
+    arms.push(sh); elbows.push(el);
+  }
+  const club = M(new THREE.CylinderGeometry(0.024, 0.045, 0.85, 12), MT.dwood, 0, -0.1, 0.2, elbows[1].children[2]); club.rotation.x = 1.25;
+  E.parts.legs = legs; E.parts.arms = arms; E.parts.elbows = elbows;
   root.traverse(o => { if (o.isMesh && o.material !== MT.eye && o.material !== MT.socket) o.castShadow = true; });
   root.scale.setScalar(0.95);
 }
@@ -1180,7 +1494,7 @@ function spatial(x, y, z, maxD) {
 // =====================================================================
 const P = { x: 3.5, z: 3.2, y: FH, f: 1, yaw: 0, pitch: 0, stam: 100, tired: false, bobPh: 0, stepIdx: 0,
             light: true, hidden: null, hideYaw: 0, hidePitch: 0, moving: false, running: false };
-const G = { state: 'loading', keys: 0, locks: 0, night: 1, time: 0, danger: 0, hb: 1, hiddenSeen: false, caughtT: 0,
+const G = { state: 'loading', notes: 0, keys: 0, locks: 0, night: 1, time: 0, danger: 0, hb: 1, hiddenSeen: false, caughtT: 0,
             winT: 0, msgT: 0, clockT: 0, flick: 1, flickT: 0, ambT: 8 };
 const exitDoor = { group: null, panels: [], locks: [] };
 const EN = { x: 15.5, z: 11.5, y: 0, f: 0, yaw: 0, state: 'patrol', path: [], goal: -1, repath: 0, lastSeen: null,
@@ -1322,6 +1636,7 @@ function interactLabel(t) {
   if (t.type === 'item') return 'Взять: ' + KEY_INFO[t.item.i].name.toLowerCase();
   if (t.type === 'hide') return t.spot.kind === 'bed' ? 'Залезть под кровать' : 'Спрятаться в шкаф';
   if (t.type === 'exit') return G.keys > G.locks ? 'Открыть замки' : 'Входная дверь';
+  if (t.type === 'note') return 'Читать записку';
   return '';
 }
 function updatePlayer(dt) {
@@ -1398,7 +1713,7 @@ function setHint(t) {
   $('hint').textContent = t;
   $('cross').classList.toggle('on', !!t);
   const b = $('bAct'); b.classList.toggle('hidden', !t || G.state !== 'play' || !isTouch);
-  const short = { 'Закрыть дверь': 'ЗАКРЫТЬ', 'Открыть дверь': 'ОТКРЫТЬ', 'Выйти': 'ВЫЙТИ', 'Входная дверь': 'ДВЕРЬ', 'Открыть замки': 'ОТКРЫТЬ' };
+  const short = { 'Закрыть дверь': 'ЗАКРЫТЬ', 'Открыть дверь': 'ОТКРЫТЬ', 'Выйти': 'ВЫЙТИ', 'Входная дверь': 'ДВЕРЬ', 'Открыть замки': 'ОТКРЫТЬ', 'Читать записку': 'ЧИТАТЬ' };
   b.textContent = short[t] || (t.startsWith('Взять') ? 'ВЗЯТЬ' : t ? 'СПРЯТАТЬСЯ' : '');
 }
 function doAction(t) {
@@ -1406,6 +1721,7 @@ function doAction(t) {
   else if (t.type === 'item') takeItem(t.item);
   else if (t.type === 'hide') enterHide(t.spot);
   else if (t.type === 'exit') tryExit();
+  else if (t.type === 'note') readNote(t.note);
 }
 function toggleDoor(d, byPlayer) {
   // не закрываем дверь, если в проёме стоит игрок
@@ -1586,6 +1902,13 @@ function animateEnemy(dt) {
   arms[0].rotation.z = -0.05; arms[1].rotation.z = 0.05;
   body.position.y = Math.abs(Math.sin(ph)) * 0.04 * s;
   body.rotation.x = EN.state === 'chase' ? 0.12 : 0.03;
+  const el = E.parts.elbows;
+  el[0].rotation.x = -0.15 - Math.max(0, Math.sin(ph)) * 0.35 * s; el[1].rotation.x = -0.25 - (EN.state === 'chase' ? 0.5 : 0);
+  // дыхание и редкие резкие подёргивания головы
+  E.parts.coat.scale.x = 1 + Math.sin(G.time * 1.7) * 0.012;
+  E.twitch = (E.twitch || 0) - dt;
+  if (Math.random() < dt * 0.25) E.twitch = 0.3;
+  E.parts.head.rotation.z = E.twitch > 0 ? Math.sin(G.time * 70) * 0.16 : E.parts.head.rotation.z * 0.9;
   E.root.position.set(EN.x, EN.y, EN.z);
   E.root.rotation.y = EN.yaw;
   E.parts.mouth.scale.y = EN.state === 'chase' ? 0.25 + Math.sin(G.time * 20) * 0.08 : 0.05;
@@ -1618,6 +1941,17 @@ function updateAtmosphere(dt) {
   const fwd = camDir, right = new THREE.Vector3(Math.cos(camera.rotation.y), 0, -Math.sin(camera.rotation.y));
   flashlight.position.copy(camera.position).addScaledVector(right, 0.16).add(new THREE.Vector3(0, -0.18, 0)).addScaledVector(fwd, 0.1);
   flashTarget.position.copy(flashlight.position).addScaledVector(flashDir, 5);
+  beam.position.copy(flashlight.position); beam.lookAt(flashTarget.position);
+  // пыль: медленно плывёт, вылетевшие из луча появляются снова
+  const dpos = dustGeo.attributes.position.array;
+  camera.updateMatrixWorld();
+  const inv = camera.matrixWorldInverse;
+  for (let i = 0; i < dpos.length / 3; i++) {
+    dpos[i * 3] += dustVel[i * 3] * dt; dpos[i * 3 + 1] += (dustVel[i * 3 + 1] - 0.004) * dt; dpos[i * 3 + 2] += dustVel[i * 3 + 2] * dt;
+    _v.set(dpos[i * 3], dpos[i * 3 + 1], dpos[i * 3 + 2]).applyMatrix4(inv);
+    if (_v.z > -0.3 || _v.z < -5 || Math.hypot(_v.x, _v.y) > -_v.z * 0.45) respawnDust(i, false);
+  }
+  dustGeo.attributes.position.needsUpdate = true;
   fillLight.position.copy(camera.position);
 
   // опасность
@@ -1633,6 +1967,8 @@ function updateAtmosphere(dt) {
   }
   const on = P.light && !P.hidden;
   flashlight.intensity = on ? 3.2 * G.flick : 0;
+  beam.visible = dust.visible = on && G.flick > 0.2;
+  beam.material.uniforms.k.value = 0.05 * G.flick;
   fillLight.intensity = on ? 0.25 * G.flick : (P.hidden ? 1.3 : 0.04);
   if (P.hidden) { fillLight.distance = 7; fillLight.color.set(0x8090b0); fillLight.position.set(P.hidden.exit.x, P.hidden.f * FH + 1.4, P.hidden.exit.z); }
   else { fillLight.distance = 3.5; fillLight.color.set(0xffe8c8); }
@@ -1644,6 +1980,8 @@ function updateAtmosphere(dt) {
     b.light.intensity = b.base * b.cur;
     b.mesh.material.emissiveIntensity = 2 * b.cur;
   }
+  for (const c of candles) { c.m.scale.y = 1.7 + Math.random() * 0.5; c.m.position.x = c.x + Math.sin(G.time * 9 + c.z) * 0.002; }
+  if (candleLight) candleLight.intensity = 0.45 + Math.random() * 0.15;
   if (emberLight) emberLight.intensity = 0.5 + Math.sin(G.time * 7) * 0.1 + Math.random() * 0.15;
   if (tvScreen) tvScreen.material.emissiveIntensity = Math.random() < 0.3 ? rand(0, 0.25) : tvScreen.material.emissiveIntensity * 0.9;
 
@@ -1697,6 +2035,7 @@ function caught() {
   P.yaw = yawFromDir(Math.sin(yaw), Math.cos(yaw));
   animateEnemy(0);
   E.parts.arms[0].rotation.x = -1.9; E.parts.arms[1].rotation.x = -2.2; E.parts.head.rotation.y = 0;
+  E.parts.elbows[0].rotation.x = -0.5; E.parts.elbows[1].rotation.x = -0.4;
   SFX.scream(); vibrate([400, 100, 600]);
   setControls(false);
   try { speechSynthesis.cancel(); } catch (e) {}
@@ -1730,7 +2069,7 @@ function startNight() {
   spawnEnemyFar();
   EN.active = true;
   showScreen(null); $('black').style.opacity = 0;
-  G.state = 'play'; setControls(true);
+  G.state = 'play'; setControls(true); wakeUp();
   if (G.night > 1) showMsg('Он знает, что ты здесь.', 3);
 }
 function win() {
@@ -1746,7 +2085,9 @@ function updateWin(dt) {
   if (G.winT > 3.4 && G.state === 'win') {
     G.state = 'won';
     const t = G.time;
-    $('winTxt').textContent = `Время: ${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')} · Ночей: ${G.night}/3`;
+    $('winTxt').textContent = `Время: ${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')} · Ночей: ${G.night}/3 · Записок: ${G.notes}/${NOTES.length}`;
+    $('endTxt').innerHTML = 'Ты выбежал на мокрую дорогу и бежал, пока не увидел огни. Обернувшись, ты заметил в окне второго этажа высокий силуэт в шляпе.<br>Он медленно поднял руку… и помахал тебе.' +
+      (G.notes === NOTES.length ? '<br><br><span style="color:#c9b88a">Ты прочитал все записки. «М.» — это Миша Воронов. Сейчас ему было бы восемнадцать.<br>Но тогда кто положил записку у твоей кровати этой ночью?</span>' : '<br><br><span class="small">Собери все записки, чтобы узнать правду.</span>');
     showScreen('win');
   }
 }
@@ -1754,7 +2095,28 @@ function updateWin(dt) {
 // =====================================================================
 //  Экраны
 // =====================================================================
-function showScreen(id) { for (const s of ['menu', 'nightScr', 'lose', 'win']) $(s).classList.toggle('hidden', s !== id); }
+function showScreen(id) { for (const s of ['menu', 'nightScr', 'lose', 'win', 'intro']) $(s).classList.toggle('hidden', s !== id); }
+const INTRO = ['Ноябрь 1994 года.', 'Ночная трасса. Дождь. Свет фар — и удар.', 'Ты очнулся в чужой кровати, в доме, где десять лет назад пропала целая семья.',
+               'Внизу тикают часы.', 'И кто-то ходит.'];
+function playIntro(done) {
+  let i = 0, over = false, tm = null; const p = $('introText');
+  p.style.opacity = 0; p.textContent = ''; showScreen('intro');
+  const finish = () => { if (over) return; over = true; clearTimeout(tm); $('intro').onclick = null; done(); };
+  $('intro').onclick = finish;
+  const next = () => {
+    if (i >= INTRO.length) { finish(); return; }
+    p.style.opacity = 0;
+    setTimeout(() => { if (!over) { p.textContent = INTRO[i++]; p.style.opacity = 1; } }, 500);
+    tm = setTimeout(next, 2600);
+  };
+  next();
+}
+function wakeUp() {
+  const lids = [$('lidTop'), $('lidBot')];
+  for (const l of lids) { l.style.transition = 'none'; l.style.height = '50%'; }
+  [[250, '20%'], [700, '50%'], [1150, '32%'], [1500, '50%'], [2100, '0%']].forEach(([ms, h]) =>
+    setTimeout(() => { for (const l of lids) { l.style.transition = 'height .4s ease-in-out'; l.style.height = h; } }, ms));
+}
 function setControls(v) {
   $('hud').classList.toggle('hidden', !v); $('cross').classList.toggle('hidden', !v);
   for (const id of ['bRun', 'bLight']) $(id).classList.toggle('hidden', !v || !isTouch);
@@ -1773,7 +2135,9 @@ function resetWorld() {
   for (const d of doors) { d.open = Math.random() < 0.45; d.ang = d.open ? 1 : 0; }
   document.querySelectorAll('.slot').forEach(s => s.classList.remove('got'));
   scene.fog.color.set(0x010102);
-  G.keys = 0; G.locks = 0; G.night = 1; G.time = 0;
+  G.keys = 0; G.locks = 0; G.night = 1; G.time = 0; G.notes = 0;
+  for (const n of notes) n.read = false;
+  $('notesHud').textContent = `📜 0/${NOTES.length}`;
 }
 function startGame() {
   initAudio();
@@ -1782,24 +2146,110 @@ function startGame() {
       document.documentElement.requestFullscreen().then(() => { try { screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} }).catch(() => {});
   } catch (e) {}
   resetWorld();
-  startNight();
-  showMsg('Найди три ключа и открой входную дверь на первом этаже. Он где-то рядом…', 5);
+  G.state = 'intro';
+  playIntro(() => {
+    startNight();
+    showMsg('Найди три ключа и открой входную дверь на первом этаже. Осмотрись — у кровати лежит записка.', 6);
+  });
 }
 $('startBtn').addEventListener('click', startGame);
 document.querySelectorAll('[data-restart]').forEach(b => b.addEventListener('click', startGame));
 document.querySelectorAll('[data-q]').forEach(b => b.addEventListener('click', () => {
-  quality = +b.dataset.q; try { localStorage.setItem('onryadom3d_q', quality); } catch (e) {} applyQuality();
+  if (+b.dataset.q === quality) return;
+  try { localStorage.setItem('onryadom3d_q', +b.dataset.q); } catch (e) {}
+  location.reload(); // текстуры и постобработка зависят от качества
 }));
 document.addEventListener('visibilitychange', () => { if (AU.ctx) document.hidden ? AU.ctx.suspend() : AU.ctx.resume(); });
+
+// =====================================================================
+//  Постобработка: свечение, затенение углов, цвет, зерно, виньетка
+// =====================================================================
+let post = null;
+const POST_FS = `
+uniform sampler2D tColor; uniform sampler2D tDepth;
+uniform vec2 res; uniform float time; uniform float near; uniform float far;
+uniform float exposure; uniform float danger; uniform float aoOn; uniform float thr;
+varying vec2 vUv;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+float linD(vec2 uv) { float d = texture2D(tDepth, uv).x; return near * far / (far - d * (far - near)); }
+vec3 hrRRT(vec3 v) { vec3 a = v * (v + 0.0245786) - 0.000090537; vec3 b = v * (0.983729 * v + 0.4329510) + 0.238081; return a / b; }
+vec3 hrAces(vec3 c) {
+  const mat3 I = mat3(vec3(0.59719, 0.07600, 0.02840), vec3(0.35458, 0.90834, 0.13383), vec3(0.04823, 0.01566, 0.83777));
+  const mat3 O = mat3(vec3(1.60475, -0.10208, -0.00327), vec3(-0.53108, 1.10813, -0.07276), vec3(-0.07367, -0.00605, 1.07602));
+  c *= exposure / 0.6; c = I * c; c = hrRRT(c); c = O * c; return clamp(c, 0.0, 1.0);
+}
+void main() {
+  vec2 uv = vUv, px = 1.0 / res, dc = uv - 0.5;
+  float r2 = dot(dc, dc);
+  vec2 ca = dc * (0.004 + 0.01 * danger);
+  vec3 col = vec3(texture2D(tColor, uv - ca).r, texture2D(tColor, uv).g, texture2D(tColor, uv + ca).b);
+  if (aoOn > 0.5) {
+    float d = linD(uv);
+    if (d < far * 0.9) {
+      float occ = 0.0, rnd = hash(gl_FragCoord.xy) * 6.2831, rad = clamp(0.45 / d, 0.004, 0.07);
+      for (int i = 0; i < 12; i++) {
+        float fi = float(i), a = fi * 2.39996 + rnd, rr = (fi + 0.5) / 12.0;
+        float diff = d - linD(uv + vec2(cos(a) * res.y / res.x, sin(a)) * rr * rad);
+        occ += smoothstep(0.02, 0.15, diff) * (1.0 - smoothstep(0.35, 1.0, diff));
+      }
+      col *= 1.0 - 0.7 * occ / 12.0;
+    }
+  }
+  vec3 bl = vec3(0.0);
+  float bs = res.y / 720.0;
+  for (int i = 0; i < 16; i++) {
+    float fi = float(i), a = fi * 2.39996;
+    bl += max(texture2D(tColor, uv + vec2(cos(a), sin(a)) * (3.0 + fi * 2.6) * bs * px).rgb - thr, 0.0);
+  }
+  col += bl / 16.0 * 1.2;
+  col = hrAces(col);
+  float l = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(vec3(l), col, 0.8);
+  col *= mix(vec3(0.84, 0.95, 1.1), vec3(1.07, 1.0, 0.88), smoothstep(0.0, 0.45, l));
+  col = pow(col, vec3(1.0 / 2.2));
+  col = (col - 0.5) * 1.08 + 0.5;
+  col *= 1.0 - smoothstep(0.15, 0.85, r2 * 1.7) * 0.62;
+  col = mix(col, vec3(0.4, 0.0, 0.0), danger * smoothstep(0.08, 0.6, r2 * 1.7) * (0.75 + 0.25 * sin(time * (4.0 + 8.0 * danger))));
+  col += (hash(uv * res + fract(time * 7.0) * 113.0) - 0.5) * 0.07;
+  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}`;
+function setupPost() {
+  const q = QUALITY[quality];
+  if (!q.post || !renderer.capabilities.isWebGL2) return;
+  const hdr = renderer.extensions.has('EXT_color_buffer_float') || renderer.extensions.has('EXT_color_buffer_half_float');
+  const rt = new THREE.WebGLRenderTarget(4, 4, { type: hdr ? THREE.HalfFloatType : THREE.UnsignedByteType });
+  rt.depthTexture = new THREE.DepthTexture(4, 4); rt.depthTexture.type = THREE.UnsignedIntType;
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { tColor: { value: rt.texture }, tDepth: { value: rt.depthTexture }, res: { value: new THREE.Vector2(4, 4) }, time: { value: 0 },
+                near: { value: camera.near }, far: { value: camera.far }, exposure: { value: 1.55 }, danger: { value: 0 },
+                aoOn: { value: q.ao ? 1 : 0 }, thr: { value: hdr ? 1.0 : 0.85 } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: POST_FS, depthTest: false, depthWrite: false,
+  });
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat); quad.frustumCulled = false;
+  const ps = new THREE.Scene(); ps.add(quad);
+  post = { rt, mat, ps, pc: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1) };
+  for (const id of ['fx', 'vignette', 'danger']) $(id).style.display = 'none';
+  resize();
+}
+function renderFrame() {
+  if (!post) { renderer.render(scene, camera); return; }
+  renderer.setRenderTarget(post.rt); renderer.render(scene, camera); renderer.setRenderTarget(null);
+  const u = post.mat.uniforms; u.time.value = performance.now() / 1000; u.danger.value = G.state === 'play' || G.state === 'caught' ? G.danger : 0;
+  renderer.render(post.ps, post.pc);
+}
 
 // =====================================================================
 //  Запуск
 // =====================================================================
 function build() {
   if (!isTouch) quality = Math.max(quality, 1);
+  TEXS = QUALITY[quality].tex;
+  applyQualityButtons();
   buildTextures(); buildMaterials(); buildHouse(); buildEnemy(); collectWalkNodes(); placeKeys();
   spawnEnemyFar();
   camera.position.set(3, FH + EYE, 3);
+  setupPost();
   resize();
   renderer.compile(scene, camera);
   built = true; G.state = 'menu';
@@ -1824,7 +2274,7 @@ function loop(t) {
     flashTarget.position.copy(camera.position).addScaledVector(camDir, 5); flashlight.intensity = 2.2;
     updateDoors(dt);
   }
-  renderer.render(scene, camera);
+  renderFrame();
 }
 resize();
 requestAnimationFrame(() => setTimeout(() => { build(); requestAnimationFrame(loop); }, 30));
