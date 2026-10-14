@@ -132,6 +132,33 @@ function buildTextures() {
     for (let i = 0; i < 40; i++) { g.strokeStyle = 'rgba(110,50,20,0.35)'; g.lineWidth = rand(1, 3); const x = rand(0, w); g.beginPath(); g.moveTo(x, rand(0, h)); g.lineTo(x + rand(-2, 2), rand(0, h)); g.stroke(); }
     addNoise(g, w, h, 20);
   });
+  // пучок травы с альфой (крест из двух плоскостей)
+  TX.tuft = mkTex(128, 128, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    for (let i = 0; i < 46; i++) {
+      const x = rand(8, w - 8), hh = rand(40, 118), lean = rand(-18, 18), v = rand(0.6, 1.25);
+      g.strokeStyle = `rgb(${130 * v | 0},${170 * v | 0},${80 * v | 0})`; g.lineWidth = rand(1.2, 2.6);
+      g.beginPath(); g.moveTo(x, h); g.quadraticCurveTo(x + lean * 0.3, h - hh * 0.6, x + lean, h - hh); g.stroke();
+    }
+  }, true, 1);
+  // опавший лист
+  TX.leaf = mkTex(64, 64, (g, w, h) => {
+    g.clearRect(0, 0, w, h); g.fillStyle = '#fff';
+    g.beginPath(); g.moveTo(32, 6); g.bezierCurveTo(58, 18, 54, 46, 32, 58); g.bezierCurveTo(10, 46, 6, 18, 32, 6); g.fill();
+    g.strokeStyle = 'rgba(90,70,40,0.8)'; g.lineWidth = 2; g.beginPath(); g.moveTo(32, 8); g.lineTo(32, 60); g.stroke();
+    for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(32, 18 + i * 9); g.lineTo(32 + 12, 12 + i * 9); g.moveTo(32, 18 + i * 9); g.lineTo(32 - 12, 12 + i * 9); g.stroke(); }
+  }, true, 1);
+  // старинная брусчатка (1 = 2 м), грязь между камнями
+  TX.cobble = mkTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#2e261c'; g.fillRect(0, 0, w, h);
+    for (let r = 0; r < 8; r++) for (let c = -1; c < 8; c++) {
+      const x = c * 34 + (r % 2 ? 17 : 0) + rand(-2, 2), y = r * 33 + rand(-1, 1), v = rand(78, 130) | 0;
+      g.fillStyle = `rgb(${v},${v - 6},${v - 16})`; g.beginPath(); g.ellipse(x + 15, y + 15, rand(13, 16), rand(12, 15), rand(-0.3, 0.3), 0, 6.3); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.12)'; g.beginPath(); g.ellipse(x + 12, y + 11, 7, 5, 0, 0, 6.3); g.fill();
+    }
+    blotches(g, w, h, 14, '40,30,18', 0.3, 0.55, 14, 50); blotches(g, w, h, 6, '70,90,40', 0.2, 0.4, 10, 30);
+    addNoise(g, w, h, 24);
+  });
   // берёзовая кора
   TX.birch = mkTex(128, 256, (g, w, h) => {
     g.fillStyle = '#d8d6ce'; g.fillRect(0, 0, w, h);
@@ -258,6 +285,9 @@ function buildMaterials() {
   MT.brick = STD({ map: TX.brick, normalMap: TXN.brick, normalScale: nv(1), roughness: 0.9 });
   MT.birch = STD({ map: TX.birch, roughness: 0.95 });
   MT.birchLeaf = STD({ roughness: 1, vertexColors: true });
+  MT.tuft = STD({ map: TX.tuft, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1, color: 0xffffff });
+  MT.leaf = STD({ map: TX.leaf, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 1 });
+  MT.cobble = STD({ map: TX.cobble, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: -2 });
   MT.bark = STD({ map: TX.bark, normalMap: TXN.bark, normalScale: nv(1), roughness: 1 });
   MT.pine = STD({ map: TX.pine, roughness: 1, vertexColors: true });
   MT.wall = STD({ map: TX.wall, normalMap: TXN.wall, normalScale: nv(0.8), roughness: 0.93 });

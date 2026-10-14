@@ -214,7 +214,13 @@ function buildHouse(GB, h) {
   fsolid(F, -FX, -2.5, -0.95, -2.34, SOLID); fsolid(F, 0.95, -2.5, FX, -2.34, SOLID);
   for (const px of [-0.95, 0.95]) fbox(GB.dwood, F, px - 0.1, 0, -2.5, px + 0.1, 1.45, -2.3, h.trim, 1);
   // тропинка от калитки к крыльцу (утоптанная земля)
-  GB.asphalt.quad(...[F.pt(-0.7, 0.03, -1.1), F.pt(0.7, 0.03, -1.1), F.pt(0.7, 0.03, -5.4), F.pt(-0.7, 0.03, -5.4)], [0, 1, 0], 0.35, 1.1, C('#fff'), h.x * 0.1, h.zf * 0.1);
+  if (h.path === 0) GB.cobble.quad(F.pt(-0.7, 0.03, -1.1), F.pt(0.7, 0.03, -1.1), F.pt(0.7, 0.03, -5.4), F.pt(-0.7, 0.03, -5.4), [0, 1, 0], 0.7, 2.15, C('#fff'), h.id * 0.37, 0);
+  else if (h.path === 1) { for (let k = 0; k < 13; k++) fbox(GB.dwood, F, -0.62, 0.02, -1.1 - k * 0.33 - 0.3, 0.62, 0.075, -1.1 - k * 0.33, C(['#7a6040', '#6a5236', '#8a6c48'][(k + h.id) % 3]), 1, 'py nx px pz nz'); for (const x of [-0.5, 0.5]) fbox(GB.dwood, F, x - 0.05, 0.0, -5.5, x + 0.05, 0.03, -1.1, C('#4a3a28'), 1, 'py'); }
+  else { GB.asphalt.quad(F.pt(-0.7, 0.03, -1.1), F.pt(0.7, 0.03, -1.1), F.pt(0.7, 0.03, -5.4), F.pt(-0.7, 0.03, -5.4), [0, 1, 0], 0.35, 1.1, C('#fff'), h.x * 0.1, h.zf * 0.1); for (let k = 0; k < 9; k++) { const x = ((k * 37 + h.id * 11) % 7 - 3) * 0.14, z = -1.4 - k * 0.45; fbox(GB.concrete, F, x - 0.28, 0.0, z - 0.2, x + 0.28, 0.06, z + 0.2, C(['#8e8a80', '#767268', '#a09a8c'][k % 3]), 1, 'py nx px pz nz'); } }
+  { // грязь у калитки (с обеих сторон забора)
+    for (let k = 0; k < 4; k++) { const mx = (Math.random() - 0.5) * 2.2, mz = -2.2 - Math.random() * 2.6, r = 0.5 + Math.random() * 0.8; const a = F.pt(mx - r, 0.034, mz + r), b = F.pt(mx + r, 0.034, mz + r), c = F.pt(mx + r, 0.034, mz - r), d = F.pt(mx - r, 0.034, mz - r); GB.mud.quad(a, b, c, d, [0, 1, 0], 1, 1, C('#fff')); }
+  }
+  yardDecor(GB, F, h, W, D, T);
   // навес над крыльцом на столбах
   for (const px of [-1.0, 1.0]) fbox(GB.dwood, F, px - 0.07, 0, -1.05, px + 0.07, 2.5, -0.91, h.trim, 1);
   fbox(GB.dwood, F, -1.3, 2.5, -1.2, 1.3, 2.62, 0, h.roofCol, 1);
@@ -289,6 +295,48 @@ function buildHouse(GB, h) {
   h.door.open = RNG() < 0.35; h.door.ang = h.door.open ? 1 : 0; applyDoorCollision(h.door);
   const a = F.pt(-W, 0, 0), b = F.pt(W, 0, D);
   h.bounds = { x0: Math.min(a[0], b[0]), x1: Math.max(a[0], b[0]), z0: Math.min(a[2], b[2]), z1: Math.max(a[2], b[2]) };
+}
+
+
+// ---------------------------------------------------------------------
+//  Двор: клумбы, бочки, будки, стога, бельё, грядки, скворечники
+// ---------------------------------------------------------------------
+function yardDecor(GB, F, h, W, D, T) {
+  const dw = GB.dwood, bar = C('#6a4a2c'), earth = C('#3a2a1c'), pick = a => a[(RNG() * a.length) | 0];
+  // перед домом: клумба слева, если нет колодца
+  if (!h.well) {
+    fbox(dw, F, -4.5, 0, -2.05, -1.8, 0.2, -1.25, bar, 1, 'px nx pz nz py'); fbox(GB.plain, F, -4.42, 0.19, -1.98, -1.88, 0.22, -1.32, earth, 1, 'py');
+    for (let i = 0; i < 11; i++) { const x = -4.35 + (i % 6) * 0.42 + ((i / 6) | 0) * 0.2, z = -1.85 + ((i / 6) | 0) * 0.35; fbox(GB.plain, F, x, 0.2, z, x + 0.03, 0.55, z + 0.03, C('#3f7a2a'), 1); fbox(GB.paint, F, x - 0.05, 0.5, z - 0.05, x + 0.09, 0.62, z + 0.09, pick([C('#e84a8a'), C('#f0d030'), C('#e8e8f0'), C('#d84a2a'), C('#8a5ad8')]), 1); }
+  }
+  // справа: скамейка у крыльца, скворечник или тачка (если нет дровницы)
+  if (!h.wood) {
+    const k = (RNG() * 3) | 0;
+    if (k === 0) { fbox(dw, F, 1.5, 0.42, -1.0, 3.0, 0.48, -0.55, C('#8a6a44'), 1); fbox(dw, F, 1.5, 0.7, -0.57, 3.0, 1.0, -0.53, C('#8a6a44'), 1); for (const x of [1.6, 2.9]) fbox(dw, F, x - 0.04, 0, -0.98, x + 0.04, 0.42, -0.57, bar, 1); fsolid(F, 1.5, -1.0, 3.0, -0.55, SOLID); }
+    else if (k === 1) { fbox(dw, F, 3.6 - 0.05, 0, -1.55, 3.65, 1.9, -1.45, bar, 1); fbox(dw, F, 3.3, 1.9, -1.7, 3.95, 2.3, -1.3, C('#9a7a50'), 1); fquad(GB.roof, F, [3.25, 2.3, -1.25], [3.25, 2.3, -1.75], [3.625, 2.55, -1.75], [3.625, 2.55, -1.25], [-0.5, 0.86, 0], 1, 1, h.roofCol); fquad(GB.roof, F, [4.0, 2.3, -1.75], [4.0, 2.3, -1.25], [3.625, 2.55, -1.25], [3.625, 2.55, -1.75], [0.5, 0.86, 0], 1, 1, h.roofCol); fbox(GB.plain, F, 3.55, 1.95, -1.31, 3.7, 2.1, -1.3, C('#111'), 1, 'pz'); fsolid(F, 3.5, -1.6, 3.7, -1.4, SOLID); }
+    else { fbox(dw, F, 2.6, 0.3, -1.9, 3.5, 0.34, -1.3, C('#6a5a48'), 1); fbox(dw, F, 2.6, 0.34, -1.9, 3.5, 0.55, -1.86, C('#6a5a48'), 1); fbox(dw, F, 2.6, 0.34, -1.34, 3.5, 0.55, -1.3, C('#6a5a48'), 1); fbox(GB.plain, F, 2.62, 0.34, -1.85, 3.48, 0.45, -1.35, C('#2a2018'), 1, 'py'); fbox(GB.metal, F, 3.5, 0.04, -1.7, 3.58, 0.38, -1.5, C('#333'), 1); fbox(dw, F, 2.3, 0.3, -1.85, 2.6, 0.34, -1.35, C('#4a3a28'), 1); fsolid(F, 2.3, -1.9, 3.6, -1.3, SOLID); }
+  }
+  // сбоку: дождевая бочка у угла
+  if (RNG() < 0.65) { const bx = W + 0.12, bz = 1.0; fbox(dw, F, bx, 0, bz, bx + 0.55, 0.85, bz + 0.55, C('#5a4a38'), 1); for (const y of [0.15, 0.7]) fbox(GB.metal, F, bx - 0.02, y, bz - 0.02, bx + 0.57, y + 0.05, bz + 0.57, C('#2a2a2c'), 1); fbox(GB.plain, F, bx + 0.05, 0.85, bz + 0.05, bx + 0.5, 0.86, bz + 0.5, C('#0c1018'), 1, 'py'); fsolid(F, bx, bz, bx + 0.55, bz + 0.55, SOLID); }
+  // за домом (глубина до 1.3 м — между рядами всего 3 м)
+  const bz0 = D + 0.25;
+  const slotA = pick(['dog', 'hay', 'scare']), slotB = pick(['line', 'garden', 'garden']), slotC = pick(['hay', 'garden', 'barrel']);
+  if (slotA === 'dog') { // собачья будка
+    fbox(dw, F, -3.6, 0, bz0, -2.4, 0.75, bz0 + 0.9, C('#8a5a30'), 1); fbox(dw, F, -3.7, 0.75, bz0 - 0.05, -2.3, 0.86, bz0 + 0.95, h.roofCol, 1); fbox(GB.plain, F, -3.25, 0, bz0 - 0.005, -2.75, 0.55, bz0 + 0.005, C('#100c08'), 1, 'nz'); fsolid(F, -3.6, bz0, -2.4, bz0 + 0.9, SOLID);
+  } else if (slotA === 'hay') { // стожок
+    for (let k = 0; k < 4; k++) fbox(GB.plain, F, -3.6 + k * 0.1, k * 0.3, bz0 + k * 0.08, -2.4 - k * 0.1, k * 0.3 + 0.32, bz0 + 1.0 - k * 0.1, C(['#c8a850', '#b89a40', '#d8b860', '#c0a048'][k]), 1); fsolid(F, -3.6, bz0, -2.4, bz0 + 1.0, SOLID);
+  } else { // пугало
+    fbox(dw, F, -3.05, 0, bz0 + 0.4, -2.95, 1.7, bz0 + 0.5, bar, 1); fbox(dw, F, -3.7, 1.25, bz0 + 0.42, -2.3, 1.32, bz0 + 0.48, bar, 1); fbox(GB.fabric, F, -3.45, 0.7, bz0 + 0.38, -2.55, 1.3, bz0 + 0.52, C('#8a5a3a'), 1); fbox(GB.plain, F, -3.12, 1.7, bz0 + 0.35, -2.88, 1.95, bz0 + 0.55, C('#c8b070'), 1); fbox(GB.plain, F, -3.2, 1.95, bz0 + 0.3, -2.8, 2.0, bz0 + 0.6, C('#4a3a28'), 1); fbox(GB.plain, F, -3.1, 2.0, bz0 + 0.38, -2.9, 2.2, bz0 + 0.52, C('#4a3a28'), 1);
+  }
+  if (slotB === 'line') { // бельё на верёвке
+    for (const x of [-1.4, 1.4]) { fbox(dw, F, x - 0.05, 0, bz0 + 0.5, x + 0.05, 2.0, bz0 + 0.6, bar, 1); fsolid(F, x - 0.05, bz0 + 0.5, x + 0.05, bz0 + 0.6, SOLID); }
+    fbox(GB.plain, F, -1.4, 1.95, bz0 + 0.53, 1.4, 1.97, bz0 + 0.57, C('#222'), 1);
+    for (let k = 0; k < 5; k++) { const x = -1.2 + k * 0.5; fbox(GB.fabric, F, x, 1.2 + (k % 2) * 0.15, bz0 + 0.5, x + 0.38, 1.94, bz0 + 0.52, pick([C('#e8e4d8'), C('#a8483e'), C('#4e78a0'), C('#d8c060'), C('#7aa06a')]), 1); }
+  } else { // грядки
+    for (let k = 0; k < 3; k++) { fbox(GB.plain, F, -1.5 + k * 1.0, 0, bz0 + 0.1, -0.7 + k * 1.0, 0.16, bz0 + 1.1, earth, 1); for (let j = 0; j < 5; j++) fbox(GB.plain, F, -1.4 + k * 1.0 + j * 0.15, 0.16, bz0 + 0.2, -1.3 + k * 1.0 + j * 0.15, 0.34 + (j % 2) * 0.08, bz0 + 1.0, C(['#4a8a2a', '#5a9a30', '#3a7a28'][(k + j) % 3]), 1); }
+  }
+  if (slotC === 'hay') { for (let k = 0; k < 3; k++) fbox(GB.plain, F, 2.4 + k * 0.1, k * 0.3, bz0 + k * 0.1, 3.6 - k * 0.1, k * 0.3 + 0.32, bz0 + 1.0 - k * 0.1, C(['#c8a850', '#d8b860', '#b89a40'][k]), 1); fsolid(F, 2.4, bz0, 3.6, bz0 + 1.0, SOLID); }
+  else if (slotC === 'garden') { for (let k = 0; k < 2; k++) { fbox(GB.plain, F, 2.2 + k * 0.9, 0, bz0 + 0.1, 2.9 + k * 0.9, 0.16, bz0 + 1.1, earth, 1); for (let j = 0; j < 4; j++) fbox(GB.plain, F, 2.3 + k * 0.9 + j * 0.15, 0.16, bz0 + 0.2, 2.4 + k * 0.9 + j * 0.15, 0.4, bz0 + 1.0, C(['#7aa030', '#4a8a2a'][j % 2]), 1); } }
+  else { for (const x of [2.4, 3.2]) { fbox(dw, F, x, 0, bz0 + 0.2, x + 0.6, 0.9, bz0 + 0.8, C('#5a4a38'), 1); fbox(GB.metal, F, x - 0.02, 0.2, bz0 + 0.18, x + 0.62, 0.25, bz0 + 0.82, C('#2a2a2c'), 1); fsolid(F, x, bz0 + 0.2, x + 0.6, bz0 + 0.8, SOLID); } }
 }
 
 // ---------------------------------------------------------------------
@@ -371,6 +419,7 @@ function buildShop(GB, s) {
   // коробки у правой стены
   for (const [lx, lz] of [[7.9, 4.6], [7.9, 5.4], [7.6, 6.4]]) { fbox(GB.wood, F, lx, 0, lz, lx + 0.7, 0.6, lz + 0.7, C('#b08a58'), 1); fsolid(F, lx, lz, lx + 0.7, lz + 0.7, SOLID); }
   // ---- снаружи ----
+  fquad(GB.cobble, F, [-10, 0.03, 0], [10, 0.03, 0], [10, 0.03, -5.5], [-10, 0.03, -5.5], [0, 1, 0], 10, 2.75, C('#fff'));
   // козырёк в полоску
   for (let k = 0; k < 12; k++) fbox(GB.paint, F, -3 + k * 0.5, 2.7, -1.7, -2.5 + k * 0.5, 2.8, -0.05, k % 2 ? C('#e8e4d8') : C('#a8322a'), 1);
   for (const x of [-2.9, 2.9]) fbox(GB.metal, F, x - 0.05, 0, -1.65, x + 0.05, 2.7, -1.55, C('#6a5a4a'), 1);
@@ -493,35 +542,104 @@ function pineGeometry() {
   m.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); m.setAttribute('color', new THREE.Float32BufferAttribute(colA, 3));
   return m;
 }
-function birchCrown() {
+// ---- виды деревьев и кустов: общий построитель из шаров и веток ----
+function colorGeo(g, r, gg, b, vary) {
+  g = g.index ? g.toNonIndexed() : g;
+  const n = g.attributes.position.count, col = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const k = 1 + (vary || 0) * (Math.sin(i * 12.9898 + r * 78.2) * 0.5); col[i * 3] = r * k; col[i * 3 + 1] = gg * k; col[i * 3 + 2] = b * k; }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3)); if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(n * 2), 2));
+  return g;
+}
+function mergeGeos(list) {
   const pos = [], nor = [], uv = [], col = [];
-  const blobs = [[0, 5.2, 0, 1.3, 1], [0.7, 4.2, 0.3, 1.0, 0.85], [-0.6, 4.4, -0.4, 1.0, 0.9], [0.1, 6.2, 0.1, 0.8, 1.1]];
-  for (const [x, y, z, r, k] of blobs) {
-    const g = new THREE.IcosahedronGeometry(r, 1).toNonIndexed(); g.translate(x, y, z);
-    for (let i = 0; i < g.attributes.position.count; i++) { const n = 0.8 + 0.4 * ((Math.sin(i * 12.9 + x * 7 + y) + 1) / 2); col.push(0.5 * k * n, 0.55 * k * n, 0.18 * k * n); }
-    pos.push(...g.attributes.position.array); nor.push(...g.attributes.normal.array); uv.push(...g.attributes.uv.array);
-  }
+  for (const g of list) { pos.push(...g.attributes.position.array); nor.push(...g.attributes.normal.array); uv.push(...g.attributes.uv.array); col.push(...g.attributes.color.array); }
   const m = new THREE.BufferGeometry();
   m.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); m.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
   m.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); m.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   return m;
 }
+function blobs(list) { // [x,y,z,r,[cr,cg,cb]] — шары листвы
+  return mergeGeos(list.map(([x, y, z, r, c, sy]) => { const g = new THREE.IcosahedronGeometry(r, 1); g.scale(1, sy || 0.85, 1); g.translate(x, y, z); return colorGeo(g, c[0], c[1], c[2], 0.35); }));
+}
+function pickSpecies(r) { return r < 0.42 ? 'pine' : r < 0.6 ? 'birch' : r < 0.74 ? 'oak' : r < 0.82 ? 'dead' : r < 0.88 ? 'rowan' : 'pine'; }
+function pick3(r) { return r < 0.4 ? 'oak' : r < 0.75 ? 'birch' : 'rowan'; }
+function birchCrown() { return blobs([[0, 5.2, 0, 1.3, [0.5, 0.55, 0.18]], [0.7, 4.2, 0.3, 1.0, [0.55, 0.52, 0.16]], [-0.6, 4.4, -0.4, 1.0, [0.45, 0.55, 0.2]], [0.1, 6.2, 0.1, 0.8, [0.6, 0.55, 0.2]]]); }
+function oakCrown() { return blobs([[0, 5.0, 0, 1.9, [0.28, 0.42, 0.14]], [1.3, 4.3, 0.4, 1.5, [0.34, 0.44, 0.14]], [-1.3, 4.4, -0.3, 1.5, [0.4, 0.42, 0.12]], [0.2, 4.2, 1.3, 1.4, [0.26, 0.4, 0.14]], [-0.3, 4.3, -1.3, 1.4, [0.46, 0.4, 0.12]], [0.1, 6.1, 0.1, 1.3, [0.3, 0.46, 0.16]]]); }
+function rowanCrown() {
+  const l = [[0, 3.6, 0, 1.1, [0.4, 0.5, 0.16]], [0.7, 3.1, 0.2, 0.8, [0.5, 0.48, 0.14]], [-0.6, 3.2, -0.3, 0.8, [0.42, 0.5, 0.18]]];
+  const g = [blobs(l)];
+  for (let i = 0; i < 18; i++) { const a = i * 2.4, r = 0.7 + (i % 4) * 0.2, b = new THREE.IcosahedronGeometry(0.1, 0); b.translate(Math.cos(a) * r, 3.0 + (i % 5) * 0.25, Math.sin(a) * r); g.push(colorGeo(b, 0.85, 0.12, 0.08, 0.2)); }
+  return mergeGeos(g);
+}
+function deadCrown() {
+  const g = [];
+  for (let i = 0; i < 11; i++) {
+    const len = 1.1 + (i % 4) * 0.35, c = new THREE.CylinderGeometry(0.025, 0.07, len, 5); c.translate(0, len / 2, 0);
+    c.rotateZ(0.7 + (i % 3) * 0.3); c.rotateY(i * 2.4); c.translate(0, 2.2 + i * 0.28, 0); g.push(colorGeo(c, 0.22, 0.17, 0.13, 0.3));
+    if (i % 2) { const t = new THREE.CylinderGeometry(0.015, 0.035, 0.7, 4); t.translate(0, 0.35, 0); t.rotateZ(-0.9); t.rotateY(i * 2.4 + 0.8); t.translate(Math.cos(i * 2.4) * len * 0.6, 2.2 + i * 0.28 + len * 0.4, Math.sin(i * 2.4) * len * 0.6); g.push(colorGeo(t, 0.2, 0.15, 0.12, 0.3)); }
+  }
+  return mergeGeos(g);
+}
+function bushCrown() { return blobs([[0, 0.4, 0, 0.55, [0.3, 0.42, 0.16], 0.8], [0.45, 0.3, 0.2, 0.4, [0.38, 0.44, 0.14], 0.8], [-0.4, 0.32, -0.2, 0.42, [0.26, 0.4, 0.16], 0.8], [0.1, 0.55, -0.3, 0.35, [0.44, 0.42, 0.14], 0.8]]); }
+let _treeKinds = null;
+function treeKinds() {
+  if (_treeKinds) return _treeKinds;
+  const cyl = (rt, rb, h) => new THREE.CylinderGeometry(rt, rb, h, 8).translate(0, h / 2, 0);
+  return _treeKinds = {
+    pine: [cyl(0.16, 0.3, 3.0), MT.bark, pineGeometry(), MT.pine, true],
+    birch: [cyl(0.1, 0.17, 5.4), MT.birch, birchCrown(), MT.birchLeaf, true],
+    oak: [cyl(0.24, 0.42, 3.4), MT.bark, oakCrown(), MT.birchLeaf, true],
+    rowan: [cyl(0.09, 0.16, 3.0), MT.birch, rowanCrown(), MT.birchLeaf, true],
+    dead: [cyl(0.1, 0.3, 4.6), MT.bark, deadCrown(), MT.birchLeaf, true],
+    bush: [null, null, bushCrown(), MT.birchLeaf, false],
+  };
+}
 function buildTrees(list) {
-  const dummy = new THREE.Object3D(), pines = list.filter(t => !t.b), birches = list.filter(t => t.b);
-  const parts = [
-    [pines, new THREE.CylinderGeometry(0.16, 0.3, 3.0, 8).translate(0, 1.5, 0), MT.bark, pineGeometry(), MT.pine],
-    [birches, new THREE.CylinderGeometry(0.1, 0.17, 5.4, 8).translate(0, 2.7, 0), MT.birch, birchCrown(), MT.birchLeaf],
-  ];
-  for (const [arr, tg, tm, cg, cm] of parts) {
-    if (!arr.length) continue;
-    const trunk = new THREE.InstancedMesh(tg, tm, arr.length), crown = new THREE.InstancedMesh(cg, cm, arr.length);
+  const dummy = new THREE.Object3D(), kinds = treeKinds();
+  for (const sp of Object.keys(kinds)) {
+    const arr = list.filter(t => t.sp === sp); if (!arr.length) continue;
+    const [tg, tm, cg, cm, solid] = kinds[sp];
+    const trunk = tg ? new THREE.InstancedMesh(tg, tm, arr.length) : null, crown = new THREE.InstancedMesh(cg, cm, arr.length);
     arr.forEach((t, i) => {
       dummy.position.set(t.x, 0, t.z); dummy.rotation.set(0, t.r, 0); dummy.scale.set(t.s, t.s * t.h, t.s); dummy.updateMatrix();
-      trunk.setMatrixAt(i, dummy.matrix); crown.setMatrixAt(i, dummy.matrix);
-      markRect(t.x - 0.3 * t.s, t.z - 0.3 * t.s, t.x + 0.3 * t.s, t.z + 0.3 * t.s, SOLID | OPAQUE);
+      if (trunk) trunk.setMatrixAt(i, dummy.matrix); crown.setMatrixAt(i, dummy.matrix);
+      if (solid) markRect(t.x - 0.3 * t.s, t.z - 0.3 * t.s, t.x + 0.3 * t.s, t.z + 0.3 * t.s, SOLID | OPAQUE);
     });
-    for (const m of [trunk, crown]) { m.castShadow = true; m.receiveShadow = true; scene.add(m); }
+    for (const m of [trunk, crown]) if (m) { m.castShadow = sp !== 'bush'; m.receiveShadow = true; scene.add(m); }
   }
+}
+// мелочь: пучки травы и опавшие листья (инстансы, только для вида)
+function buildGroundCover(trees) {
+  const q = quality, nT = [1400, 3000, 4800][q], nL = [1600, 3200, 5000][q];
+  const okAt = (x, z, onRoadOk) => {
+    if (!onRoadOk && (STREETS_Z.some(zs => Math.abs(z - zs) < 3.5 && Math.abs(x) < 106) || STREETS_X.some(xs => Math.abs(x - xs) < 3.5 && Math.abs(z) < 68))) return false;
+    if (Town.houses.some(h => x > h.bounds.x0 - 0.4 && x < h.bounds.x1 + 0.4 && z > h.bounds.z0 - 0.4 && z < h.bounds.z1 + 0.4)) return false;
+    const sb = Town.shop.bounds; if (x > sb.x0 - 0.4 && x < sb.x1 + 0.4 && z > sb.z0 - 0.4 && z < sb.z1 + 0.4) return false;
+    return !(colAt(x, z) & SOLID);
+  };
+  const dummy = new THREE.Object3D(), col = new THREE.Color();
+  // трава: крестовина из двух плоскостей
+  const tg = mergeGeos([0, Math.PI / 2].map(r => { const g = new THREE.PlaneGeometry(0.8, 0.6).translate(0, 0.3, 0).rotateY(r); return colorGeo(g, 1, 1, 1, 0); }));
+  const tuft = new THREE.InstancedMesh(tg, MT.tuft, nT); tuft.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(nT * 3), 3);
+  const nTuft = (() => { let n = 0; for (let tries = 0; n < nT && tries < nT * 4; tries++) {
+    const x = (Math.random() - 0.5) * 220, z = (Math.random() - 0.5) * 168; if (!okAt(x, z, false)) continue;
+    const sc = 0.5 + Math.random() * 1.3; dummy.position.set(x, 0, z); dummy.rotation.set(0, Math.random() * 6.3, 0); dummy.scale.set(sc, sc * (0.7 + Math.random() * 0.8), sc); dummy.updateMatrix();
+    tuft.setMatrixAt(n, dummy.matrix); const v = 0.7 + Math.random() * 0.5, y = Math.random() < 0.25 ? 1.0 : 0.6; col.setRGB(v * (0.7 + y * 0.4), v, v * 0.6); tuft.setColorAt(n, col); n++; } return n; })();
+  tuft.count = nTuft; tuft.receiveShadow = true; scene.add(tuft);
+  // листья
+  const lg = new THREE.PlaneGeometry(0.15, 0.15).rotateX(-Math.PI / 2);
+  const leaf = new THREE.InstancedMesh(lg, MT.leaf, nL); leaf.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(nL * 3), 3);
+  const LC = [[0.8, 0.4, 0.1], [0.7, 0.25, 0.08], [0.85, 0.65, 0.15], [0.5, 0.32, 0.12], [0.6, 0.15, 0.08]];
+  let n = 0; const decid = trees.filter(t => t.sp === 'birch' || t.sp === 'oak' || t.sp === 'rowan');
+  for (let tries = 0; n < nL && tries < nL * 4; tries++) {
+    let x, z;
+    if (decid.length && Math.random() < 0.55) { const t = decid[(Math.random() * decid.length) | 0], a = Math.random() * 6.3, r = Math.random() * 2.8 * t.s; x = t.x + Math.cos(a) * r; z = t.z + Math.sin(a) * r; }
+    else { x = (Math.random() - 0.5) * 220; z = (Math.random() - 0.5) * 168; }
+    if (!okAt(x, z, true)) continue;
+    dummy.position.set(x, 0.04 + Math.random() * 0.01, z); dummy.rotation.set((Math.random() - 0.5) * 0.4, Math.random() * 6.3, 0); const sc = 0.6 + Math.random() * 0.9; dummy.scale.set(sc, 1, sc); dummy.updateMatrix();
+    leaf.setMatrixAt(n, dummy.matrix); const c = LC[(Math.random() * LC.length) | 0], v = 0.8 + Math.random() * 0.4; col.setRGB(c[0] * v, c[1] * v, c[2] * v); leaf.setColorAt(n, col); n++;
+  }
+  leaf.count = n; scene.add(leaf);
 }
 function buildCar(GB, x, z, alongX, col) {
   const L = 4.3, Wd = 1.8, b = (a0, y0, b0, a1, y1, b1, G, c) => alongX ? G.box(x + a0, y0, z + b0, x + a1, y1, z + b1, c, 1) : G.box(x + b0, y0, z + a0, x + b1, y1, z + a1, c, 1);
@@ -551,7 +669,7 @@ function buildCar(GB, x, z, alongX, col) {
 function buildWorld(seed) {
   Town.seed = seed; RNG = mulberry32(seed);
   const GB = {};
-  for (const k of ['siding', 'wall', 'roof', 'plain', 'brick', 'floor', 'ceil', 'concrete', 'win', 'winL', 'wood', 'fabric', 'paint', 'metal', 'glassShop', 'fridgeGlow', 'fluor', 'glassCar', 'asphalt', 'dwood', 'puddle', 'glassWin', 'mark']) GB[k] = new Geo();
+  for (const k of ['siding', 'wall', 'roof', 'plain', 'brick', 'floor', 'ceil', 'concrete', 'win', 'winL', 'wood', 'fabric', 'paint', 'metal', 'glassShop', 'fridgeGlow', 'fluor', 'glassCar', 'asphalt', 'dwood', 'puddle', 'glassWin', 'cobble', 'mud', 'mark']) GB[k] = new Geo();
 
   // ---- земля и дороги ----
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 200), MT.grass); ground.rotation.x = -Math.PI / 2;
@@ -584,7 +702,7 @@ function buildWorld(seed) {
   buildShop(GB, Town.shop);
   houseLots.forEach((l, i) => {
     const h = { id: i, x: l.x, zf: l.zs + l.sd * 8.5, rot: l.sd < 0 ? 1 : 0, col: spick(SIDING), roofCol: spick(ROOFS), lit: RNG() < 0.3,
-                fab: C(spick(['#6a3a34', '#3a4a6a', '#5a6a3a', '#7a6a4a'])), trim: spick(TRIMS), shut: RNG() < 0.55, shutCol: C(spick(['#3f6a9a', '#4a7a4a', '#8a3a30', '#2f5a6a'])), wood: RNG() < 0.5, well: RNG() < 0.3,
+                fab: C(spick(['#6a3a34', '#3a4a6a', '#5a6a3a', '#7a6a4a'])), trim: spick(TRIMS), shut: RNG() < 0.55, shutCol: C(spick(['#3f6a9a', '#4a7a4a', '#8a3a30', '#2f5a6a'])), wood: RNG() < 0.5, well: RNG() < 0.3, path: (RNG() * 3) | 0,
                 rug: C(spick(['#5a2a24', '#2a3a4a', '#4a3a2a'])), fence: C(spick(['#8a6a44', '#5f86a8', '#6f9a62', '#c9b890', '#a8584a'])) };
     Town.houses.push(h); buildHouse(GB, h);
   });
@@ -597,17 +715,21 @@ function buildWorld(seed) {
     if (Math.abs(x) < 86 && Math.abs(z) < 58) continue;
     if (nearRoad(x, z)) continue;
     if (trees.some(t => Math.abs(t.x - x) < 2.6 && Math.abs(t.z - z) < 2.6)) continue;
-    trees.push({ x, z, s: srand(0.8, 1.35), h: srand(0.85, 1.3), r: srand(0, 6.3), b: RNG() < 0.3 });
+    trees.push({ x, z, s: srand(0.8, 1.35), h: srand(0.85, 1.3), r: srand(0, 6.3), sp: pickSpecies(RNG()) });
   }
   for (const l of emptyLots) {
     const zc = l.zs + l.sd * 12.5;
-    for (let k = 0; k < 3; k++) { const x = l.x + srand(-4, 4), z = zc + srand(-3, 3); trees.push({ x, z, s: srand(0.6, 1.0), h: srand(0.8, 1.1), r: srand(0, 6.3), b: RNG() < 0.5 }); }
+    for (let k = 0; k < 3; k++) { const x = l.x + srand(-4, 4), z = zc + srand(-3, 3); trees.push({ x, z, s: srand(0.6, 1.0), h: srand(0.8, 1.1), r: srand(0, 6.3), sp: pick3(RNG()) }); }
   }
   for (let i = 0; i < 40; i++) { // берёзы вдоль дорог
     const zs = spick(STREETS_Z), x = srand(-98, 98), z = zs + (RNG() < 0.5 ? -1 : 1) * srand(4.6, 5.6);
     if ((x > 2 && x < 40 && Math.abs(z) < 12) || STREETS_X.some(xs => Math.abs(x - xs) < 6) || houseLots.some(l => l.zs === zs && Math.abs(l.x - x) < 5.6 && Math.sign(z - zs) === l.sd)) continue;
-    trees.push({ x, z, s: srand(0.7, 1.0), h: srand(0.9, 1.2), r: srand(0, 6.3), b: true });
+    trees.push({ x, z, s: srand(0.7, 1.0), h: srand(0.9, 1.2), r: srand(0, 6.3), sp: RNG() < 0.8 ? 'birch' : 'rowan' });
   }
+  // кусты: у домов, вдоль дорог и в лесу
+  for (const h of Town.houses) for (let k = 0; k < 4; k++) { const k1 = RNG() < 0.5 ? -1 : 1; trees.push({ x: h.x + (k1 * (4.3 + RNG() * 1.0)), z: h.zf + (h.rot ? -1 : 1) * (RNG() * 8), s: 0.7 + RNG() * 0.7, h: 0.8 + RNG() * 0.5, r: RNG() * 6.3, sp: 'bush' }); }
+  for (let i = 0; i < 90; i++) { const zs = spick(STREETS_Z), x = srand(-100, 100), z = zs + (RNG() < 0.5 ? -1 : 1) * srand(3.6, 4.4); if (STREETS_X.some(xs => Math.abs(x - xs) < 5)) continue; trees.push({ x, z, s: 0.6 + RNG() * 0.8, h: 0.8 + RNG() * 0.5, r: RNG() * 6.3, sp: 'bush' }); }
+  for (let i = 0; i < 160; i++) { const x = srand(-108, 108), z = srand(-82, 82); if (nearRoad(x, z) || (Math.abs(x) < 80 && Math.abs(z) < 55)) continue; trees.push({ x, z, s: 0.8 + RNG() * 1.0, h: 0.8 + RNG() * 0.6, r: RNG() * 6.3, sp: 'bush' }); }
   Town.trees = trees; buildTrees(trees);
 
   // ---- фонари ----
@@ -647,6 +769,7 @@ function buildWorld(seed) {
     paint: GB.paint.mesh(MT.paint), metal: GB.metal.mesh(MT.metal), glassShop: GB.glassShop.mesh(MT.shopGlass = new THREE.MeshStandardMaterial({ color: 0x9ab0c0, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide }), false),
     fridge: GB.fridgeGlow.mesh(MT.fridgeGlow = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.9, 2.2) }), false),
     fluor: GB.fluor.mesh(MT.fluor, false), glassCar: GB.glassCar.mesh(MT.glass), asphalt: GB.asphalt.mesh(MT.asphalt, false),
+    cobble: GB.cobble.mesh(MT.cobble, false), mud: GB.mud.mesh(MT.mud = new THREE.MeshStandardMaterial({ color: 0x33261a, map: TX.pool, roughness: 1, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), false),
     dwood: GB.dwood.mesh(MT.dwood), glassWin: GB.glassWin.mesh(MT.glassWin = new THREE.MeshStandardMaterial({ color: 0xaac4d8, roughness: 0.03, metalness: 0.4, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }), false), puddle: GB.puddle.mesh(new THREE.MeshStandardMaterial({ color: 0x1c2228, map: TX.pool, roughness: 0.04, metalness: 0.5, transparent: true, opacity: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), false),
     mark: GB.mark.mesh(new THREE.MeshStandardMaterial({ color: 0x1e1812, roughness: 1, transparent: true, opacity: 0.45, polygonOffset: true, polygonOffsetFactor: -2 }), false),
   };
@@ -656,6 +779,7 @@ function buildWorld(seed) {
   markRect(-112, -86, 112, -84.5, SOLID | OPAQUE); markRect(-112, 84.5, 112, 86, SOLID | OPAQUE);
   markRect(-112, -86, -110.5, 86, SOLID | OPAQUE); markRect(110.5, -86, 112, 86, SOLID | OPAQUE);
   buildCurtains(); applyLayout(1);
+  buildGroundCover(trees);
   buildNav();
 }
 
