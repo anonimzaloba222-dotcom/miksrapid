@@ -28,6 +28,8 @@ FIT = 0.25             # зазор для посадки деталей в па
 BELLY_CUT = 0.8        # срез «брюха» для устойчивой печати
 PIN_D = 3.0            # диаметр штыря подставки
 PIN_X = 58.0           # положение штыря (≈ центр тяжести)
+PIN_H = 3.6            # высота штыря над стойкой
+HOLE_DEPTH = 4.2       # глубина отверстия в брюхе (> PIN_H)
 
 WING_T = 2.0           # толщина крыла
 WING_Z = 2.0           # высота оси крыла (высокоплан)
@@ -154,8 +156,9 @@ def fuselage_printable():
     cut = m3d.Manifold.cube([L + 20, 40, 20]).translate([-10, -20, -R + BELLY_CUT - 20])
     body = body - cut
     # Отверстие под штырь подставки
-    hole = m3d.Manifold.cylinder(5.0, (PIN_D + FIT * 2) / 2, (PIN_D + FIT * 2) / 2, 48)
-    body = body - hole.translate([PIN_X, 0, -R - 1])
+    # глубина HOLE_DEPTH от плоскости брюха; паз крыла начинается выше
+    hole = m3d.Manifold.cylinder(HOLE_DEPTH + 1, (PIN_D + FIT * 2) / 2, (PIN_D + FIT * 2) / 2, 48)
+    body = body - hole.translate([PIN_X, 0, -R + BELLY_CUT - 1])
     return body
 
 
@@ -206,10 +209,10 @@ def stand():
     # Стойка: сужающаяся колонна + наклонная «седловина»
     post = m3d.Manifold.cylinder(POST_H, 6.0, 3.5, SEG).translate([0, 0, STAND_H])
     collar = m3d.Manifold.cylinder(2.0, 8.0, 6.0, SEG).translate([0, 0, STAND_H])
-    pin = m3d.Manifold.cylinder(4.0, PIN_D / 2, PIN_D / 2, 48) \
+    pin = m3d.Manifold.cylinder(PIN_H - 0.6, PIN_D / 2, PIN_D / 2, 48) \
         .translate([0, 0, STAND_H + POST_H])
     tip = m3d.Manifold.cylinder(0.6, PIN_D / 2, PIN_D / 2 - 0.5, 48) \
-        .translate([0, 0, STAND_H + POST_H + 4.0])
+        .translate([0, 0, STAND_H + POST_H + PIN_H - 0.6])
     return base + (post + collar + pin + tip).translate([0, POST_Y, 0])
 
 
