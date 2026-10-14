@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Эскиз с габаритами, проверка посадок и расчёт материала для модели FP-5 «Фламинго».
+"""Ескіз з габаритами, перевірка посадок і розрахунок матеріалу для моделі FP-5 «Фламінго».
 
-Создаёт:
-  * sketch.pdf / sketch.png  — лист 1: сборка (3 вида), лист 2: детали с размерами + расчёт
+Створює:
+  * sketch.pdf / sketch.png  — аркуш 1: збірка (3 вигляди), аркуш 2: деталі з розмірами + розрахунок
   * sketch_page2.png
-  * MATERIALS.md             — таблица материала, стоимости и времени печати
-Запуск: python3 drawing.py (после generate.py, использует его параметры).
+  * MATERIALS.md             — таблиця матеріалу, вартості та часу друку
+Запуск: python3 drawing.py (після generate.py, використовує його параметри).
 """
 import os
 import numpy as np
@@ -20,15 +20,15 @@ import generate as g
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# ---------- Параметры расчёта материала (FDM, PLA) ----------
+# ---------- Параметри розрахунку матеріалу (FDM, PLA) ----------
 DENSITY = 1.24          # г/см³, PLA
-FIL_D = 1.75            # мм, диаметр прутка
-WALL = 3 * 0.42         # мм, 3 периметра
-SHELL_TB = 0.8          # мм, верх/низ (≈5 слоёв по 0.16)
-INFILL = 0.15           # заполнение 15 %
-PRICE_PER_KG = 1500.0   # руб. за 1 кг катушки
-FLOW_G_PER_H = 9.0      # г/ч — средняя производительность для мелких деталей, слой 0.16
-WASTE = 1.10            # +10 % на юбку, продувку, брак
+FIL_D = 1.75            # мм, діаметр прутка
+WALL = 3 * 0.42         # мм, 3 периметри
+SHELL_TB = 0.8          # мм, верх/низ (≈5 шарів по 0.16)
+INFILL = 0.15           # заповнення 15 %
+PRICE_PER_KG = 700.0    # грн за 1 кг котушки
+FLOW_G_PER_H = 9.0      # г/год — середня продуктивність для дрібних деталей, шар 0.16
+WASTE = 1.10            # +10 % на спідницю, продувку, брак
 
 # ---------- Геометрия в собранном виде ----------
 Z_ROCKET = g.STAND_H + g.POST_H + g.R - g.BELLY_CUT   # ось ракеты над столом
@@ -121,12 +121,12 @@ def frame(fig, sheet, total, title):
     x0, y0, w, h = 0.66, 0.015, 0.325, 0.09
     fig.patches.append(plt.Rectangle((x0, y0), w, h, transform=fig.transFigure,
                                      fill=False, lw=1.0, ec="k"))
-    fig.text(x0 + 0.01, y0 + h - 0.025, "Памятная модель ракеты FP-5 «Фламинго»",
+    fig.text(x0 + 0.01, y0 + h - 0.025, "Пам'ятна модель ракети FP-5 «Фламінго»",
              fontsize=11, fontweight="bold")
     fig.text(x0 + 0.01, y0 + h - 0.05, title, fontsize=9)
     fig.text(x0 + 0.01, y0 + 0.012,
-             f"Масштаб: 1:1 (мм)   Материал: PLA   Лист {sheet}/{total}", fontsize=8)
-    fig.text(x0 + w - 0.01, y0 + 0.012, "Размеры в мм, эскиз", fontsize=8, ha="right")
+             f"Масштаб: 1:1 (мм)   Матеріал: PLA   Аркуш {sheet}/{total}", fontsize=8)
+    fig.text(x0 + w - 0.01, y0 + 0.012, "Розміри в мм, ескіз", fontsize=8, ha="right")
 
 
 # ---------- Расчёт материала ----------
@@ -153,20 +153,20 @@ def main():
     pin_top = g.STAND_H + g.POST_H + g.PIN_H
     hole_top = g.STAND_H + g.POST_H + g.HOLE_DEPTH
     checks = [
-        ("Штырь Ø%.1f в отверстии Ø%.1f" % (g.PIN_D, g.PIN_D + 2 * g.FIT), g.FIT, "радиальный зазор"),
-        ("Штырь %.1f мм / глубина отв. %.1f мм" % (g.PIN_H, g.HOLE_DEPTH), hole_top - pin_top, "запас по глубине"),
-        ("Крыло %.1f мм в пазу %.1f мм" % (g.WING_T, g.WING_T + 2 * g.FIT), g.FIT, "зазор на сторону"),
-        ("Оперение %.1f мм в пазу %.1f мм" % (g.TAIL_T, g.TAIL_T + 2 * g.FIT), g.FIT, "зазор на сторону"),
+        ("Штир Ø%.1f в отворі Ø%.1f" % (g.PIN_D, g.PIN_D + 2 * g.FIT), g.FIT, "радіальний зазор"),
+        ("Штир %.1f мм / глибина отв. %.1f мм" % (g.PIN_H, g.HOLE_DEPTH), hole_top - pin_top, "запас по глибині"),
+        ("Крило %.1f мм у пазу %.1f мм" % (g.WING_T, g.WING_T + 2 * g.FIT), g.FIT, "зазор на бік"),
+        ("Оперення %.1f мм у пазу %.1f мм" % (g.TAIL_T, g.TAIL_T + 2 * g.FIT), g.FIT, "зазор на бік"),
     ]
     for name, v in fits:
-        assert v < 0.01, f"Пересечение деталей: {name} = {v:.3f} мм³"
+        assert v < 0.01, f"Перетин деталей: {name} = {v:.3f} мм³"
 
     # материал по деталям для печати
     print_parts = {
-        "Подставка (stand.stl)": tm(g.lay_flat(g.stand())),
+        "Підставка (stand.stl)": tm(g.lay_flat(g.stand())),
         "Фюзеляж (fuselage.stl)": tm(g.lay_flat(g.fuselage_printable())),
-        "Крыло (wing.stl)": tm(g.lay_flat(g.wing_part())),
-        "Оперение (tail.stl)": tm(g.lay_flat(g.tail_shape())),
+        "Крило (wing.stl)": tm(g.lay_flat(g.wing_part())),
+        "Оперення (tail.stl)": tm(g.lay_flat(g.tail_shape())),
     }
     rows = []
     for name, m in print_parts.items():
@@ -179,38 +179,38 @@ def main():
 
     # ===== Лист 1: сборка =====
     fig = plt.figure(figsize=(16.54, 11.69))  # A3
-    frame(fig, 1, 2, "Сборочный эскиз, габаритные размеры")
+    frame(fig, 1, 2, "Складальний ескіз, габаритні розміри")
     zt = bb[1][2]
     # Вид спереди (XZ)
     ax = fig.add_axes([0.04, 0.50, 0.55, 0.44])
     for k in ("stand", "fuselage", "tail", "wing"):
         draw_view(ax, meshes[k], (0, 2), color="#cfd8dc" if k == "stand" else "#f8bbd0")
-    setup(ax, "Вид спереди (сбоку на ракету)", (-85, 85), (-22, 75))
-    dim(ax, (-70, 0), (70, 0), -10, "140 (подставка)")
-    dim(ax, (DX, Z_ROCKET), (DX + g.L, Z_ROCKET), zt + 8, f"{g.L:.0f} (длина ракеты)")
-    dim(ax, (70, 0), (70, zt), 80, f"{zt:.1f} (общая высота)", horiz=False)
+    setup(ax, "Вигляд спереду (збоку на ракету)", (-85, 85), (-22, 75))
+    dim(ax, (-70, 0), (70, 0), -10, "140 (підставка)")
+    dim(ax, (DX, Z_ROCKET), (DX + g.L, Z_ROCKET), zt + 8, f"{g.L:.0f} (довжина ракети)")
+    dim(ax, (70, 0), (70, zt), 80, f"{zt:.1f} (загальна висота)", horiz=False)
     dim(ax, (-70, 0), (-70, g.STAND_H), -76, f"{g.STAND_H:.0f}", horiz=False)
     dim(ax, (-8, g.STAND_H), (-8, g.STAND_H + g.POST_H), -14, f"{g.POST_H:.0f}", horiz=False)
-    dim(ax, (DX, 0), (0, 0), -18, f"{g.PIN_X:.0f} (нос → ось стойки)")
+    dim(ax, (DX, 0), (0, 0), -18, f"{g.PIN_X:.0f} (ніс → вісь стійки)")
     note(ax, (DX + 95, Z_ROCKET + g.R + 7.5), "мотогондола Ø6.8×30", (-30, 14))
-    note(ax, (DX + 116, Z_ROCKET + 6), "кили H-оперения h=8", (2, 16))
+    note(ax, (DX + 116, Z_ROCKET + 6), "кілі H-оперення h=8", (2, 16))
 
     # Вид сверху (XY)
     ax = fig.add_axes([0.04, 0.10, 0.55, 0.40])
     for k in ("stand", "fuselage", "tail", "wing"):
         draw_view(ax, meshes[k], (0, 1), color="#cfd8dc" if k == "stand" else "#f8bbd0")
-    setup(ax, "Вид сверху", (-85, 100), (-40, 45))
+    setup(ax, "Вигляд згори", (-85, 100), (-40, 45))
     dim(ax, (-70, -23), (-70, 23), -78, "46", horiz=False)
     wx = DX + 58
-    dim(ax, (wx, DY - 29), (wx, DY + 29), 92, "58 (размах крыла)", horiz=False)
-    dim(ax, (DX + g.L - 3, DY - 15), (DX + g.L - 3, DY + 15), 78, "30 (оперение)", horiz=False)
+    dim(ax, (wx, DY - 29), (wx, DY + 29), 92, "58 (розмах крила)", horiz=False)
+    dim(ax, (DX + g.L - 3, DY - 15), (DX + g.L - 3, DY + 15), 78, "30 (оперення)", horiz=False)
     dim(ax, (DX + 44, DY + 29), (DX + 58, DY + 29), 40, "14 (хорда)")
 
     # Вид сбоку (YZ)
     ax = fig.add_axes([0.62, 0.50, 0.35, 0.44])
     for k in ("stand", "tail", "fuselage", "wing"):
         draw_view(ax, meshes[k], (1, 2), color="#cfd8dc" if k == "stand" else "#f8bbd0")
-    setup(ax, "Вид слева (с носа)", (-40, 40), (-22, 75))
+    setup(ax, "Вигляд зліва (з носа)", (-40, 40), (-22, 75))
     dim(ax, (-23, 0), (23, 0), -10, "46")
     dim(ax, (DY - g.R, Z_ROCKET), (DY + g.R, Z_ROCKET), zt + 6, f"Ø{2*g.R:.0f}")
     dim(ax, (DY - 29, Z_ROCKET + g.WING_Z), (DY + 29, Z_ROCKET + g.WING_Z), -16, "58")
@@ -218,48 +218,48 @@ def main():
     # Сводка
     ax = fig.add_axes([0.62, 0.12, 0.35, 0.34]); ax.axis("off")
     txt = [
-        "ГАБАРИТЫ СБОРКИ",
+        "ГАБАРИТИ ЗБІРКИ",
         f"  Д × Ш × В: {bb[1][0]-bb[0][0]:.1f} × {bb[1][1]-bb[0][1]:.1f} × {zt:.1f} мм",
-        f"  Ракета: {g.L:.0f} мм, Ø{2*g.R:.0f} мм, размах 58 мм",
-        f"  Ось ракеты над столом: {Z_ROCKET:.1f} мм",
+        f"  Ракета: {g.L:.0f} мм, Ø{2*g.R:.0f} мм, розмах 58 мм",
+        f"  Вісь ракети над столом: {Z_ROCKET:.1f} мм",
         "",
-        "ПРОВЕРКА ПОСАДОК",
+        "ПЕРЕВІРКА ПОСАДОК",
     ]
     for n, v, d in checks:
         txt.append(f"  {'✔' if v > 0 else '✘'} {n}: {d} {v:.2f} мм")
     worst = max(v for _, v in fits)
-    txt.append(f"  ✔ Пересечений деталей нет (макс. {worst:.3f} мм³)")
-    txt += ["", "МАТЕРИАЛ (итого, PLA)",
-            f"  Масса ≈ {tot['mass']:.0f} г, пруток Ø1.75 ≈ {tot['length']:.1f} м",
-            f"  Стоимость ≈ {tot['cost']:.0f} руб. (при {PRICE_PER_KG:.0f} руб./кг)",
-            f"  Время печати ≈ {tot['time']:.1f} ч"]
+    txt.append(f"  ✔ Перетинів деталей немає (макс. {worst:.3f} мм³)")
+    txt += ["", "МАТЕРІАЛ (разом, PLA)",
+            f"  Маса ≈ {tot['mass']:.0f} г, пруток Ø1.75 ≈ {tot['length']:.1f} м",
+            f"  Вартість ≈ {tot['cost']:.0f} грн (при {PRICE_PER_KG:.0f} грн/кг)",
+            f"  Час друку ≈ {tot['time']:.1f} год"]
     ax.text(0, 1, "\n".join(txt), va="top", family="DejaVu Sans Mono", fontsize=9)
     fig.savefig(os.path.join(HERE, "sketch.png"), dpi=110)
     pdf.savefig(fig); plt.close(fig)
 
     # ===== Лист 2: детали =====
     fig = plt.figure(figsize=(16.54, 11.69))
-    frame(fig, 2, 2, "Детали: пазы, посадки, расчёт материала")
+    frame(fig, 2, 2, "Деталі: пази, посадки, розрахунок матеріалу")
     fus = tm(g.fuselage_printable())
     # Фюзеляж сбоку
     ax = fig.add_axes([0.04, 0.66, 0.6, 0.29])
     draw_view(ax, fus, (0, 2))
-    setup(ax, "Деталь 1 — Фюзеляж (вид сбоку)", (-8, 128), (-16, 22))
+    setup(ax, "Деталь 1 — Фюзеляж (вигляд збоку)", (-8, 128), (-16, 22))
     zb = -g.R + g.BELLY_CUT
     dim(ax, (0, zb), (g.L, zb), -12, f"{g.L:.0f}")
     dim(ax, (g.L, zb), (g.L, fus.bounds[1][2]), 126, f"{fus.bounds[1][2]-zb:.1f}", horiz=False)
     dim(ax, (0, -g.R), (0, g.R), -5, f"Ø{2*g.R:.0f}", horiz=False)
     ws = g.WING_T + 2 * g.FIT
-    note(ax, (51, g.WING_Z), f"паз крыла {14+2*g.FIT:.1f}×{ws:.1f} сквозной", (-30, 14))
-    note(ax, (g.L - 7, 0), f"паз оперения {10.5+2*g.FIT:.1f}×{g.TAIL_T+2*g.FIT:.1f} сквозной", (-30, -14))
-    note(ax, (g.PIN_X, zb), f"отв. Ø{g.PIN_D+2*g.FIT:.1f}, гл. {g.HOLE_DEPTH:.1f}", (12, -8))
-    note(ax, (5, zb), f"плоское брюхо (срез {g.BELLY_CUT} мм)", (8, -8))
+    note(ax, (51, g.WING_Z), f"паз крила {14+2*g.FIT:.1f}×{ws:.1f} наскрізний", (-30, 14))
+    note(ax, (g.L - 7, 0), f"паз оперення {10.5+2*g.FIT:.1f}×{g.TAIL_T+2*g.FIT:.1f} наскрізний", (-30, -14))
+    note(ax, (g.PIN_X, zb), f"отв. Ø{g.PIN_D+2*g.FIT:.1f}, глиб. {g.HOLE_DEPTH:.1f}", (12, -8))
+    note(ax, (5, zb), f"пласке черевце (зріз {g.BELLY_CUT} мм)", (8, -8))
 
     # Крыло сверху
     wing = tm(g.wing_part())
     ax = fig.add_axes([0.04, 0.33, 0.28, 0.32])
     draw_view(ax, wing, (0, 1))
-    setup(ax, f"Деталь 2 — Крыло, s={g.WING_T:.0f}", (36, 70), (-34, 34))
+    setup(ax, f"Деталь 2 — Крило, s={g.WING_T:.0f}", (36, 70), (-34, 34))
     dim(ax, (44, -29), (58, -29), -33, "14")
     dim(ax, (56, -29), (56, 29), 64, "58", horiz=False)
     dim(ax, (47, 29), (56, 29), 32, "9")
@@ -268,30 +268,30 @@ def main():
     tail = tm(g.tail_shape())
     ax = fig.add_axes([0.34, 0.33, 0.3, 0.32])
     draw_view(ax, tail, (0, 1))
-    setup(ax, f"Деталь 3 — Оперение, s={g.TAIL_T}", (g.L - 18, g.L + 6), (-24, 20))
+    setup(ax, f"Деталь 3 — Оперення, s={g.TAIL_T}", (g.L - 18, g.L + 6), (-24, 20))
     dim(ax, (g.L - 13, -15), (g.L - 2.5, -15), -18, "10.5")
     dim(ax, (g.L - 1, -15), (g.L - 1, 15), g.L + 3, "30", horiz=False)
     ax2 = fig.add_axes([0.34, 0.19, 0.3, 0.1])
     draw_view(ax2, tail, (0, 2))
-    setup(ax2, "вид сбоку: кили h=8", (g.L - 18, g.L + 6), (-3, 12))
+    setup(ax2, "вигляд збоку: кілі h=8", (g.L - 18, g.L + 6), (-3, 12))
 
     # Подставка сверху
     st = tm(g.stand())
     ax = fig.add_axes([0.66, 0.55, 0.32, 0.40])
     draw_view(ax, st, (0, 1), color="#cfd8dc", angle=40)
-    setup(ax, "Деталь 4 — Подставка (вид сверху)", (-75, 75), (-30, 30))
+    setup(ax, "Деталь 4 — Підставка (вигляд згори)", (-75, 75), (-30, 30))
     dim(ax, (-70, -23), (70, -23), -28, "140")
     dim(ax, (70, -23), (70, 23), 73, "46", horiz=False)
-    note(ax, (0, g.POST_Y), f"стойка Ø12→Ø7, h={g.POST_H:.0f};\nштырь Ø{g.PIN_D:.0f}, h={g.PIN_H}", (20, 12))
-    note(ax, (0, -11), f"надпись «{g.TITLE}», h=1", (-60, -12))
+    note(ax, (0, g.POST_Y), f"стійка Ø12→Ø7, h={g.POST_H:.0f};\nштир Ø{g.PIN_D:.0f}, h={g.PIN_H}", (20, 12))
+    note(ax, (0, -11), f"напис «{g.TITLE}», h=1", (-60, -12))
 
     # Таблица материала
     ax = fig.add_axes([0.04, 0.03, 0.6, 0.15]); ax.axis("off")
-    head = ["Деталь", "Габарит, мм", "Объём, см³", "Масса, г", "Пруток, м", "Цена, руб.", "Время, ч"]
+    head = ["Деталь", "Габарит, мм", "Об'єм, см³", "Маса, г", "Пруток, м", "Ціна, грн", "Час, год"]
     data = [[n, d, f"{m['V']:.2f}", f"{m['mass']:.1f}", f"{m['length']:.2f}",
-             f"{m['cost']:.0f}", f"{m['time']:.1f}"] for n, d, m in rows]
-    data.append(["ИТОГО", "", f"{tot['V']:.2f}", f"{tot['mass']:.1f}", f"{tot['length']:.2f}",
-                 f"{tot['cost']:.0f}", f"{tot['time']:.1f}"])
+             f"{m['cost']:.1f}", f"{m['time']:.1f}"] for n, d, m in rows]
+    data.append(["РАЗОМ", "", f"{tot['V']:.2f}", f"{tot['mass']:.1f}", f"{tot['length']:.2f}",
+                 f"{tot['cost']:.1f}", f"{tot['time']:.1f}"])
     t = ax.table(cellText=data, colLabels=head, loc="upper left", cellLoc="center")
     t.auto_set_font_size(False); t.set_fontsize(8.5); t.scale(1, 1.25)
     for (r, c), cell in t.get_celld().items():
@@ -299,37 +299,37 @@ def main():
             cell.set_text_props(fontweight="bold")
     ax3 = fig.add_axes([0.66, 0.13, 0.32, 0.38]); ax3.axis("off")
     ax3.text(0, 1, "\n".join([
-        "ДОПУЩЕНИЯ РАСЧЁТА",
+        "ПРИПУЩЕННЯ РОЗРАХУНКУ",
         f"  PLA, ρ = {DENSITY} г/см³, пруток Ø{FIL_D} мм",
-        f"  стенки 3×0.42 мм, верх/низ {SHELL_TB} мм",
-        f"  заполнение {INFILL*100:.0f} %, +{(WASTE-1)*100:.0f} % на юбку/отходы",
-        f"  цена {PRICE_PER_KG:.0f} руб./кг, ~{FLOW_G_PER_H:.0f} г/ч (слой 0.16)",
-        "  Слайсер даст точные цифры — расхождение ±20 %.",
+        f"  стінки 3×0.42 мм, верх/низ {SHELL_TB} мм",
+        f"  заповнення {INFILL*100:.0f} %, +{(WASTE-1)*100:.0f} % на спідницю/відходи",
+        f"  ціна {PRICE_PER_KG:.0f} грн/кг, ~{FLOW_G_PER_H:.0f} г/год (шар 0.16)",
+        "  Точні цифри дасть слайсер — розбіжність ±20 %.",
         "",
-        "ЦВЕТА",
-        "  Ракета (дет. 1–3): розовый PLA",
-        "  Подставка: серый/чёрный, надпись — смена",
-        f"  цвета на высоте {g.STAND_H:.0f} мм (белый/золотой)",
+        "КОЛЬОРИ",
+        "  Ракета (дет. 1–3): рожевий PLA",
+        "  Підставка: сірий/чорний, напис — зміна",
+        f"  кольору на висоті {g.STAND_H:.0f} мм (білий/золотий)",
         "",
-        "КРЕПЁЖ",
-        "  Суперклей (циакрилат) — 1–2 капли",
-        "  в пазы крыла и оперения (по желанию).",
+        "КРІПЛЕННЯ",
+        "  Суперклей (ціакрилат) — 1–2 краплі",
+        "  у пази крила та оперення (за бажанням).",
     ]), va="top", family="DejaVu Sans Mono", fontsize=9)
     fig.savefig(os.path.join(HERE, "sketch_page2.png"), dpi=110)
     pdf.savefig(fig); plt.close(fig); pdf.close()
 
     # MATERIALS.md
-    md = ["# Расчёт материала и габариты — FP-5 «Фламинго»", "",
-          f"Габарит сборки: **{bb[1][0]-bb[0][0]:.1f} × {bb[1][1]-bb[0][1]:.1f} × {zt:.1f} мм** (Д × Ш × В)", "",
+    md = ["# Розрахунок матеріалу та габарити — FP-5 «Фламінго»", "",
+          f"Габарит збірки: **{bb[1][0]-bb[0][0]:.1f} × {bb[1][1]-bb[0][1]:.1f} × {zt:.1f} мм** (Д × Ш × В)", "",
           "| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
     md += ["| " + " | ".join(r) + " |" for r in data]
-    md += ["", "## Проверка посадок", ""]
+    md += ["", "## Перевірка посадок", ""]
     md += [f"- {n}: {d} **{v:.2f} мм**" for n, v, d in checks]
-    md += [f"- Пересечений деталей в сборке нет (макс. {worst:.3f} мм³)", "",
-           "## Допущения", "",
-           f"PLA ρ={DENSITY} г/см³, пруток {FIL_D} мм, 3 стенки, заполнение {INFILL*100:.0f} %, "
-           f"+{(WASTE-1)*100:.0f} % на отходы, цена {PRICE_PER_KG:.0f} руб./кг, ~{FLOW_G_PER_H:.0f} г/ч. "
-           "Точные цифры покажет слайсер (±20 %).", ""]
+    md += [f"- Перетинів деталей у збірці немає (макс. {worst:.3f} мм³)", "",
+           "## Припущення", "",
+           f"PLA ρ={DENSITY} г/см³, пруток {FIL_D} мм, 3 стінки, заповнення {INFILL*100:.0f} %, "
+           f"+{(WASTE-1)*100:.0f} % на відходи, ціна {PRICE_PER_KG:.0f} грн/кг, ~{FLOW_G_PER_H:.0f} г/год. "
+           "Точні цифри покаже слайсер (±20 %).", ""]
     open(os.path.join(HERE, "MATERIALS.md"), "w").write("\n".join(md))
     print("\n".join(md))
 
