@@ -96,7 +96,7 @@ function makeDoor(F, lx, lz, width, h, mat, owner, glass, mirror) {
   addInter('door', c[0], 1.1, c[2], 1.0, 2.0, 0.4, d);
   d.locked = false;
   if (!glass) { // замок: накладной засов на двери и интерактивная зона изнутри
-    const lk = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.2, 0.14), new THREE.MeshStandardMaterial({ color: 0xc8a040, metalness: 0.8, roughness: 0.3 }));
+    const lk = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.28, 0.16), new THREE.MeshStandardMaterial({ color: 0xd8a020, emissive: 0x401800, metalness: 0.8, roughness: 0.3 }));
     lk.position.set(width - 0.1, 0.88, 0); lk.visible = false; pivot.add(lk); d.lockMesh = lk;
     const li = F.pt(lx + width - 0.14, 1.15, lz + 0.3); d.lockInter = addInter('lock', li[0], 1.15, li[2], 0.28, 0.3, 0.28, d);
   }
@@ -157,7 +157,7 @@ function buildHouse(GB, h) {
   h.wins = [];
   const addWin = (side, c) => {
     // side: f/b — вдоль x, l/r — вдоль z
-    const quadOut = (pts, n) => fquad(winB, F, pts[0], pts[1], pts[2], pts[3], n, 1, 1, white);
+    const quadOut = (pts, n) => { if (!h.lit) return; const sh = 0.006 + 0.03; pts = pts.map(p => side === 'f' ? [p[0], p[1], T + 0.02] : side === 'b' ? [p[0], p[1], D - T - 0.02] : side === 'l' ? [-W + T + 0.02, p[1], p[2]] : [W - T - 0.02, p[1], p[2]]); fquad(GB.winL, F, pts[0], pts[1], pts[2], pts[3], n, 1, 1, white); };
     let ctr, nrm, rotY;
     if (side === 'f') { quadOut([[c + WHW, WH0, -0.006], [c - WHW, WH0, -0.006], [c - WHW, WH1, -0.006], [c + WHW, WH1, -0.006]], [0, 0, -1]); ctr = [c, 0, T]; nrm = [0, 0, 1]; }
     else if (side === 'b') { quadOut([[c - WHW, WH0, D + 0.006], [c + WHW, WH0, D + 0.006], [c + WHW, WH1, D + 0.006], [c - WHW, WH1, D + 0.006]], [0, 0, 1]); ctr = [c, 0, D - T]; nrm = [0, 0, -1]; }
@@ -286,9 +286,15 @@ function buildShop(GB, s) {
   const prodC = ['#a83a2a', '#d8b03a', '#3a6aa8', '#e8e0c8', '#4a8a3a', '#8a3a6a', '#c86a2a'].map(C);
   for (const lx0 of [-6.5, -2.5, 1.5]) {
     fbox(GB.metal, F, lx0, 0, 4.0, lx0 + 2.8, 1.9, 4.6, C('#8a8a88'), 1); fsolid(F, lx0, 4.0, lx0 + 2.8, 4.6, SOLID);
-    for (let y = 0.25; y < 1.8; y += 0.45) for (let x = lx0 + 0.1; x < lx0 + 2.7; x += srand(0.14, 0.24)) {
-      const w = srand(0.1, 0.18), hh = srand(0.15, 0.32);
-      for (const sz of [3.95, 4.65]) fbox(GB.paint, F, x, y, sz - 0.12, x + w, y + hh, sz + 0.12, spick(prodC), 1);
+    for (let y = 0.25; y < 1.8; y += 0.45) {
+      fbox(GB.metal, F, lx0, y - 0.02, 3.9, lx0 + 2.8, y, 4.7, C('#7a7a78'), 1, 'py ny');
+      for (const [sz, dir] of [[3.95, -1], [4.65, 1]]) for (let x = lx0 + 0.1; x < lx0 + 2.7; x += 0.17) {
+        const kind = (srand(0, 4)) | 0, col = spick(prodC), lab = spick(prodC), z0 = sz - 0.1, z1 = sz + 0.1;
+        if (kind === 0) { fbox(GB.paint, F, x, y, z0, x + 0.07, y + 0.22, z1 - 0.04, col, 1); fbox(GB.paint, F, x + 0.02, y + 0.22, z0 + 0.04, x + 0.05, y + 0.28, z1 - 0.08, C('#d8d8d0'), 1); fbox(GB.paint, F, x - 0.002, y + 0.07, z0 - 0.002 * dir, x + 0.072, y + 0.15, z1 - 0.036, lab, 1, dir < 0 ? 'nz' : 'pz'); } // бутылка
+        else if (kind === 1) { fbox(GB.paint, F, x, y, z0 + 0.02, x + 0.09, y + 0.11, z1 - 0.02, C('#b8bcc0'), 1); fbox(GB.paint, F, x - 0.002, y + 0.03, z0 + 0.018, x + 0.092, y + 0.085, z1 - 0.018, lab, 1, dir < 0 ? 'nz pz' : 'pz nz'); } // банка
+        else if (kind === 2) { fbox(GB.paint, F, x, y, z0 + 0.03, x + 0.15, y + 0.25, z1 - 0.07, col, 1); fbox(GB.paint, F, x + 0.02, y + 0.1, z0 + 0.025, x + 0.13, y + 0.2, z1 - 0.065, C('#ece6d4'), 1, dir < 0 ? 'nz' : 'pz'); } // коробка
+        else { fbox(GB.paint, F, x, y, z0 + 0.02, x + 0.16, y + 0.2, z1 - 0.08, col, 1); fbox(GB.paint, F, x + 0.01, y + 0.2, z0 + 0.02, x + 0.15, y + 0.23, z1 - 0.08, lab, 1); } // пакет
+      }
     }
   }
   // холодильник с напитками вдоль задней стены
@@ -356,16 +362,81 @@ function buildShop(GB, s) {
   s.bounds = { x0: Math.min(a[0], b[0]), x1: Math.max(a[0], b[0]), z0: Math.min(a[2], b[2]), z1: Math.max(a[2], b[2]) };
   s.stock = { canned: 6, bread: 6, water: 8, soda: 8, bandage: 3, battery: 4, lockpick: 4 };
 }
+// ---------------------------------------------------------------------
+//  Люди: общая детальная модель (игроки и продавец)
+// ---------------------------------------------------------------------
+function buildHuman(o) {
+  const g = new THREE.Group();
+  const M = (c, r = 0.85, m = 0) => new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+  const jacket = M(o.jacket), pants = M(o.pants), skin = M(o.skin || 0xd2b49a, 0.7), hair = M(o.hair || 0x2a2018, 0.9), boots = M(0x1a1a1c, 0.6), dark = M(0x151515, 0.6);
+  const mk = (geo, mat, x, y, z, p = g, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; p.add(m); return m; };
+  const body = new THREE.Group(); g.add(body);
+  mk(new THREE.CapsuleGeometry(0.2, 0.4, 4, 14), jacket, 0, 1.3, 0, body, 1.05, 1, 0.7);         // куртка
+  mk(new THREE.CylinderGeometry(0.205, 0.215, 0.07, 16), M(0x2a2018, 0.6), 0, 1.02, 0, body, 1.05, 1, 0.72); // ремень
+  mk(new THREE.CapsuleGeometry(0.19, 0.12, 4, 12), pants, 0, 0.93, 0, body, 1.05, 1, 0.72);       // таз
+  mk(new THREE.TorusGeometry(0.1, 0.035, 8, 14), jacket, 0, 1.6, 0, body, 1, 1, 1).rotation.x = Math.PI / 2; // воротник
+  mk(new THREE.CylinderGeometry(0.05, 0.055, 0.1, 10), skin, 0, 1.64, 0, body);                  // шея
+  if (o.apron) { mk(new THREE.BoxGeometry(0.34, 0.62, 0.03), M(o.apron, 0.9), 0, 1.15, 0.155, body); mk(new THREE.BoxGeometry(0.28, 0.2, 0.02), M(0xd8d0b8, 0.9), 0, 1.0, 0.18, body); }
+  if (o.pack) { mk(new THREE.BoxGeometry(0.34, 0.44, 0.17), M(o.pack, 0.9), 0, 1.3, -0.2, body); mk(new THREE.BoxGeometry(0.3, 0.12, 0.14), M(o.pack, 0.9), 0, 1.58, -0.19, body); for (const sx of [-1, 1]) mk(new THREE.BoxGeometry(0.05, 0.5, 0.02), dark, sx * 0.12, 1.32, 0.135, body); }
+  // голова
+  const head = new THREE.Group(); head.position.set(0, 1.77, 0); g.add(head);
+  mk(new THREE.SphereGeometry(0.115, 20, 16), skin, 0, 0, 0, head, 0.95, 1.12, 1);
+  mk(new THREE.ConeGeometry(0.022, 0.05, 8), skin, 0, -0.01, 0.12, head).rotation.x = Math.PI / 2;
+  for (const sx of [-1, 1]) {
+    mk(new THREE.SphereGeometry(0.02, 8, 6), M(0xf0f0f0, 0.3), sx * 0.04, 0.025, 0.1, head, 1, 0.8, 0.5); mk(new THREE.SphereGeometry(0.01, 8, 6), dark, sx * 0.04, 0.025, 0.114, head);
+    mk(new THREE.BoxGeometry(0.05, 0.01, 0.01), hair, sx * 0.04, 0.055, 0.11, head); mk(new THREE.SphereGeometry(0.03, 8, 6), skin, sx * 0.112, 0, 0, head, 0.4, 1, 0.8);
+  }
+  mk(new THREE.BoxGeometry(0.06, 0.008, 0.01), M(0x7a3a30, 0.7), 0, -0.055, 0.108, head);
+  if (o.mustache) mk(new THREE.BoxGeometry(0.09, 0.02, 0.02), hair, 0, -0.04, 0.112, head);
+  if (o.hat === 'beanie') { mk(new THREE.SphereGeometry(0.125, 16, 10, 0, 6.3, 0, 1.55), M(o.hatCol || 0x8a2a2a), 0, 0.01, 0, head, 1, 1.05, 1.02); mk(new THREE.TorusGeometry(0.118, 0.022, 8, 18), M(o.hatCol || 0x8a2a2a), 0, 0.03, 0, head).rotation.x = Math.PI / 2; mk(new THREE.SphereGeometry(0.03, 8, 6), M(0xdddddd), 0, 0.14, 0, head); }
+  else if (o.hat === 'cap') { mk(new THREE.SphereGeometry(0.122, 16, 10, 0, 6.3, 0, 1.45), M(o.hatCol || 0x2a3a5a), 0, 0.015, 0, head, 1, 1, 1.02); mk(new THREE.BoxGeometry(0.15, 0.012, 0.09), M(o.hatCol || 0x2a3a5a), 0, 0.03, 0.14, head); }
+  else mk(new THREE.SphereGeometry(0.12, 16, 10, 0, 6.3, 0, 1.75), hair, 0, 0.012, -0.012, head, 1, 1.08, 1.04);
+  // ноги: бедро + колено + сапог
+  const legs = [];
+  for (const sx of [-1, 1]) {
+    const hip = new THREE.Group(); hip.position.set(sx * 0.1, 0.93, 0); g.add(hip);
+    mk(new THREE.CapsuleGeometry(0.085, 0.3, 4, 10), pants, 0, -0.24, 0, hip);
+    const knee = new THREE.Group(); knee.position.set(0, -0.46, 0); hip.add(knee);
+    mk(new THREE.CapsuleGeometry(0.07, 0.3, 4, 10), pants, 0, -0.2, 0, knee);
+    mk(new THREE.BoxGeometry(0.11, 0.09, 0.27), boots, 0, -0.43, 0.05, knee); mk(new THREE.CylinderGeometry(0.075, 0.08, 0.1, 10), boots, 0, -0.36, 0, knee);
+    legs.push({ hip, knee });
+  }
+  // руки: плечо + локоть + кисть
+  const arms = [];
+  for (const sx of [-1, 1]) {
+    const sh = new THREE.Group(); sh.position.set(sx * 0.26, 1.5, 0); g.add(sh);
+    mk(new THREE.SphereGeometry(0.075, 10, 8), jacket, 0, 0, 0, sh);
+    mk(new THREE.CapsuleGeometry(0.055, 0.2, 4, 8), jacket, 0, -0.17, 0, sh);
+    const el = new THREE.Group(); el.position.set(0, -0.33, 0); sh.add(el);
+    mk(new THREE.CapsuleGeometry(0.048, 0.19, 4, 8), jacket, 0, -0.14, 0, el);
+    mk(new THREE.SphereGeometry(0.05, 10, 8), skin, 0, -0.29, 0, el);
+    arms.push({ sh, el });
+  }
+  if (o.light) { const fl = new THREE.Group(); fl.position.set(0, -0.3, 0.04); arms[1].el.add(fl); mk(new THREE.CylinderGeometry(0.03, 0.026, 0.17, 10), M(0x303236, 0.4, 0.7), 0, 0, 0.08, fl).rotation.x = Math.PI / 2; mk(new THREE.CylinderGeometry(0.036, 0.03, 0.04, 10), M(0xfff0c0, 0.2), 0, 0, 0.17, fl).rotation.x = Math.PI / 2; }
+  return { g, body, head, legs, arms, holding: !!o.light };
+}
+function animateHuman(h, phase, s, t, flashlightUp) {
+  const sw = Math.sin(phase) * 0.65 * s;
+  h.legs[0].hip.rotation.x = sw; h.legs[1].hip.rotation.x = -sw;
+  h.legs[0].knee.rotation.x = Math.max(0, -Math.sin(phase + 0.6)) * 0.9 * s; h.legs[1].knee.rotation.x = Math.max(0, Math.sin(phase + 0.6)) * 0.9 * s;
+  h.arms[0].sh.rotation.x = -sw * 0.8; h.arms[0].el.rotation.x = -0.15 - 0.3 * s;
+  if (h.holding && flashlightUp) { h.arms[1].sh.rotation.x = -1.35; h.arms[1].el.rotation.x = -0.2; }
+  else { h.arms[1].sh.rotation.x = sw * 0.8; h.arms[1].el.rotation.x = -0.15 - 0.3 * s; }
+  h.body.position.y = Math.abs(Math.sin(phase)) * 0.025 * s + Math.sin(t * 1.6) * 0.004;
+  h.head.rotation.y = Math.sin(t * 0.5) * 0.12 * (1 - s);
+}
 function makeKeeper() {
-  const g = new THREE.Group(); scene.add(g);
-  const std = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 });
-  const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
-  add(new THREE.CapsuleGeometry(0.22, 0.6, 4, 10), std(0x5a5048), 0, 1.15, 0);
-  add(new THREE.SphereGeometry(0.13, 16, 12), std(0xc8a890), 0, 1.72, 0);
-  add(new THREE.CapsuleGeometry(0.1, 0.7, 4, 8), std(0x2a2a30), -0.1, 0.45, 0); add(new THREE.CapsuleGeometry(0.1, 0.7, 4, 8), std(0x2a2a30), 0.1, 0.45, 0);
-  add(new THREE.SphereGeometry(0.135, 14, 10, 0, 6.3, 0, 1.3), std(0xdddddd), 0, 1.75, -0.01);
-  add(new THREE.BoxGeometry(0.46, 0.5, 0.05), std(0x3a6a8a), 0, 1.15, 0.2);
-  return g;
+  const h = buildHuman({ jacket: 0x4a6a8a, pants: 0x2a2a30, skin: 0xc8a086, hair: 0x4a4038, apron: 0xe0dccc, hat: 'cap', hatCol: 0xe8e4d8, mustache: true });
+  scene.add(h.g); h.g.userData.human = h;
+  h.arms[0].sh.rotation.x = -0.5; h.arms[1].sh.rotation.x = -0.5; h.arms[0].el.rotation.x = -0.9; h.arms[1].el.rotation.x = -0.9;
+  return h.g;
+}
+function keeperUpdate(dt, t) {
+  const k = Town.keeper, h = k && k.userData.human; if (!h) return;
+  const d = Math.hypot(P.x - k.position.x, P.z - k.position.z);
+  if (d < 12) { const want = Math.atan2(P.x - k.position.x, P.z - k.position.z); k.rotation.y += clamp(angWrap(want - k.rotation.y), -2 * dt, 2 * dt); }
+  h.body.position.y = Math.sin(t * 1.4) * 0.006; h.head.rotation.y = Math.sin(t * 0.4) * 0.1;
+  h.arms[0].el.rotation.x = -0.9 + Math.sin(t * 0.9) * 0.05;
 }
 
 // ---------------------------------------------------------------------
@@ -528,7 +599,7 @@ function buildWorld(seed) {
     paint: GB.paint.mesh(MT.paint), metal: GB.metal.mesh(MT.metal), glassShop: GB.glassShop.mesh(MT.shopGlass = new THREE.MeshStandardMaterial({ color: 0x9ab0c0, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide }), false),
     fridge: GB.fridgeGlow.mesh(MT.fridgeGlow = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.9, 2.2) }), false),
     fluor: GB.fluor.mesh(MT.fluor, false), glassCar: GB.glassCar.mesh(MT.glass), asphalt: GB.asphalt.mesh(MT.asphalt, false),
-    dwood: GB.dwood.mesh(MT.dwood), glassWin: GB.glassWin.mesh(MT.glassWin = new THREE.MeshStandardMaterial({ color: 0xaac4d8, roughness: 0.03, metalness: 0.4, transparent: true, opacity: 0.1, depthWrite: false }), false), puddle: GB.puddle.mesh(new THREE.MeshStandardMaterial({ color: 0x1c2228, map: TX.pool, roughness: 0.04, metalness: 0.5, transparent: true, opacity: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), false),
+    dwood: GB.dwood.mesh(MT.dwood), glassWin: GB.glassWin.mesh(MT.glassWin = new THREE.MeshStandardMaterial({ color: 0xaac4d8, roughness: 0.03, metalness: 0.4, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }), false), puddle: GB.puddle.mesh(new THREE.MeshStandardMaterial({ color: 0x1c2228, map: TX.pool, roughness: 0.04, metalness: 0.5, transparent: true, opacity: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), false),
     mark: GB.mark.mesh(new THREE.MeshStandardMaterial({ color: 0x1e1812, roughness: 1, transparent: true, opacity: 0.45, polygonOffset: true, polygonOffsetFactor: -2 }), false),
   };
   Town.meshes = meshes;

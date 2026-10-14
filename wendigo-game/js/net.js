@@ -178,7 +178,7 @@ function ensureRemote(id, name) {
   let r = REMOTES.get(id);
   if (r) { if (name) r.name = cleanName(name); return r; }
   r = { id, name: cleanName(name), x: Town.spawn.x, z: Town.spawn.z, tx: Town.spawn.x, tz: Town.spawn.z, yaw: 0, tyaw: 0, pitch: 0, hp: 100, light: false, alive: true, running: false, house: -1, lamp: false, hiddenDoor: false, phase: 0 };
-  r.avatar = makeAvatar(AV_COL[id % 4], r.name); REMOTES.set(id, r);
+  r.avatar = makeAvatar(AV_COL[id % 4], r.name, id); REMOTES.set(id, r);
   updatePlayerList(); return r;
 }
 function dropRemote(id) {
@@ -186,16 +186,16 @@ function dropRemote(id) {
   scene.remove(r.avatar.g); if (r.avatar.spot) { scene.remove(r.avatar.spot); scene.remove(r.avatar.spot.target); }
   REMOTES.delete(id); updatePlayerList();
 }
-function makeAvatar(color, name) {
-  const g = new THREE.Group(); scene.add(g);
-  const std = c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.85 });
-  const add = (geo, m, x, y, z, p = g) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.castShadow = true; p.add(o); return o; };
-  const legs = [], arms = [];
-  for (const sx of [-1, 1]) { const hip = new THREE.Group(); hip.position.set(sx * 0.1, 0.9, 0); g.add(hip); add(new THREE.CapsuleGeometry(0.075, 0.75, 4, 8), std(0x22252a), 0, -0.45, 0, hip); legs.push(hip); }
-  add(new THREE.CapsuleGeometry(0.21, 0.5, 4, 12), std(color), 0, 1.28, 0);
-  add(new THREE.SphereGeometry(0.12, 16, 12), std(0xd2b49a), 0, 1.75, 0);
-  add(new THREE.SphereGeometry(0.125, 14, 10, 0, 6.3, 0, 1.4), std(0x222222), 0, 1.78, -0.01);
-  for (const sx of [-1, 1]) { const sh = new THREE.Group(); sh.position.set(sx * 0.27, 1.55, 0); g.add(sh); add(new THREE.CapsuleGeometry(0.06, 0.55, 4, 8), std(color), 0, -0.3, 0, sh); arms.push(sh); }
+const AV_LOOK = [
+  { pants: 0x2a3040, skin: 0xd2b49a, hair: 0x2a2018, hat: 'beanie', hatCol: 0x8a2a2a },
+  { pants: 0x3a3a30, skin: 0xe0c0a0, hair: 0x6a4a28, hat: 'cap', hatCol: 0x2a3a5a },
+  { pants: 0x2a2a2e, skin: 0xa8806a, hair: 0x14100c, hat: 'none' },
+  { pants: 0x4a4030, skin: 0xcaa488, hair: 0x9a8a68, hat: 'beanie', hatCol: 0x3a5a3a },
+];
+function makeAvatar(color, name, id = 0) {
+  const look = AV_LOOK[id % 4];
+  const hum = buildHuman({ jacket: color, pack: 0x3a3228, light: true, ...look });
+  const g = hum.g; scene.add(g);
   // подпись с именем
   const c = document.createElement('canvas'); c.width = 256; c.height = 48; const x = c.getContext('2d');
   x.font = 'bold 28px Georgia'; x.textAlign = 'center'; x.fillStyle = 'rgba(0,0,0,0.5)'; x.fillRect(0, 4, 256, 40); x.fillStyle = '#fff'; x.fillText(name, 128, 34);
@@ -205,7 +205,7 @@ function makeAvatar(color, name) {
   beam.position.set(0.2, 1.45, 0.25); beam.frustumCulled = false; g.add(beam);
   let spot = null;
   if (quality >= 1) { spot = new THREE.SpotLight(0xfff0d8, 0, 20, 0.5, 0.5, 1.6); scene.add(spot); scene.add(spot.target); }
-  return { g, legs, arms, beam, spot };
+  return { g, hum, beam, spot };
 }
 function updateRemotes(dt) {
   for (const r of REMOTES.values()) {
@@ -213,8 +213,7 @@ function updateRemotes(dt) {
     const a = r.avatar, mv = Math.hypot(r.x - (r.px ?? r.x), r.z - (r.pz ?? r.z)) / Math.max(dt, 0.001); r.px = r.x; r.pz = r.z;
     r.phase += dt * mv * 2.2;
     const s = clamp(mv / 3, 0, 1);
-    a.legs[0].rotation.x = Math.sin(r.phase) * 0.6 * s; a.legs[1].rotation.x = -Math.sin(r.phase) * 0.6 * s;
-    a.arms[0].rotation.x = -Math.sin(r.phase) * 0.5 * s; a.arms[1].rotation.x = -0.9;
+    animateHuman(a.hum, r.phase, s, G.time, r.light && dayFactor(G.clock) < 0.6);
     a.g.position.set(r.x, 0, r.z); a.g.rotation.y = r.yaw + Math.PI;
     a.g.visible = r.alive; a.g.rotation.z = 0;
     a.beam.visible = r.alive && r.light && dayFactor(G.clock) < 0.6; a.beam.rotation.x = -r.pitch;

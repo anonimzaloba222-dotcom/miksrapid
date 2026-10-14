@@ -276,7 +276,7 @@ function updateAtmosphere(dt, dk) {
   for (const l of sh.lights) l.intensity = open ? 1.5 * (Math.random() < 0.02 ? 0.3 : 1) : 0;
   MT.fluor.color.setScalar(open ? 3.2 : 0.05); MT.fridgeGlow.color.setRGB(open ? 1.6 : 0.05, open ? 1.9 : 0.06, open ? 2.2 : 0.08);
   MT.sign.color.setScalar(open || Math.random() < 0.5 ? 2.2 : 0.3);
-  Town.keeper.visible = open;
+  Town.keeper.visible = open; keeperUpdate(dt, G.time);
   if (G.msgT > 0) { G.msgT -= dt; if (G.msgT <= 0) $('msg').style.opacity = 0; }
   if (G.shake > 0) { G.shake -= dt; camera.position.x += rand(-1, 1) * G.shake * 0.08; camera.position.y += rand(-1, 1) * G.shake * 0.08; }
 }
