@@ -146,6 +146,20 @@ function buildHouse(GB, h) {
   fquad(GB.plain, F, [-W - 0.4, 2.9, -0.5], [W + 0.4, 2.9, -0.5], [W + 0.4, 5.03, D / 2], [-W - 0.4, 5.03, D / 2], [0, -4.5 / rl, 2.15 / rl], 1, 1, C('#2a2622'));
   fquad(GB.plain, F, [W + 0.4, 2.9, D + 0.5], [-W - 0.4, 2.9, D + 0.5], [-W - 0.4, 5.03, D / 2], [W + 0.4, 5.03, D / 2], [0, -4.5 / rl, -2.15 / rl], 1, 1, C('#2a2622'));
   fbox(GB.brick, F, 2.2, 3.4, 5.2, 2.9, 6.0, 5.9, white, 1);
+  // ---- детали фасада: каменный цоколь, торцы брёвен, конёк, наличники карниза ----
+  const stone = C('#8a8478');
+  fbox(GB.concrete, F, -W - 0.06, 0, -0.06, -0.55, 0.32, 0.0, stone, 1, 'px nx pz nz py'); fbox(GB.concrete, F, 0.55, 0, -0.06, W + 0.06, 0.32, 0.0, stone, 1, 'px nx pz nz py');
+  fbox(GB.concrete, F, -W - 0.06, 0, D, W + 0.06, 0.32, D + 0.06, stone, 1, 'px nx pz nz py');
+  fbox(GB.concrete, F, -W - 0.06, 0, 0, -W, 0.32, D, stone, 1, 'nx nz pz py'); fbox(GB.concrete, F, W, 0, 0, W + 0.06, 0.32, D, stone, 1, 'px nz pz py');
+  for (const sx of [-1, 1]) for (const cz of [0, D]) for (let r = 0; r < 12; r++) {
+    const y = 0.36 + r * 0.22, zc = cz === 0 ? 0.1 : D - 0.1;
+    if (r % 2) fbox(GB.siding, F, sx * W, y, zc - 0.1, sx * (W + 0.14), y + 0.2, zc + 0.1, col, 1);
+    else if (cz === 0) fbox(GB.siding, F, sx * W - sx * 0.2, y, -0.14, sx * W, y + 0.2, 0, col, 1); else fbox(GB.siding, F, sx * W - sx * 0.2, y, D, sx * W, y + 0.2, D + 0.14, col, 1);
+  }
+  fbox(GB.dwood, F, -W - 0.5, 5.0, D / 2 - 0.12, W + 0.5, 5.14, D / 2 + 0.12, h.roofCol.clone().multiplyScalar(0.7), 1);
+  for (const lz of [-0.52, D + 0.52]) fbox(GB.dwood, F, -W - 0.45, 2.82, lz - 0.03, W + 0.45, 2.96, lz + 0.03, h.trim, 1);
+  for (let x = -W - 0.3; x <= W + 0.31; x += 0.6) { fbox(GB.dwood, F, x - 0.04, 2.78, -0.48, x + 0.04, 2.9, 0.0, h.trim, 1); fbox(GB.dwood, F, x - 0.04, 2.78, D, x + 0.04, 2.9, D + 0.48, h.trim, 1); }
+  for (const sx of [-1, 1]) fquad(GB.dwood, F, [sx * (W + 0.05), 3.0, 0.4], [sx * (W + 0.05), 3.0, D - 0.4], [sx * (W + 0.05), 4.1, D / 2], [sx * (W + 0.05), 3.0, D / 2], [sx, 0, 0], 1, 1, h.trim.clone().multiplyScalar(0.8));
   // пол, потолок, крыльцо, дорожка
   fquad(GB.floor, F, [-W + T, 0.02, D - T], [W - T, 0.02, D - T], [W - T, 0.02, T], [-W + T, 0.02, T], [0, 1, 0], 7.6 / 2, 7.6 / 2, white);
   fquad(GB.floor, F, [-0.55, 0.02, T], [0.55, 0.02, T], [0.55, 0.02, 0], [-0.55, 0.02, 0], [0, 1, 0], 0.5, 0.1, white);
@@ -242,6 +256,27 @@ function buildHouse(GB, h) {
   fbox(GB.wood, F, 0.8, 0, 7.2, 3.0, 0.9, 7.8, wood, 1); fbox(GB.plain, F, 0.78, 0.9, 7.15, 3.02, 0.95, 7.8, C('#b9b3a4'), 1);
   fsolid(F, 0.8, 7.2, 3.0, 7.8, SOLID);
   fbox(GB.wood, F, 3.4, 0, 1.0, 3.78, 1.8, 2.4, wood, 1); fsolid(F, 3.4, 1.0, 3.8, 2.4, SOLID);
+  // ---- детали интерьера ----
+  const trimC = C('#e6e0d0'), brown = C('#5a3e28');
+  for (const [a, b, z0, z1] of [[-W + T, -0.55, T, T + 0.02], [0.55, W - T, T, T + 0.02], [-W + T, W - T, D - T - 0.02, D - T]]) fbox(GB.dwood, F, a, 0.0, z0, b, 0.12, z1, trimC, 1);
+  for (const [x0, x1] of [[-W + T, -W + T + 0.02], [W - T - 0.02, W - T]]) fbox(GB.dwood, F, x0, 0, T, x1, 0.12, D - T, trimC, 1);
+  for (const px of [-0.6, 0.52]) fbox(GB.dwood, F, px, 0, T, px + 0.08, 2.2, T + 0.05, trimC, 1); fbox(GB.dwood, F, -0.6, 2.2, T, 0.6, 2.28, T + 0.05, trimC, 1);
+  fbox(GB.plain, F, -0.015, 2.5, 3.9, 0.015, 2.95, 4.1, C('#222'), 1); fbox(GB.paint, F, -0.2, 2.35, 3.8, 0.2, 2.52, 4.2, h.fab, 1, 'px nx pz nz ny'); // потолочная лампа
+  for (const [wall, lz, y] of [['r', 2.0, 1.6], ['b', 1.6, 1.7], ['r', 5.4, 1.55]]) { // картины
+    if (wall === 'r') { fbox(GB.dwood, F, W - T - 0.04, y, lz, W - T, y + 0.5, lz + 0.7, brown, 1, 'nx py ny nz pz'); fbox(GB.paint, F, W - T - 0.045, y + 0.05, lz + 0.05, W - T - 0.04, y + 0.45, lz + 0.65, spick([C('#4a7a5a'), C('#a8683a'), C('#5a6a9a')]), 1, 'nx'); }
+    else { fbox(GB.dwood, F, lz, y, D - T - 0.04, lz + 0.7, y + 0.5, D - T, brown, 1, 'nz px nx py ny'); fbox(GB.paint, F, lz + 0.05, y + 0.05, D - T - 0.045, lz + 0.65, y + 0.45, D - T - 0.04, spick([C('#4a7a5a'), C('#a8683a'), C('#5a6a9a')]), 1, 'nz'); }
+  }
+  fbox(GB.fabric, F, -3.6, 0.62, 5.75, -2.7, 0.7, 6.15, C('#f0ece0'), 1); fbox(GB.fabric, F, -3.6, 0.62, 6.25, -2.2, 0.66, 7.7, fab.clone().multiplyScalar(1.3), 1); // подушка и одеяло
+  // стол: посуда и ваза
+  for (const [x, z] of [[1.9, 4.3], [2.5, 4.3], [1.9, 4.7], [2.5, 4.7]]) { fbox(GB.paint, F, x, 0.79, z, x + 0.2, 0.81, z + 0.2, C('#e8e4d8'), 1); fbox(GB.paint, F, x + 0.07, 0.81, z + 0.07, x + 0.13, 0.9, z + 0.13, C('#c8c0b0'), 1); }
+  fbox(GB.paint, F, 2.2, 0.79, 4.45, 2.4, 1.0, 4.65, C('#4a6a8a'), 1); fbox(GB.plain, F, 2.27, 1.0, 4.52, 2.33, 1.2, 4.58, C('#3a7a3a'), 1);
+  // книжный шкаф у правой стены
+  fbox(GB.wood, F, W - T - 0.32, 0, 2.7, W - T, 1.8, 3.95, wood, 1); fsolid(F, W - T - 0.32, 2.7, W - T, 3.95, SOLID);
+  for (const y of [0.4, 0.85, 1.3]) for (let z = 2.78; z < 3.88; z += 0.09) fbox(GB.paint, F, W - T - 0.3, y, z, W - T - 0.18, y + srand(0.26, 0.38), z + 0.07, spick([C('#8a2a2a'), C('#2a4a6a'), C('#4a6a3a'), C('#c8a050'), C('#5a3a5a')]), 1, 'nx py');
+  // кухня: мойка, чайник, кастрюли, верхние шкафчики
+  fbox(GB.metal, F, 1.0, 0.9, 7.35, 1.7, 0.93, 7.7, C('#9a9a98'), 1, 'py'); fbox(GB.plain, F, 1.1, 0.92, 7.4, 1.6, 0.94, 7.65, C('#2a2a2c'), 1, 'py'); fbox(GB.metal, F, 1.3, 0.93, 7.55, 1.34, 1.1, 7.58, C('#bbb'), 1);
+  fbox(GB.metal, F, 2.2, 0.95, 7.3, 2.45, 1.2, 7.55, C('#2a2a2e'), 1); fbox(GB.metal, F, 2.6, 0.95, 7.3, 2.85, 1.12, 7.55, C('#c8a040'), 1); fbox(GB.paint, F, 2.25, 1.2, 7.35, 2.4, 1.25, 7.5, C('#a8322a'), 1);
+  fbox(GB.wood, F, 0.8, 1.55, 7.5, 3.0, 2.2, D - T, wood, 1); for (const x of [0.8, 1.55, 2.3]) fbox(GB.dwood, F, x + 0.73, 1.57, 7.48, x + 0.77, 2.18, 7.5, brown, 1, 'nz');
   // шкаф и холодильник — в них припасы
   fbox(GB.wood, F, -3.78, 0, 1.2, -3.18, 2.0, 2.3, wood, 1); fsolid(F, -3.8, 1.2, -3.18, 2.3, SOLID);
   fbox(GB.plain, F, 3.15, 0, 6.5, 3.78, 1.8, 7.15, C('#d6d2c4'), 1); fsolid(F, 3.15, 6.5, 3.8, 7.15, SOLID);
@@ -490,10 +525,23 @@ function buildTrees(list) {
 }
 function buildCar(GB, x, z, alongX, col) {
   const L = 4.3, Wd = 1.8, b = (a0, y0, b0, a1, y1, b1, G, c) => alongX ? G.box(x + a0, y0, z + b0, x + a1, y1, z + b1, c, 1) : G.box(x + b0, y0, z + a0, x + b1, y1, z + a1, c, 1);
-  b(-L / 2, 0.35, -Wd / 2, L / 2, 1.0, Wd / 2, GB.paint, col);
-  b(-1.1, 1.0, -Wd / 2 + 0.12, 0.9, 1.55, Wd / 2 - 0.12, GB.glassCar, C('#fff'));
-  b(-1.05, 1.55, -Wd / 2 + 0.15, 0.85, 1.6, Wd / 2 - 0.15, GB.paint, col);
-  for (const [a, c] of [[-1.35, -0.92], [1.35, -0.92], [-1.35, 0.92], [1.35, 0.92]]) b(a - 0.33, 0, c - 0.12, a + 0.33, 0.66, c + 0.12, GB.plain, C('#151515'));
+  const hw = Wd / 2, dk = C('#151515'), chrome = C('#c0c4c8');
+  b(-L / 2, 0.3, -hw, L / 2, 0.95, hw, GB.paint, col);                 // кузов
+  b(-L / 2 + 0.05, 0.95, -hw + 0.04, -1.1, 1.05, hw - 0.04, GB.paint, col); b(1.0, 0.95, -hw + 0.04, L / 2 - 0.05, 1.03, hw - 0.04, GB.paint, col); // капот и багажник
+  b(-1.1, 0.95, -hw + 0.12, 0.95, 1.52, hw - 0.12, GB.glassCar, C('#fff')); // стёкла
+  for (const p of [-1.1, -0.2, 0.95]) for (const sd of [-1, 1]) b(p - 0.04, 0.95, sd * (hw - 0.12) - 0.03, p + 0.04, 1.52, sd * (hw - 0.12) + 0.03, GB.paint, col); // стойки
+  b(-1.12, 1.52, -hw + 0.1, 0.98, 1.6, hw - 0.1, GB.paint, col);       // крыша
+  b(-L / 2 - 0.08, 0.28, -hw + 0.05, -L / 2, 0.5, hw - 0.05, GB.metal, chrome); b(L / 2, 0.28, -hw + 0.05, L / 2 + 0.08, 0.5, hw - 0.05, GB.metal, chrome); // бамперы
+  for (const sd of [-1, 1]) {
+    b(-L / 2, 0.62, sd * (hw - 0.3) - 0.14, -L / 2 + 0.03, 0.78, sd * (hw - 0.3) + 0.14, GB.paint, C('#f4ecc8')); // фары
+    b(L / 2 - 0.03, 0.62, sd * (hw - 0.3) - 0.14, L / 2, 0.78, sd * (hw - 0.3) + 0.14, GB.paint, C('#a82020'));   // габариты
+    b(-0.35, 1.1, sd * (hw + 0.02) - 0.03, -0.1, 1.2, sd * (hw + 0.1) + 0.03, GB.paint, col); // зеркала
+    b(-0.7, 0.55, sd * hw - 0.005, -0.66, 0.95, sd * hw + 0.005, GB.plain, dk); b(0.1, 0.55, sd * hw - 0.005, 0.14, 0.95, sd * hw + 0.005, GB.plain, dk); // зазоры дверей
+    b(-0.3, 0.8, sd * hw - 0.02, -0.15, 0.84, sd * hw + 0.02, GB.metal, chrome); // ручка
+  }
+  b(-L / 2 - 0.001, 0.52, -0.4, -L / 2 + 0.02, 0.6, 0.4, GB.plain, dk); // решётка
+  b(L / 2, 0.38, -0.25, L / 2 + 0.01, 0.5, 0.25, GB.paint, C('#e8e8e0')); // номер
+  for (const [a, c] of [[-1.35, -0.92], [1.35, -0.92], [-1.35, 0.92], [1.35, 0.92]]) { b(a - 0.33, 0, c - 0.13, a + 0.33, 0.66, c + 0.13, GB.plain, dk); b(a - 0.2, 0.12, c - 0.14 * Math.sign(c) - 0.005, a + 0.2, 0.54, c + 0.14 * Math.sign(c) + 0.005, GB.metal, C('#8a8c90')); }
   if (alongX) markRect(x - L / 2, z - Wd / 2, x + L / 2, z + Wd / 2, SOLID | OPAQUE); else markRect(x - Wd / 2, z - L / 2, x + Wd / 2, z + L / 2, SOLID | OPAQUE);
 }
 
