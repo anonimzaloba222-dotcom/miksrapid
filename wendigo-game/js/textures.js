@@ -159,6 +159,12 @@ function buildTextures() {
     blotches(g, w, h, 14, '40,30,18', 0.3, 0.55, 14, 50); blotches(g, w, h, 6, '70,90,40', 0.2, 0.4, 10, 30);
     addNoise(g, w, h, 24);
   });
+  // клочок тумана (мягкий альфа-шум)
+  TX.mist = mkTex(256, 256, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    for (let i = 0; i < 26; i++) { const x = rand(40, 216), y = rand(60, 196), r = rand(28, 70), gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(255,255,255,${rand(0.18, 0.38)})`); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }
+    g.globalCompositeOperation = 'destination-in'; const m = g.createRadialGradient(128, 128, 20, 128, 128, 126); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = m; g.fillRect(0, 0, w, h);
+  }, true, 1);
   // берёзовая кора
   TX.birch = mkTex(128, 256, (g, w, h) => {
     g.fillStyle = '#d8d6ce'; g.fillRect(0, 0, w, h);

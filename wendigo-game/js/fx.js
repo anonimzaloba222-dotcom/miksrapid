@@ -36,27 +36,41 @@ function resize() {
 const SKY = {};
 function buildSky() {
   const mat = new THREE.ShaderMaterial({
-    uniforms: { sunDir: { value: new THREE.Vector3(0, 1, 0) }, moonDir: { value: new THREE.Vector3(0, 1, 0) }, dayK: { value: 1 }, duskK: { value: 0 } },
+    uniforms: { sunDir: { value: new THREE.Vector3(0, 1, 0) }, moonDir: { value: new THREE.Vector3(0, 1, 0) }, dayK: { value: 1 }, duskK: { value: 0 }, time: { value: 0 } },
     vertexShader: 'varying vec3 vD; void main(){ vD = position; vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position = p.xyww; }',
-    fragmentShader: `uniform vec3 sunDir; uniform vec3 moonDir; uniform float dayK; uniform float duskK; varying vec3 vD;
+    fragmentShader: `uniform vec3 sunDir; uniform vec3 moonDir; uniform float dayK; uniform float duskK; uniform float time; varying vec3 vD;
       float h3(vec3 p){ return fract(sin(dot(p, vec3(12.9898, 78.233, 37.719))) * 43758.5453); }
+      float vn(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(mix(h3(i), h3(i + vec3(1,0,0)), f.x), mix(h3(i + vec3(0,1,0)), h3(i + vec3(1,1,0)), f.x), f.y),
+                   mix(mix(h3(i + vec3(0,0,1)), h3(i + vec3(1,0,1)), f.x), mix(h3(i + vec3(0,1,1)), h3(i + vec3(1,1,1)), f.x), f.y), f.z); }
+      float fbm(vec3 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++) { s += a * vn(p); p = p * 2.03 + 7.1; a *= 0.5; } return s; }
       void main(){
-        vec3 d = normalize(vD); float h = d.y;
+        vec3 d = normalize(vD); float h = d.y; float nk = 1.0 - dayK;
         vec3 day = mix(vec3(0.62, 0.68, 0.74), vec3(0.28, 0.42, 0.62), clamp(h * 1.6, 0.0, 1.0));
-        vec3 nig = mix(vec3(0.018, 0.024, 0.04), vec3(0.003, 0.006, 0.016), clamp(h * 2.0, 0.0, 1.0));
+        vec3 nig = mix(vec3(0.03, 0.04, 0.062), vec3(0.004, 0.008, 0.02), clamp(h * 1.8, 0.0, 1.0));
+        float md = max(dot(d, moonDir), 0.0);
+        nig += vec3(0.05, 0.07, 0.12) * pow(md, 8.0) + vec3(0.02, 0.03, 0.05) * pow(md, 2.0); // лунное зарево
         vec3 col = mix(nig, day, dayK);
         float hz = pow(1.0 - abs(h), 5.0);
         col += vec3(0.9, 0.38, 0.12) * hz * duskK * 0.7 * max(0.0, dot(normalize(vec3(d.x, 0.0, d.z)), normalize(vec3(sunDir.x, 0.0, sunDir.z))) * 0.5 + 0.5);
+        col += vec3(0.04, 0.05, 0.07) * hz * nk * 0.8; // холодная дымка у горизонта
         float sd = max(dot(d, sunDir), 0.0);
         col += vec3(1.0, 0.9, 0.7) * pow(sd, 900.0) * 30.0 * dayK + vec3(1.0, 0.6, 0.3) * pow(sd, 10.0) * 0.25 * (dayK + duskK);
-        float nk = 1.0 - dayK;
-        vec3 cell = floor(d * 380.0); float s = h3(cell);
-        col += vec3(0.8, 0.85, 1.0) * step(0.9982, s) * nk * clamp(h * 5.0, 0.0, 1.0) * (0.6 + 0.4 * h3(cell + 1.0)) * 1.4;
-        float md = max(dot(d, moonDir), 0.0);
-        col += vec3(0.85, 0.9, 1.0) * smoothstep(0.99955, 0.9997, md) * 4.0 * nk + vec3(0.25, 0.3, 0.45) * pow(md, 40.0) * 0.5 * nk;
-        // облака
-        float c = h3(floor(vec3(d.x / (h + 0.3) * 6.0, 0.0, d.z / (h + 0.3) * 6.0)));
-        col = mix(col, col * 0.7 + vec3(0.05) * dayK, smoothstep(0.55, 1.0, c) * clamp(h * 3.0, 0.0, 1.0) * 0.4);
+        // облака (дрейфуют, ночью подсвечены луной)
+        vec3 cp = vec3(d.x / (h + 0.28) * 2.4 + time * 0.012, d.z / (h + 0.28) * 2.4, time * 0.004);
+        float cl = smoothstep(0.46, 0.78, fbm(cp)) * clamp(h * 3.5, 0.0, 1.0);
+        // звёзды: два слоя, разной яркости и мерцание
+        float stars = 0.0;
+        vec3 c1 = floor(d * 380.0); float s1 = h3(c1); stars += step(0.9982, s1) * (0.5 + 0.9 * h3(c1 + 1.0)) * (0.75 + 0.25 * sin(time * (2.0 + 4.0 * s1) + s1 * 90.0));
+        vec3 c2 = floor(d * 900.0); stars += step(0.9992, h3(c2)) * 0.35;
+        float mw = exp(-pow(dot(d, normalize(vec3(0.35, 0.25, 1.0))) * 3.2, 2.0)) * (0.5 + 0.8 * fbm(d * 18.0)) * 0.05;
+        col += (vec3(0.8, 0.85, 1.0) * stars * 1.4 + vec3(0.55, 0.6, 0.9) * mw) * nk * clamp(h * 5.0, 0.0, 1.0) * (1.0 - cl * 0.9);
+        // луна: диск с «морями» и ореолом
+        float disc = smoothstep(0.99953, 0.99968, md);
+        float maria = 0.65 + 0.35 * fbm(d * 160.0);
+        col += vec3(0.9, 0.93, 1.0) * disc * maria * 3.6 * nk * (1.0 - cl * 0.75) + vec3(0.25, 0.3, 0.45) * pow(md, 40.0) * 0.5 * nk;
+        vec3 ccol = mix(vec3(0.02, 0.028, 0.045) + vec3(0.14, 0.16, 0.24) * pow(md, 5.0), vec3(0.78, 0.8, 0.84), dayK);
+        col = mix(col, ccol, cl * mix(0.8, 0.45, dayK));
         gl_FragColor = vec4(col, 1.0);
       }`,
     side: THREE.BackSide, depthWrite: false, fog: false,
@@ -77,25 +91,70 @@ function dayFactor(clock) {
   const a = (clock - 360) / 840 * Math.PI; // 06:00 → 20:00
   return clamp(Math.sin(a) * 3 + 0.15, 0, 1);
 }
-const _fogDay = new THREE.Color(0.6, 0.65, 0.7), _fogNight = new THREE.Color(0.012, 0.016, 0.026), _fogDusk = new THREE.Color(0.45, 0.28, 0.2);
+const _fogDay = new THREE.Color(0.6, 0.65, 0.7), _fogNight = new THREE.Color(0.024, 0.032, 0.05), _fogDusk = new THREE.Color(0.45, 0.28, 0.2);
 function updateSky(clock, px, pz) {
   const a = (clock - 360) / 840 * Math.PI;
   const sun = new THREE.Vector3(Math.cos(a) * 0.8, Math.sin(a), 0.45).normalize();
   const ma = (clock - 1260 + (clock < 600 ? 1440 : 0)) / 600 * Math.PI;
   const moon = new THREE.Vector3(-Math.cos(ma) * 0.7, Math.max(0.25, Math.sin(ma)), -0.5).normalize();
   const dk = dayFactor(clock), dusk = clamp(1 - Math.abs(sun.y) * 5, 0, 1) * (sun.y > -0.15 ? 1 : 0);
-  const u = SKY.mat.uniforms; u.sunDir.value.copy(sun); u.moonDir.value.copy(moon); u.dayK.value = dk; u.duskK.value = dusk;
+  SKY.dk = dk; const u = SKY.mat.uniforms; u.time.value = performance.now() / 1000; u.sunDir.value.copy(sun); u.moonDir.value.copy(moon); u.dayK.value = dk; u.duskK.value = dusk;
   SKY.mesh.position.copy(camera.position);
   SKY.sun.intensity = 2.4 * dk; SKY.sun.color.setRGB(1, 0.85 + 0.15 * dk, 0.7 + 0.28 * dk);
   SKY.sun.position.set(px + sun.x * 120, sun.y * 120, pz + sun.z * 120); SKY.sun.target.position.set(px, 0, pz);
   SKY.sun.visible = dk > 0.02;
-  SKY.moon.intensity = 0.16 * (1 - dk); SKY.moon.position.set(px + moon.x * 100, moon.y * 100, pz + moon.z * 100); SKY.moon.target.position.set(px, 0, pz);
-  SKY.hemi.intensity = 0.06 + 0.55 * dk;
+  SKY.moon.intensity = 0.26 * (1 - dk); SKY.moon.position.set(px + moon.x * 100, moon.y * 100, pz + moon.z * 100); SKY.moon.target.position.set(px, 0, pz);
+  SKY.hemi.intensity = 0.085 + 0.55 * dk;
   SKY.hemi.color.setRGB(0.25 + 0.4 * dk, 0.3 + 0.4 * dk, 0.45 + 0.35 * dk);
-  scene.fog.density = lerp(0.034, 0.0075, dk);
+  const tt = performance.now() / 1000; SKY.fogK = 1 + 0.2 * Math.sin(tt * 0.045) + 0.1 * Math.sin(tt * 0.13 + 1.3) + (clock > 240 && clock < 380 ? 0.35 : 0); // предрассветный туман гуще
+  scene.fog.density = lerp(0.038, 0.0085, dk) * SKY.fogK;
   scene.fog.color.copy(_fogNight).lerp(_fogDay, dk).lerp(_fogDusk, dusk * 0.35);
   MT.winLit.emissiveIntensity = (1 - dk) * 1.7;
   return dk;
+}
+
+
+// ---------------------------------------------------------------------
+//  Приземный туман: билборды-клочья вокруг игрока + ореолы фонарей
+// ---------------------------------------------------------------------
+function buildMist() {
+  const n = [34, 60, 96][quality], geo = new THREE.InstancedBufferGeometry(); geo.copy(new THREE.PlaneGeometry(1, 1));
+  const off = new Float32Array(n * 3), sc = new Float32Array(n), ph = new Float32Array(n);
+  for (let i = 0; i < n; i++) { off[i * 3] = rand(-58, 58); off[i * 3 + 1] = rand(1.0, 2.6); off[i * 3 + 2] = rand(-58, 58); sc[i] = rand(8, 17); ph[i] = rand(0.3, 1.2); }
+  geo.setAttribute('off', new THREE.InstancedBufferAttribute(off, 3)); geo.setAttribute('sc', new THREE.InstancedBufferAttribute(sc, 1));
+  geo.instanceCount = n;
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { tMap: { value: TX.mist }, color: { value: new THREE.Color(0.1, 0.12, 0.16) }, opacity: { value: 0.2 } },
+    vertexShader: 'attribute vec3 off; attribute float sc; varying vec2 vUv; varying float vZ; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(off, 1.0); mv.xy += position.xy * sc; vZ = -mv.z; gl_Position = projectionMatrix * mv; }',
+    fragmentShader: 'uniform sampler2D tMap; uniform vec3 color; uniform float opacity; varying vec2 vUv; varying float vZ; void main(){ float a = texture2D(tMap, vUv).a * opacity * smoothstep(2.0, 9.0, vZ) * (1.0 - smoothstep(45.0, 70.0, vZ)); gl_FragColor = vec4(color, a); }',
+    transparent: true, depthWrite: false, fog: false,
+  });
+  const m = new THREE.Mesh(geo, mat); m.frustumCulled = false; m.renderOrder = 5; scene.add(m);
+  SKY.mist = { m, mat, off, ph, n, geo };
+}
+function updateMist(dt, dk, px, pz) {
+  const M = SKY.mist; if (!M) return;
+  const nk = 1 - dk, fk = SKY.fogK || 1, o = M.off;
+  M.mat.uniforms.opacity.value = (0.07 + 0.2 * nk) * fk;
+  M.mat.uniforms.color.value.setRGB(lerp(0.06, 0.72, dk), lerp(0.075, 0.76, dk), lerp(0.11, 0.8, dk));
+  const wx = 0.6, wz = 0.25;
+  for (let i = 0; i < M.n; i++) {
+    o[i * 3] += wx * M.ph[i] * dt; o[i * 3 + 2] += wz * M.ph[i] * dt;
+    if (o[i * 3] - px > 60) o[i * 3] -= 120; else if (o[i * 3] - px < -60) o[i * 3] += 120;
+    if (o[i * 3 + 2] - pz > 60) o[i * 3 + 2] -= 120; else if (o[i * 3 + 2] - pz < -60) o[i * 3 + 2] += 120;
+  }
+  M.geo.attributes.off.needsUpdate = true;
+}
+function updateHalos(dk) {
+  if (!SKY.halos && Town.lamps.length) {
+    SKY.halos = Town.lamps.map(l => {
+      const mk = (size, op, col) => { const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.dot, color: col, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, opacity: 0 })); sp.scale.set(size, size, 1); sp.position.set(l.x, 5.4, l.z); scene.add(sp); return sp; };
+      return { l, a: mk(1.4, 1, 0xffd9a0), b: mk(9, 0.3, 0xff9a4a) };
+    });
+  }
+  if (!SKY.halos) return;
+  const fk = SKY.fogK || 1;
+  for (const h of SKY.halos) { const v = h.l.level; h.a.material.opacity = v; h.b.material.opacity = v * 0.22 * fk; h.a.visible = h.b.visible = v > 0.01; }
 }
 
 // ---------------------------------------------------------------------
@@ -122,6 +181,7 @@ function updateLamps(dt, dk, px, pz) {
     SKY.lampLights.forEach((L, i) => { const l = near[i]; L.userData.lamp = l || null; if (l) L.position.set(l.x, 5.2, l.z); });
   }
   for (const L of SKY.lampLights) L.intensity = L.userData.lamp ? 1.5 * L.userData.lamp.level : 0;
+  updateHalos(dk); if (!SKY.mist) buildMist(); updateMist(dt, dk, px, pz);
 }
 
 // ---------------------------------------------------------------------
@@ -191,7 +251,7 @@ function updateSnow(dt, t, px, pz) {
 const POST_FS = `
 uniform sampler2D tColor; uniform sampler2D tDepth;
 uniform vec2 res; uniform float time; uniform float near; uniform float far;
-uniform float exposure; uniform float danger; uniform float aoOn; uniform float thr; uniform float hurt;
+uniform float night; uniform float exposure; uniform float danger; uniform float aoOn; uniform float thr; uniform float hurt;
 varying vec2 vUv;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 float linD(vec2 uv) { float d = texture2D(tDepth, uv).x; return near * far / (far - d * (far - near)); }
@@ -224,12 +284,14 @@ void main() {
   float l = dot(col, vec3(0.299, 0.587, 0.114));
   col = mix(vec3(l), col, 0.82);
   col *= mix(vec3(0.86, 0.96, 1.1), vec3(1.05, 1.0, 0.92), smoothstep(0.0, 0.45, l));
+  col = mix(col, vec3(dot(col, vec3(0.299, 0.587, 0.114))) * vec3(0.82, 0.95, 1.22), night * 0.4);
+  col += vec3(0.0, 0.004, 0.014) * night;
   col = pow(col, vec3(1.0 / 2.2));
   col = (col - 0.5) * 1.06 + 0.5;
-  col *= 1.0 - smoothstep(0.18, 0.85, r2 * 1.7) * 0.55;
+  col *= 1.0 - smoothstep(0.18, 0.85, r2 * 1.7) * (0.55 + 0.22 * night);
   col = mix(col, vec3(0.4, 0.0, 0.0), danger * smoothstep(0.08, 0.6, r2 * 1.7) * (0.75 + 0.25 * sin(time * (4.0 + 8.0 * danger))));
   col = mix(col, vec3(0.55, 0.0, 0.0), hurt * 0.6);
-  col += (hash(uv * res + fract(time * 7.0) * 113.0) - 0.5) * 0.055;
+  col += (hash(uv * res + fract(time * 7.0) * 113.0) - 0.5) * (0.055 + 0.03 * night);
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }`;
 function setupPost() {
@@ -240,7 +302,7 @@ function setupPost() {
   rt.depthTexture = new THREE.DepthTexture(4, 4); rt.depthTexture.type = THREE.UnsignedIntType;
   const mat = new THREE.ShaderMaterial({
     uniforms: { tColor: { value: rt.texture }, tDepth: { value: rt.depthTexture }, res: { value: new THREE.Vector2(4, 4) }, time: { value: 0 },
-                near: { value: camera.near }, far: { value: camera.far }, exposure: { value: 1.35 }, danger: { value: 0 }, hurt: { value: 0 },
+                near: { value: camera.near }, far: { value: camera.far }, exposure: { value: 1.35 }, night: { value: 0 }, danger: { value: 0 }, hurt: { value: 0 },
                 aoOn: { value: q.ao ? 1 : 0 }, thr: { value: hdr ? 1.0 : 0.88 } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
     fragmentShader: POST_FS, depthTest: false, depthWrite: false,
@@ -253,7 +315,7 @@ function setupPost() {
 function renderFrame(danger, hurt) {
   if (!post) { renderer.render(scene, camera); return; }
   renderer.setRenderTarget(post.rt); renderer.render(scene, camera); renderer.setRenderTarget(null);
-  const u = post.mat.uniforms; u.time.value = performance.now() / 1000; u.danger.value = danger; u.hurt.value = hurt;
+  const u = post.mat.uniforms; u.time.value = performance.now() / 1000; u.danger.value = danger; u.hurt.value = hurt; u.night.value = 1 - (SKY.dk ?? 1);
   renderer.render(post.ps, post.pc);
 }
 
