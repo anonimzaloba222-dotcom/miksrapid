@@ -1,6 +1,6 @@
 'use strict';
 // =====================================================================
-//  Городок Кедровый: 31 дом, магазин, улицы, фонари, лес
+//  Деревня Кедровая: 31 дом, магазин, улицы, фонари, лес
 // =====================================================================
 const STREETS_Z = [-36, 0, 36], STREETS_X = [-48, 0, 48];
 const LOT_X = [-74, -64, -31, -17, 17, 31, 64, 74];
@@ -103,8 +103,10 @@ function applyDoorCollision(d) {
 // ---------------------------------------------------------------------
 //  Дом
 // ---------------------------------------------------------------------
-const SIDING = ['#9aa7a8', '#b7a98e', '#8f6f5a', '#a9b49a', '#c9c3b2', '#7d8a99', '#b08f7a', '#9c8f9e', '#d0c7a8', '#6f7a6a'].map(C);
-const ROOFS = ['#5a3e36', '#3e4448', '#4a5245', '#6a5a4a', '#3a3a3e'].map(C);
+const SIDING_OLD = ['#9aa7a8', '#b7a98e', '#8f6f5a', '#a9b49a', '#c9c3b2', '#7d8a99', '#b08f7a', '#9c8f9e', '#d0c7a8', '#6f7a6a'].map(C);
+const SIDING = ['#c9a06a', '#b08550', '#9a7448', '#d4b07a', '#5f86a8', '#6f9a62', '#c8a84e', '#a8584a', '#8a6a44', '#7aa0b0'].map(C); // сруб и крашеные доски
+const ROOFS = ['#9a9a96', '#82827e', '#6a6e6a', '#6f8a6a', '#8a5a44', '#7a7a78'].map(C); // шифер и крашеная жесть
+const TRIMS = ['#f2efe6', '#f2efe6', '#3f7ab0', '#e8d8a0', '#58a068'].map(C); // наличники
 function buildHouse(GB, h) {
   const F = Frame(h.x, h.zf, h.rot), col = h.col, white = C('#d8d4c8'), wood = C('#f2dcc0'), fab = h.fab;
   const ext = GB.siding, int = GB.wall;
@@ -148,12 +150,43 @@ function buildHouse(GB, h) {
     if (sx > 0) fquad(GB.win, F, [xi, 1.0, 3.4], [xi, 1.0, 4.6], [xi, 2.3, 4.6], [xi, 2.3, 3.4], [-1, 0, 0], 1, 1, white);
     else fquad(GB.win, F, [xi, 1.0, 4.6], [xi, 1.0, 3.4], [xi, 2.3, 3.4], [xi, 2.3, 4.6], [1, 0, 0], 1, 1, white);
   }
-  // забор с калиткой
-  const fc = h.fence;
-  for (let lx = -5.8; lx <= 5.8; lx += 0.45) if (Math.abs(lx) > 0.9) fbox(GB.plain, F, lx - 0.04, 0, -2.45, lx + 0.04, 0.95, -2.37, fc, 1, 'px nx py pz nz');
-  for (const y of [0.3, 0.75]) { fbox(GB.plain, F, -5.9, y, -2.5, -0.9, y + 0.07, -2.45, fc, 1, 'py pz nz ny'); fbox(GB.plain, F, 0.9, y, -2.5, 5.9, y + 0.07, -2.45, fc, 1, 'py pz nz ny'); }
-  fsolid(F, -5.9, -2.5, -0.9, -2.37, SOLID); fsolid(F, 0.9, -2.5, 5.9, -2.37, SOLID);
-  fbox(GB.plain, F, 1.3, 0, -2.2, 1.36, 1.0, -2.14, C('#333'), 1); fbox(GB.paint, F, 1.2, 1.0, -2.3, 1.46, 1.2, -2.0, h.mail, 1);
+  // штакетник с воротцами
+  const fc = h.fence, FX = 4.9;
+  for (let lx = -FX; lx <= FX; lx += 0.3) if (Math.abs(lx) > 0.95) fbox(GB.plain, F, lx - 0.04, 0, -2.45, lx + 0.04, 1.0 + ((lx * 10 | 0) % 2 ? 0.04 : 0), -2.39, fc, 1, 'px nx py pz nz');
+  for (const y of [0.3, 0.75]) { fbox(GB.plain, F, -FX - 0.05, y, -2.39, -0.95, y + 0.07, -2.34, fc, 1, 'py pz nz ny'); fbox(GB.plain, F, 0.95, y, -2.39, FX + 0.05, y + 0.07, -2.34, fc, 1, 'py pz nz ny'); }
+  fsolid(F, -FX, -2.5, -0.95, -2.34, SOLID); fsolid(F, 0.95, -2.5, FX, -2.34, SOLID);
+  for (const px of [-0.95, 0.95]) fbox(GB.dwood, F, px - 0.1, 0, -2.5, px + 0.1, 1.45, -2.3, h.trim, 1);
+  // тропинка от калитки к крыльцу (утоптанная земля)
+  GB.asphalt.quad(...[F.pt(-0.7, 0.03, -1.1), F.pt(0.7, 0.03, -1.1), F.pt(0.7, 0.03, -5.4), F.pt(-0.7, 0.03, -5.4)], [0, 1, 0], 0.35, 1.1, C('#fff'), h.x * 0.1, h.zf * 0.1);
+  // навес над крыльцом на столбах
+  for (const px of [-1.0, 1.0]) fbox(GB.dwood, F, px - 0.07, 0, -1.05, px + 0.07, 2.5, -0.91, h.trim, 1);
+  fbox(GB.dwood, F, -1.3, 2.5, -1.2, 1.3, 2.62, 0, h.roofCol, 1);
+  // наличники и ставни на окнах
+  const T2 = h.trim, nal = (lx, side) => {
+    const w = 0.55, y0 = 1.0, y1 = 2.3;
+    if (!side) {
+      fbox(GB.dwood, F, lx - w - 0.16, y0 - 0.12, -0.1, lx - w, y1 + 0.1, -0.02, T2, 1); fbox(GB.dwood, F, lx + w, y0 - 0.12, -0.1, lx + w + 0.16, y1 + 0.1, -0.02, T2, 1);
+      fbox(GB.dwood, F, lx - w - 0.2, y1, -0.1, lx + w + 0.2, y1 + 0.2, -0.02, T2, 1); fbox(GB.dwood, F, lx - w - 0.1, y0 - 0.2, -0.12, lx + w + 0.1, y0 - 0.1, -0.02, T2, 1);
+      fbox(GB.dwood, F, lx - 0.03, y0, -0.06, lx + 0.03, y1, -0.01, T2, 1);
+      if (h.shut) for (const sx of [-1, 1]) fbox(GB.dwood, F, sx > 0 ? lx + w + 0.16 : lx - w - 0.16 - 0.5, y0 - 0.1, -0.08, sx > 0 ? lx + w + 0.16 + 0.5 : lx - w - 0.16, y1 + 0.1, -0.02, h.shutCol, 1);
+    }
+  };
+  nal(-2.4); nal(2.4);
+  for (const sx of [-1, 1]) { const x = sx * (W + 0.01), xo = sx * (W + 0.08); fbox(GB.dwood, F, Math.min(x, xo), 0.88, 3.2, Math.max(x, xo), 1.0, 4.8, T2, 1); fbox(GB.dwood, F, Math.min(x, xo), 2.3, 3.2, Math.max(x, xo), 2.5, 4.8, T2, 1); fbox(GB.dwood, F, Math.min(x, xo), 1.0, 3.2, Math.max(x, xo), 2.3, 3.4, T2, 1); fbox(GB.dwood, F, Math.min(x, xo), 1.0, 4.6, Math.max(x, xo), 2.3, 4.8, T2, 1); }
+  // дровница и колодец во дворе
+  if (h.wood) {
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 6 - (r >> 1); c++) fbox(GB.siding, F, 2.6 + c * 0.2 + (r >> 1) * 0.1, r * 0.2, -2.1, 2.78 + c * 0.2 + (r >> 1) * 0.1, r * 0.2 + 0.19, -1.25, SIDING[(r * 7 + c * 3 + h.id) % 4], 1);
+    fsolid(F, 2.5, -2.1, 3.9, -1.25, SOLID);
+  }
+  if (h.well) {
+    const wx = -3.4, wz = -1.9;
+    fbox(GB.siding, F, wx - 0.5, 0, wz - 0.5, wx + 0.5, 0.85, wz + 0.5, C('#8a6a44'), 1, 'px nx pz nz py'); fbox(GB.plain, F, wx - 0.3, 0.84, wz - 0.3, wx + 0.3, 0.86, wz + 0.3, C('#0c1014'), 1, 'py');
+    for (const sx of [-1, 1]) fbox(GB.dwood, F, wx + sx * 0.52 - 0.05, 0.85, wz - 0.05, wx + sx * 0.52 + 0.05, 2.1, wz + 0.05, C('#6a4a2c'), 1);
+    fbox(GB.dwood, F, wx - 0.6, 1.7, wz - 0.03, wx + 0.6, 1.76, wz + 0.03, C('#6a4a2c'), 1);
+    fquad(GB.roof, F, [wx - 0.8, 1.95, wz - 0.7], [wx - 0.8, 1.95, wz + 0.7], [wx, 2.45, wz + 0.7], [wx, 2.45, wz - 0.7], [-0.53, 0.85, 0], 1.4, 1, h.roofCol);
+    fquad(GB.roof, F, [wx + 0.8, 1.95, wz + 0.7], [wx + 0.8, 1.95, wz - 0.7], [wx, 2.45, wz - 0.7], [wx, 2.45, wz + 0.7], [0.53, 0.85, 0], 1.4, 1, h.roofCol);
+    fsolid(F, wx - 0.5, wz - 0.5, wx + 0.5, wz + 0.5, SOLID);
+  }
   // мебель
   fbox(GB.wood, F, -3.7, 0, 5.6, -2.1, 0.42, 7.75, wood, 1); fbox(GB.fabric, F, -3.65, 0.42, 5.65, -2.15, 0.62, 7.7, fab, 1);
   fbox(GB.fabric, F, -3.6, 0.62, 7.2, -2.2, 0.74, 7.6, C('#c8c2b0'), 1); fbox(GB.wood, F, -3.75, 0, 7.72, -2.05, 1.1, 7.8, wood, 1);
@@ -197,6 +230,7 @@ function buildShop(GB, s) {
     fquad(GB.glassShop, F, [a, 0.8, 0.15], [b, 0.8, 0.15], [b, 3.0, 0.15], [a, 3.0, 0.15], [0, 0, -1], 1, 1, white);
     fbox(GB.plain, F, a, 0.8, 0.1, b, 0.86, 0.3, C('#ddd'), 1); fbox(GB.plain, F, b - 0.05, 0.8, 0.1, b + 0.05, 3.0, 0.3, C('#ddd'), 1);
   }
+  for (const [a, b] of [[-5.6, -4.4], [4.4, 5.6], [-3.4, -3.0], [3.0, 3.4]]) fbox(GB.brick, F, a, 0.8, -0.02, b, 3.0, T, white, 1, 'px nx pz nz');
   fbox(GB.plain, F, -1.6, 0.8, 0.1, -1.1, 3.0, 0.3, C('#ddd'), 1); fbox(GB.plain, F, 1.1, 0.8, 0.1, 1.6, 3.0, 0.3, C('#ddd'), 1);
   fbox(GB.plain, F, -W - 0.2, HH + 0.6, -0.2, W + 0.2, HH + 0.8, D + 0.2, C('#3a3836'), 1);
   // интерьер
@@ -267,16 +301,35 @@ function pineGeometry() {
   m.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); m.setAttribute('color', new THREE.Float32BufferAttribute(colA, 3));
   return m;
 }
+function birchCrown() {
+  const pos = [], nor = [], uv = [], col = [];
+  const blobs = [[0, 5.2, 0, 1.3, 1], [0.7, 4.2, 0.3, 1.0, 0.85], [-0.6, 4.4, -0.4, 1.0, 0.9], [0.1, 6.2, 0.1, 0.8, 1.1]];
+  for (const [x, y, z, r, k] of blobs) {
+    const g = new THREE.IcosahedronGeometry(r, 1).toNonIndexed(); g.translate(x, y, z);
+    for (let i = 0; i < g.attributes.position.count; i++) { const n = 0.8 + 0.4 * ((Math.sin(i * 12.9 + x * 7 + y) + 1) / 2); col.push(0.5 * k * n, 0.55 * k * n, 0.18 * k * n); }
+    pos.push(...g.attributes.position.array); nor.push(...g.attributes.normal.array); uv.push(...g.attributes.uv.array);
+  }
+  const m = new THREE.BufferGeometry();
+  m.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); m.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  m.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); m.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  return m;
+}
 function buildTrees(list) {
-  const dummy = new THREE.Object3D();
-  const trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.16, 0.3, 3.0, 8).translate(0, 1.5, 0), MT.bark, list.length);
-  const crown = new THREE.InstancedMesh(pineGeometry(), MT.pine, list.length);
-  list.forEach((t, i) => {
-    dummy.position.set(t.x, 0, t.z); dummy.rotation.set(0, t.r, 0); dummy.scale.set(t.s, t.s * t.h, t.s); dummy.updateMatrix();
-    trunk.setMatrixAt(i, dummy.matrix); crown.setMatrixAt(i, dummy.matrix);
-    markRect(t.x - 0.3 * t.s, t.z - 0.3 * t.s, t.x + 0.3 * t.s, t.z + 0.3 * t.s, SOLID | OPAQUE);
-  });
-  for (const m of [trunk, crown]) { m.castShadow = true; m.receiveShadow = true; scene.add(m); }
+  const dummy = new THREE.Object3D(), pines = list.filter(t => !t.b), birches = list.filter(t => t.b);
+  const parts = [
+    [pines, new THREE.CylinderGeometry(0.16, 0.3, 3.0, 8).translate(0, 1.5, 0), MT.bark, pineGeometry(), MT.pine],
+    [birches, new THREE.CylinderGeometry(0.1, 0.17, 5.4, 8).translate(0, 2.7, 0), MT.birch, birchCrown(), MT.birchLeaf],
+  ];
+  for (const [arr, tg, tm, cg, cm] of parts) {
+    if (!arr.length) continue;
+    const trunk = new THREE.InstancedMesh(tg, tm, arr.length), crown = new THREE.InstancedMesh(cg, cm, arr.length);
+    arr.forEach((t, i) => {
+      dummy.position.set(t.x, 0, t.z); dummy.rotation.set(0, t.r, 0); dummy.scale.set(t.s, t.s * t.h, t.s); dummy.updateMatrix();
+      trunk.setMatrixAt(i, dummy.matrix); crown.setMatrixAt(i, dummy.matrix);
+      markRect(t.x - 0.3 * t.s, t.z - 0.3 * t.s, t.x + 0.3 * t.s, t.z + 0.3 * t.s, SOLID | OPAQUE);
+    });
+    for (const m of [trunk, crown]) { m.castShadow = true; m.receiveShadow = true; scene.add(m); }
+  }
 }
 function buildCar(GB, x, z, alongX, col) {
   const L = 4.3, Wd = 1.8, b = (a0, y0, b0, a1, y1, b1, G, c) => alongX ? G.box(x + a0, y0, z + b0, x + a1, y1, z + b1, c, 1) : G.box(x + b0, y0, z + a0, x + b1, y1, z + a1, c, 1);
@@ -293,23 +346,27 @@ function buildCar(GB, x, z, alongX, col) {
 function buildWorld(seed) {
   Town.seed = seed; RNG = mulberry32(seed);
   const GB = {};
-  for (const k of ['siding', 'wall', 'roof', 'plain', 'brick', 'floor', 'ceil', 'concrete', 'win', 'winL', 'wood', 'fabric', 'paint', 'metal', 'glassShop', 'fridgeGlow', 'fluor', 'glassCar', 'asphalt', 'walk', 'mark']) GB[k] = new Geo();
+  for (const k of ['siding', 'wall', 'roof', 'plain', 'brick', 'floor', 'ceil', 'concrete', 'win', 'winL', 'wood', 'fabric', 'paint', 'metal', 'glassShop', 'fridgeGlow', 'fluor', 'glassCar', 'asphalt', 'dwood', 'puddle', 'mark']) GB[k] = new Geo();
 
   // ---- земля и дороги ----
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 200), MT.grass); ground.rotation.x = -Math.PI / 2;
   MT.grass.map.repeat.set(260 / 6, 200 / 6); MT.grass.normalMap.repeat.copy(MT.grass.map.repeat);
   ground.receiveShadow = true; scene.add(ground);
   const road = (x0, z0, x1, z1) => GB.asphalt.quad([x0, 0.02, z1], [x1, 0.02, z1], [x1, 0.02, z0], [x0, 0.02, z0], [0, 1, 0], (x1 - x0) / 4, (z1 - z0) / 4, C('#fff'), x0 / 4, -z1 / 4);
-  const walk = (x0, z0, x1, z1) => GB.walk.box(x0, 0, z0, x1, 0.1, z1, C('#fff'), 0.5, 'py px nx pz nz');
+  // грунтовые дороги: узкая колея, обочины заросли травой, лужи
+  const HW = 3.2;
+  const rut = (x0, z0, x1, z1) => GB.mark.quad([x0, 0.026, z1], [x1, 0.026, z1], [x1, 0.026, z0], [x0, 0.026, z0], [0, 1, 0], 1, 1, C('#fff'));
   for (const zs of STREETS_Z) {
-    road(-104, zs - 4, 104, zs + 4);
-    for (const [a, b] of [[-104, -54], [-42, -6], [6, 42], [54, 104]]) { walk(a, zs - 6, b, zs - 4); walk(a, zs + 4, b, zs + 6); }
-    for (let x = -100; x < 100; x += 6) if (!STREETS_X.some(xs => Math.abs(x + 1.5 - xs) < 6)) GB.mark.quad([x, 0.026, zs + 0.08], [x + 3, 0.026, zs + 0.08], [x + 3, 0.026, zs - 0.08], [x, 0.026, zs - 0.08], [0, 1, 0], 1, 1, C('#cfc9b8'));
-    for (const xs of STREETS_X) for (const sx of [-1, 1]) for (let k = 0; k < 6; k++) { const z = zs - 3.3 + k * 1.3, x = xs + sx * 7.5; GB.mark.quad([x - 1.2, 0.026, z + 0.4], [x + 1.2, 0.026, z + 0.4], [x + 1.2, 0.026, z - 0.4], [x - 1.2, 0.026, z - 0.4], [0, 1, 0], 1, 1, C('#d8d2c2')); }
+    road(-104, zs - HW, 104, zs + HW);
+    for (const o of [-1.05, 1.05]) rut(-104, zs + o - 0.28, 104, zs + o + 0.28);
   }
   for (const xs of STREETS_X) {
-    for (const [a, b] of [[-66, -40], [-32, -4], [4, 32], [40, 66]]) road(xs - 4, a, xs + 4, b);
-    for (const [a, b] of [[-66, -42], [-30, -6], [6, 30], [42, 66]]) { walk(xs - 6, a, xs - 4, b); walk(xs + 4, a, xs + 6, b); }
+    road(xs - HW, -66, xs + HW, -40); road(xs - HW, -32, xs + HW, -4); road(xs - HW, 4, xs + HW, 32); road(xs - HW, 40, xs + HW, 66);
+    for (const o of [-1.05, 1.05]) for (const [a, b] of [[-66, -40], [-32, -4], [4, 32], [40, 66]]) rut(xs + o - 0.28, a, xs + o + 0.28, b);
+  }
+  for (let i = 0; i < 30; i++) { // лужи
+    const zs = spick(STREETS_Z) + srand(-1.8, 1.8), x = srand(-100, 100), r = srand(0.6, 1.5);
+    GB.puddle.quad([x - r, 0.03, zs + r * 0.6], [x + r, 0.03, zs + r * 0.6], [x + r, 0.03, zs - r * 0.6], [x - r, 0.03, zs - r * 0.6], [0, 1, 0], 1, 1, C('#fff'));
   }
 
   // ---- участки ----
@@ -322,8 +379,8 @@ function buildWorld(seed) {
   buildShop(GB, Town.shop);
   houseLots.forEach((l, i) => {
     const h = { id: i, x: l.x, zf: l.zs + l.sd * 8.5, rot: l.sd < 0 ? 1 : 0, col: spick(SIDING), roofCol: spick(ROOFS), lit: RNG() < 0.3,
-                fab: C(spick(['#6a3a34', '#3a4a6a', '#5a6a3a', '#7a6a4a'])),
-                rug: C(spick(['#5a2a24', '#2a3a4a', '#4a3a2a'])), fence: C(spick(['#d8d4c8', '#8a7a68', '#a8a49a'])), mail: C(spick(['#2a4a8a', '#8a2a2a', '#2a6a3a'])) };
+                fab: C(spick(['#6a3a34', '#3a4a6a', '#5a6a3a', '#7a6a4a'])), trim: spick(TRIMS), shut: RNG() < 0.55, shutCol: C(spick(['#3f6a9a', '#4a7a4a', '#8a3a30', '#2f5a6a'])), wood: RNG() < 0.5, well: RNG() < 0.3,
+                rug: C(spick(['#5a2a24', '#2a3a4a', '#4a3a2a'])), fence: C(spick(['#8a6a44', '#5f86a8', '#6f9a62', '#c9b890', '#a8584a'])) };
     Town.houses.push(h); buildHouse(GB, h);
   });
 
@@ -335,11 +392,16 @@ function buildWorld(seed) {
     if (Math.abs(x) < 86 && Math.abs(z) < 58) continue;
     if (nearRoad(x, z)) continue;
     if (trees.some(t => Math.abs(t.x - x) < 2.6 && Math.abs(t.z - z) < 2.6)) continue;
-    trees.push({ x, z, s: srand(0.8, 1.35), h: srand(0.85, 1.3), r: srand(0, 6.3) });
+    trees.push({ x, z, s: srand(0.8, 1.35), h: srand(0.85, 1.3), r: srand(0, 6.3), b: RNG() < 0.3 });
   }
   for (const l of emptyLots) {
     const zc = l.zs + l.sd * 12.5;
-    for (let k = 0; k < 3; k++) { const x = l.x + srand(-4, 4), z = zc + srand(-3, 3); trees.push({ x, z, s: srand(0.6, 1.0), h: srand(0.8, 1.1), r: srand(0, 6.3) }); }
+    for (let k = 0; k < 3; k++) { const x = l.x + srand(-4, 4), z = zc + srand(-3, 3); trees.push({ x, z, s: srand(0.6, 1.0), h: srand(0.8, 1.1), r: srand(0, 6.3), b: RNG() < 0.5 }); }
+  }
+  for (let i = 0; i < 40; i++) { // берёзы вдоль дорог
+    const zs = spick(STREETS_Z), x = srand(-98, 98), z = zs + (RNG() < 0.5 ? -1 : 1) * srand(4.6, 5.6);
+    if (STREETS_X.some(xs => Math.abs(x - xs) < 6) || houseLots.some(l => l.zs === zs && Math.abs(l.x - x) < 5.6 && Math.sign(z - zs) === l.sd)) continue;
+    trees.push({ x, z, s: srand(0.7, 1.0), h: srand(0.9, 1.2), r: srand(0, 6.3), b: true });
   }
   Town.trees = trees; buildTrees(trees);
 
@@ -348,6 +410,19 @@ function buildWorld(seed) {
   for (const zs of STREETS_Z) for (let x = -92, k = 0; x <= 92; x += 17, k++) if (!STREETS_X.some(xs => Math.abs(x - xs) < 8)) lampSpots.push({ x, z: zs + (k % 2 ? 5.4 : -5.4), dx: 0, dz: k % 2 ? -1 : 1 });
   for (const xs of STREETS_X) for (const z of [-54, -20, 20, 54]) lampSpots.push({ x: xs + 5.4, z, dx: -1, dz: 0 });
   buildLamps(lampSpots);
+  { // провода между столбами
+    const pts = [];
+    for (let i = 1; i < lampSpots.length; i++) {
+      const a = lampSpots[i - 1], b = lampSpots[i];
+      if (Math.hypot(a.x - b.x, a.z - b.z) > 20) continue;
+      for (const dy of [0, 0.35]) for (let k = 0; k < 8; k++) {
+        const t0 = k / 8, t1 = (k + 1) / 8, sag = t => -0.9 * 4 * t * (1 - t);
+        pts.push(a.x + (b.x - a.x) * t0, 5.6 - dy + sag(t0), a.z + (b.z - a.z) * t0, a.x + (b.x - a.x) * t1, 5.6 - dy + sag(t1), a.z + (b.z - a.z) * t1);
+      }
+    }
+    const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    const wires = new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0x0e0e10 })); wires.frustumCulled = false; scene.add(wires);
+  }
 
   // ---- машины, остановка ----
   const carC = ['#6a1a1a', '#1a3a5a', '#4a4a48', '#7a6a3a', '#2a4a2a', '#8a8a86', '#3a2a4a'].map(C);
@@ -367,7 +442,8 @@ function buildWorld(seed) {
     paint: GB.paint.mesh(MT.paint), metal: GB.metal.mesh(MT.metal), glassShop: GB.glassShop.mesh(MT.shopGlass = new THREE.MeshStandardMaterial({ color: 0x9ab0c0, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide }), false),
     fridge: GB.fridgeGlow.mesh(MT.fridgeGlow = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.9, 2.2) }), false),
     fluor: GB.fluor.mesh(MT.fluor, false), glassCar: GB.glassCar.mesh(MT.glass), asphalt: GB.asphalt.mesh(MT.asphalt, false),
-    walk: GB.walk.mesh(MT.concrete), mark: GB.mark.mesh(new THREE.MeshStandardMaterial({ color: 0x8c877c, roughness: 0.95, transparent: true, opacity: 0.55, polygonOffset: true, polygonOffsetFactor: -2 }), false),
+    dwood: GB.dwood.mesh(MT.dwood), puddle: GB.puddle.mesh(new THREE.MeshStandardMaterial({ color: 0x1c2228, map: TX.pool, roughness: 0.04, metalness: 0.5, transparent: true, opacity: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), false),
+    mark: GB.mark.mesh(new THREE.MeshStandardMaterial({ color: 0x1e1812, roughness: 1, transparent: true, opacity: 0.45, polygonOffset: true, polygonOffsetFactor: -2 }), false),
   };
   Town.meshes = meshes;
   Town.keeper = makeKeeper(); Town.keeper.position.set(Town.shop.keeperPos.x, 0, Town.shop.keeperPos.z); Town.keeper.rotation.y = 0;
@@ -382,8 +458,8 @@ function buildWorld(seed) {
 // ---------------------------------------------------------------------
 function buildLamps(spots) {
   const n = spots.length, dummy = new THREE.Object3D();
-  const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.07, 0.11, 5.6, 8).translate(0, 2.8, 0), MT.metal, n);
-  const arm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.08, 0.08, 1.4).translate(0, 0, 0.7), MT.metal, n);
+  const pole = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.09, 0.14, 5.8, 8).translate(0, 2.9, 0), MT.bark, n);
+  const arm = new THREE.InstancedMesh(new THREE.BoxGeometry(0.1, 0.1, 1.4).translate(0, 0, 0.7), MT.bark, n);
   const head = new THREE.InstancedMesh(new THREE.BoxGeometry(0.42, 0.12, 0.26), MT.lampOn, n);
   const pool = new THREE.InstancedMesh(new THREE.PlaneGeometry(13, 13).rotateX(-Math.PI / 2), MT.pool, n);
   spots.forEach((s, i) => {

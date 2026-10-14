@@ -75,15 +75,16 @@ function normalTex(src, strength) {
 }
 
 function buildTextures() {
-  // асфальт (1 текстура = 4 м)
+  // грунтовка с щебнем и грязью (1 текстура = 4 м)
   TX.asphalt = mkTex(512, 512, (g, w, h) => {
-    g.fillStyle = '#2b2b2c'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 4000; i++) { const v = rand(25, 70) | 0; g.fillStyle = `rgb(${v},${v},${v + 2})`; g.fillRect(rand(0, w), rand(0, h), rand(1, 3), rand(1, 3)); }
-    blotches(g, w, h, 10, '15,15,15', 0.3, 0.6, 20, 80);
-    blotches(g, w, h, 6, '70,70,68', 0.1, 0.25, 30, 90);
-    g.fillStyle = 'rgba(20,20,20,0.6)'; g.fillRect(rand(50, 300), rand(50, 300), rand(60, 140), rand(40, 100)); // заплатка
-    cracks(g, w, h, 12, 'rgba(8,8,8,0.8)');
-    addNoise(g, w, h, 26);
+    g.fillStyle = '#4a3f33'; g.fillRect(0, 0, w, h);
+    blotches(g, w, h, 26, '88,76,60', 0.25, 0.5, 30, 90);
+    blotches(g, w, h, 18, '30,24,18', 0.3, 0.55, 20, 70);
+    for (let i = 0; i < 5000; i++) { const v = rand(70, 150) | 0; g.fillStyle = `rgb(${v},${v - 6},${v - 18})`; const r = rand(1, 3.2); g.fillRect(rand(0, w), rand(0, h), r, r * rand(0.6, 1)); }
+    for (let i = 0; i < 6; i++) { const y = rand(0, h); g.fillStyle = 'rgba(16,13,10,0.35)'; g.fillRect(0, y, w, rand(6, 14)); }
+    blotches(g, w, h, 5, '20,22,24', 0.35, 0.6, 14, 34); // лужи
+    for (let i = 0; i < 700; i++) { g.strokeStyle = `rgba(${rand(60, 90) | 0},${rand(80, 100) | 0},40,0.6)`; g.lineWidth = 1; const x = rand(0, w), y = rand(0, h); g.beginPath(); g.moveTo(x, y); g.lineTo(x + rand(-2, 2), y - rand(3, 8)); g.stroke(); } // сорняки
+    addNoise(g, w, h, 30);
   });
   // тротуарная плитка (1 = 2 м)
   TX.concrete = mkTex(256, 256, (g, w, h) => {
@@ -107,27 +108,35 @@ function buildTextures() {
     blotches(g, w, h, 12, '190,195,200', 0.08, 0.2, 15, 50);
     addNoise(g, w, h, 18);
   });
-  // обшивка домов (нейтральная — цвет задаётся вершинами)
+  // сруб: брёвна (нейтральный, цвет — вершинами). 1 текстура = 1 м, 4 бревна
   TX.siding = mkTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#d8d8d4'; g.fillRect(0, 0, w, h);
-    for (let y = 0; y < h; y += 32) {
-      const gr = g.createLinearGradient(0, y, 0, y + 32); gr.addColorStop(0, '#f0f0ec'); gr.addColorStop(0.85, '#c8c8c2'); gr.addColorStop(1, '#6a6a66');
-      g.fillStyle = gr; g.fillRect(0, y, w, 32);
-      grainLines(g, 0, y, 30, w, 200, 200, 196, false, 4);
+    g.fillStyle = '#6a5a48'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 64) {
+      const gr = g.createLinearGradient(0, y, 0, y + 64); gr.addColorStop(0, '#5a4c3c'); gr.addColorStop(0.25, '#e4d6bc'); gr.addColorStop(0.55, '#cbbb9c'); gr.addColorStop(1, '#3c3226');
+      g.fillStyle = gr; g.fillRect(0, y, w, 64);
+      grainLines(g, 0, y + 6, 52, w, 150, 130, 100, false, 14);
+      for (let k = 0; k < 3; k++) { g.strokeStyle = 'rgba(40,28,16,0.55)'; g.lineWidth = rand(1, 2); const yy = y + rand(10, 54), x0 = rand(0, w); g.beginPath(); g.moveTo(x0, yy); g.lineTo(x0 + rand(30, 90), yy + rand(-2, 2)); g.stroke(); } // трещины
     }
-    blotches(g, w, h, 10, '60,55,45', 0.15, 0.35, 10, 50);
-    for (let i = 0; i < 6; i++) { const x = rand(0, w); const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(50,40,30,0)'); gr.addColorStop(1, 'rgba(50,40,30,0.35)'); g.fillStyle = gr; g.fillRect(x, 0, rand(3, 10), h); }
-    addNoise(g, w, h, 18);
-  });
-  TX.shingle = mkTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#5a5a5a'; g.fillRect(0, 0, w, h);
-    for (let r = 0; r < 8; r++) for (let c = -1; c < 9; c++) {
-      const v = rand(140, 210) | 0, x = c * 32 + (r % 2 ? 16 : 0);
-      g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(x + 1, r * 32 + 1, 30, 30);
-      g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(x, r * 32 + 28, 32, 4);
-    }
-    blotches(g, w, h, 12, '40,50,30', 0.2, 0.45, 10, 40);
+    blotches(g, w, h, 10, '30,40,20', 0.15, 0.3, 10, 40);
     addNoise(g, w, h, 20);
+  });
+  // шифер/жесть: вертикальные волны с ржавчиной
+  TX.shingle = mkTex(256, 256, (g, w, h) => {
+    for (let x = 0; x < w; x += 32) {
+      const gr = g.createLinearGradient(x, 0, x + 32, 0); gr.addColorStop(0, '#6a6a68'); gr.addColorStop(0.35, '#e0e0dc'); gr.addColorStop(0.7, '#9a9a96'); gr.addColorStop(1, '#3a3a38');
+      g.fillStyle = gr; g.fillRect(x, 0, 32, h);
+    }
+    for (let y = 0; y < h; y += 128) { g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillRect(0, y, w, 3); }
+    blotches(g, w, h, 18, '120,60,30', 0.15, 0.4, 8, 36);
+    blotches(g, w, h, 14, '40,60,30', 0.2, 0.45, 10, 40);
+    for (let i = 0; i < 40; i++) { g.strokeStyle = 'rgba(110,50,20,0.35)'; g.lineWidth = rand(1, 3); const x = rand(0, w); g.beginPath(); g.moveTo(x, rand(0, h)); g.lineTo(x + rand(-2, 2), rand(0, h)); g.stroke(); }
+    addNoise(g, w, h, 20);
+  });
+  // берёзовая кора
+  TX.birch = mkTex(128, 256, (g, w, h) => {
+    g.fillStyle = '#d8d6ce'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 26; i++) { g.fillStyle = `rgba(20,18,16,${rand(0.55, 0.9)})`; const y = rand(0, h), x = rand(0, w); g.fillRect(x, y, rand(10, 46), rand(2, 6)); }
+    blotches(g, w, h, 8, '120,120,110', 0.1, 0.3, 10, 40); addNoise(g, w, h, 18);
   });
   TX.brick = mkTex(256, 256, (g, w, h) => {
     g.fillStyle = '#6b6158'; g.fillRect(0, 0, w, h);
@@ -247,6 +256,8 @@ function buildMaterials() {
   MT.siding = STD({ map: TX.siding, normalMap: TXN.siding, normalScale: nv(1), roughness: 0.8, vertexColors: true });
   MT.shingle = STD({ map: TX.shingle, normalMap: TXN.shingle, normalScale: nv(1), roughness: 0.9, vertexColors: true });
   MT.brick = STD({ map: TX.brick, normalMap: TXN.brick, normalScale: nv(1), roughness: 0.9 });
+  MT.birch = STD({ map: TX.birch, roughness: 0.95 });
+  MT.birchLeaf = STD({ roughness: 1, vertexColors: true });
   MT.bark = STD({ map: TX.bark, normalMap: TXN.bark, normalScale: nv(1), roughness: 1 });
   MT.pine = STD({ map: TX.pine, roughness: 1, vertexColors: true });
   MT.wall = STD({ map: TX.wall, normalMap: TXN.wall, normalScale: nv(0.8), roughness: 0.93 });
