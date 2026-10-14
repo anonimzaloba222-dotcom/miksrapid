@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>Он рядом</title>
+<style>
+  html, body {
+    margin: 0; height: 100%; background: #000; overflow: hidden;
+    touch-action: none; user-select: none; -webkit-user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    font-family: Georgia, "Times New Roman", serif; color: #ddd;
+  }
+  canvas { display: block; position: fixed; inset: 0; width: 100%; height: 100%; }
+  .screen {
+    position: fixed; inset: 0; z-index: 10; box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    background: radial-gradient(circle at 50% 40%, #1c0000 0, #000 70%);
+  }
+  .hidden { display: none !important; }
+  h1 {
+    font-size: clamp(42px, 13vw, 88px); margin: 0 0 8px; color: #b00; letter-spacing: 4px;
+    text-shadow: 0 0 14px #f00, 2px 2px 0 #300; animation: glitch 3s infinite;
+  }
+  h2 { font-size: clamp(30px, 9vw, 56px); margin: 0 0 10px; color: #c11; text-shadow: 0 0 10px #f00; }
+  @keyframes glitch {
+    0%, 91%, 100% { transform: none; }
+    93% { transform: translate(3px, -2px) skewX(5deg); }
+    95% { transform: translate(-4px, 2px); }
+    97% { transform: translate(2px, 1px) skewX(-4deg); }
+  }
+  p { max-width: 430px; line-height: 1.5; color: #aaa; font-size: 16px; margin: 6px 0; }
+  .small { font-size: 13px; color: #777; }
+  button.big {
+    margin-top: 20px; padding: 16px 44px; font-size: 22px; font-family: inherit;
+    background: #200; color: #e33; border: 2px solid #700; border-radius: 6px; letter-spacing: 2px;
+  }
+  button.big:active { background: #400; }
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 5; pointer-events: none;
+    padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 18px; text-shadow: 0 0 4px #000;
+  }
+  #stam { width: 110px; height: 8px; border: 1px solid #555; border-radius: 4px; overflow: hidden; }
+  #stamFill { height: 100%; width: 100%; background: #ccc; }
+  #msg {
+    position: fixed; left: 0; right: 0; top: 20%; z-index: 5; pointer-events: none;
+    text-align: center; font-size: 20px; padding: 0 20px; color: #ddd;
+    text-shadow: 0 0 6px #000, 0 0 2px #000; transition: opacity .5s; opacity: 0;
+  }
+  .btn {
+    position: fixed; z-index: 6; width: 86px; height: 86px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.25); background: rgba(40,0,0,.45); color: #ddd;
+    font-family: inherit; font-size: 14px; touch-action: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn.on { background: rgba(170,0,0,.6); }
+  #runBtn  { right: 22px;  bottom: calc(env(safe-area-inset-bottom) + 36px); }
+  #hideBtn { right: 120px; bottom: calc(env(safe-area-inset-bottom) + 92px); }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="keysTxt">🗝 0/3</div>
+  <div id="stam"><div id="stamFill"></div></div>
+</div>
+<div id="msg"></div>
+<button id="hideBtn" class="btn hidden">Спрятаться</button>
+<button id="runBtn" class="btn hidden">БЕГ</button>
+
+<div id="menu" class="screen">
+  <h1>ОН РЯДОМ</h1>
+  <p>Ты очнулся в заброшенном доме. В темноте бродит <b>Он</b> — высокий мужчина в чёрной шляпе.</p>
+  <p>Найди <b>3 ключа</b> и выберись через входную дверь. Прячься в шкафах. Бег шумит — он услышит.</p>
+  <p class="small">Левая часть экрана — джойстик. Справа — бег и «спрятаться».<br>На ПК: WASD / стрелки, Shift — бег, E — спрятаться.<br>🎧 Играй в наушниках.</p>
+  <button class="big" id="startBtn">ИГРАТЬ</button>
+  <p class="small" id="bestTxt"></p>
+</div>
+
+<div id="lose" class="screen hidden">
+  <h2>ОН ПОЙМАЛ ТЕБЯ</h2>
+  <p id="loseTxt"></p>
+  <button class="big" data-restart>ЕЩЁ РАЗ</button>
+</div>
+
+<div id="win" class="screen hidden">
+  <h2 style="color:#ddd;text-shadow:0 0 10px #fff">ТЫ СБЕЖАЛ</h2>
+  <p id="winTxt"></p>
+  <p class="small">…но он всё ещё где-то там.</p>
+  <button class="big" data-restart>ЕЩЁ РАЗ</button>
+</div>
+
+<script>
+'use strict';
+// ===================== Константы =====================
+const T = 64;                 // размер клетки в мировых пикселях
+const MAP_W = 25, MAP_H = 25; // размер карты (нечётные)
+const KEYS_NEEDED = 3;
+const D4 = [[1,0],[-1,0],[0,1],[0,-1]];
+const WALL = 1, FLOOR = 0, CLOSET = 2, EXIT = 3;
+
+const $ = id => document.getElementById(id);
+const cv = $('game'), ctx = cv.getContext('2d');
+const lc = document.createElement('canvas'), lctx = lc.getContext('2d');
+
+let dpr = 1, vw = 0, vh = 0, zoom = 1;
+function resize() {
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  vw = innerWidth; vh = innerHeight;
+  cv.width = lc.width = Math.floor(vw * dpr);
+  cv.height = lc.height = Math.floor(vh * dpr);
+  zoom = Math.min(1.3, Math.max(0.55, Math.min(vw, vh) / (7.5 * T)));
+}
+addEventListener('resize', resize);
+resize();
+
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+// ===================== Генерация дома =====================
+function genMap(w, h) {
+  const m = Array.from({ length: h }, () => Array(w).fill(WALL));
+  const stack = [[1, 1]]; m[1][1] = FLOOR;
+  while (stack.length) {
+    const [x, y] = stack[stack.length - 1];
+    let moved = false;
+    for (const [dx, dy] of shuffle([[2,0],[-2,0],[0,2],[0,-2]])) {
+      const nx = x + dx, ny = y + dy;
+      if (nx > 0 && ny > 0 && nx < w - 1 && ny < h - 1 && m[ny][nx] === WALL) {
+        m[y + dy / 2][x + dx / 2] = FLOOR; m[ny][nx] = FLOOR;
+        stack.push([nx, ny]); moved = true; break;
+      }
+    }
+    if (!moved) stack.pop();
+  }
+  // дополнительные проходы — чтобы можно было убегать кругами
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    if (m[y][x] !== WALL || Math.random() > 0.13) continue;
+    const horiz = m[y][x-1] === FLOOR && m[y][x+1] === FLOOR && m[y-1][x] === WALL && m[y+1][x] === WALL;
+    const vert  = m[y-1][x] === FLOOR && m[y+1][x] === FLOOR && m[y][x-1] === WALL && m[y][x+1] === WALL;
+    if (horiz || vert) m[y][x] = FLOOR;
+  }
+  // несколько комнат
+  for (let i = 0; i < 4; i++) {
+    const cx = 2 + (Math.random() * (w - 4) | 0), cy = 2 + (Math.random() * (h - 4) | 0);
+    for (let y = cy - 1; y <= cy + 1; y++) for (let x = cx - 1; x <= cx + 1; x++)
+      if (x > 0 && y > 0 && x < w - 1 && y < h - 1) m[y][x] = FLOOR;
+  }
+  return m;
+}
+
+function distMap(m, sx, sy) {
+  const H = m.length, W = m[0].length;
+  const d = Array.from({ length: H }, () => Array(W).fill(Infinity));
+  d[sy][sx] = 0; const q = [[sx, sy]];
+  for (let h = 0; h < q.length; h++) {
+    const [x, y] = q[h];
+    for (const [dx, dy] of D4) {
+      const nx = x + dx, ny = y + dy;
+      if (m[ny] && m[ny][nx] !== undefined && m[ny][nx] !== WALL && d[ny][nx] === Infinity) {
+        d[ny][nx] = d[y][x] + 1; q.push([nx, ny]);
+      }
+    }
+  }
+  return d;
+}
+
+// Поиск пути для мужчины (в шкафы он не заходит)
+function findPath(m, sx, sy, tx, ty) {
+  const H = m.length, W = m[0].length;
+  if (tx < 0 || ty < 0 || tx >= W || ty >= H) return [];
+  const start = sy * W + sx, goal = ty * W + tx;
+  const prev = new Int32Array(W * H).fill(-1);
+  prev[start] = start; const q = [start];
+  for (let h = 0; h < q.length; h++) {
+    const c = q[h]; if (c === goal) break;
+    const cx = c % W, cy = (c / W) | 0;
+    for (const [dx, dy] of D4) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+      const n = ny * W + nx, t = m[ny][nx];
+      if (prev[n] !== -1 || t === WALL || t === CLOSET) continue;
+      prev[n] = c; q.push(n);
+    }
+  }
+  if (prev[goal] === -1) return [];
+  const path = [];
+  for (let c = goal; c !== start; c = prev[c]) path.push({ x: c % W, y: (c / W) | 0 });
+  return path.reverse();
+}
+
+function renderMap(m) {
+  const H = m.length, W = m[0].length;
+  const c = document.createElement('canvas'); c.width = W * T; c.height = H * T;
+  const g = c.getContext('2d');
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const px = x * T, py = y * T, t = m[y][x];
+    if (t === WALL) {
+      g.fillStyle = '#2a2626'; g.fillRect(px, py, T, T);
+      g.fillStyle = '#151212';
+      for (let r = 0; r < 4; r++) {
+        g.fillRect(px, py + r * 16, T, 2);
+        const off = r % 2 ? 0 : 16;
+        for (let k = off; k < T; k += 32) g.fillRect(px + k, py + r * 16, 2, 16);
+      }
+      continue;
+    }
+    // пол — доски
+    g.fillStyle = '#3a2d20'; g.fillRect(px, py, T, T);
+    for (let k = 0; k < 4; k++) {
+      g.fillStyle = `rgba(${62 + Math.random() * 25 | 0},${44 + Math.random() * 15 | 0},28,0.7)`;
+      g.fillRect(px + k * 16, py, 15, T);
+    }
+    g.fillStyle = 'rgba(0,0,0,0.35)';
+    if (m[y - 1] && m[y - 1][x] === WALL) g.fillRect(px, py, T, 10);
+    if (m[y][x - 1] === WALL) g.fillRect(px, py, 8, T);
+    if (t === CLOSET) {
+      g.fillStyle = '#3b2414'; g.fillRect(px + 6, py + 6, T - 12, T - 12);
+      g.strokeStyle = '#1a0e06'; g.lineWidth = 3; g.strokeRect(px + 6, py + 6, T - 12, T - 12);
+      g.beginPath(); g.moveTo(px + T / 2, py + 8); g.lineTo(px + T / 2, py + T - 8); g.stroke();
+      g.fillStyle = '#8a7a50'; g.fillRect(px + T / 2 - 6, py + T / 2 - 2, 3, 6); g.fillRect(px + T / 2 + 3, py + T / 2 - 2, 3, 6);
+    }
+    if (t === EXIT) {
+      g.fillStyle = '#4a2a12'; g.fillRect(px + 8, py + 4, T - 16, T - 8);
+      g.strokeStyle = '#120800'; g.lineWidth = 4; g.strokeRect(px + 8, py + 4, T - 16, T - 8);
+      g.fillStyle = '#c9a640'; g.beginPath(); g.arc(px + T - 20, py + T / 2, 4, 0, 7); g.fill();
+    }
+  }
+  // кровь
+  for (let i = 0; i < 22; i++) {
+    const x = 1 + (Math.random() * (W - 2) | 0), y = 1 + (Math.random() * (H - 2) | 0);
+    if (m[y][x] !== FLOOR) continue;
+    g.fillStyle = 'rgba(70,0,0,0.55)';
+    for (let k = 0; k < 6; k++) {
+      g.beginPath();
+      g.ellipse(x * T + rand(16, 48), y * T + rand(16, 48), rand(3, 12), rand(2, 8), rand(0, 3), 0, 7);
+      g.fill();
+    }
+  }
+  return c;
+}
+
+// ===================== Звук =====================
+let AC = null, master = null, noiseBuf = null;
+function initAudio() {
+  if (AC) { AC.resume(); return; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  master = AC.createGain(); master.gain.value = 0.9; master.connect(AC.destination);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  // гул
+  const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 46;
+  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 160;
+  const g = AC.createGain(); g.gain.value = 0.05;
+  o.connect(f); f.connect(g); g.connect(master); o.start();
+  const lfo = AC.createOscillator(); lfo.frequency.value = 0.08;
+  const lg = AC.createGain(); lg.gain.value = 70; lfo.connect(lg); lg.connect(f.frequency); lfo.start();
+}
+function thump(vol, delay = 0) {
+  if (!AC) return;
+  const t = AC.currentTime + delay;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.frequency.setValueAtTime(70, t); o.frequency.exponentialRampToValueAtTime(30, t + 0.15);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.25);
+}
+function noiseHit(vol, freq, dur, pan = 0) {
+  if (!AC || vol < 0.003) return;
+  const t = AC.currentTime;
+  const s = AC.createBufferSource(); s.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq;
+  const g = AC.createGain();
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  let node = g;
+  if (AC.createStereoPanner) { const p = AC.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); g.connect(p); node = p; }
+  s.connect(f); f.connect(g); node.connect(master);
+  s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.05);
+}
+function chime() {
+  if (!AC) return;
+  [880, 1320, 1760].forEach((fr, i) => {
+    const t = AC.currentTime + i * 0.09, o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'triangle'; o.frequency.value = fr;
+    g.gain.setValueAtTime(0.15, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.7);
+  });
+}
+function stinger() { // резкий звук, когда он тебя заметил
+  if (!AC) return;
+  const t = AC.currentTime;
+  [110, 116.5, 155].forEach(fr => {
+    const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sawtooth'; o.frequency.value = fr;
+    g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 1.3);
+  });
+}
+function scream() {
+  if (!AC) return;
+  const t = AC.currentTime;
+  noiseHit(0.9, 4000, 1.4);
+  for (const fr of [900, 950, 1300]) {
+    const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sawtooth';
+    o.frequency.setValueAtTime(fr, t); o.frequency.exponentialRampToValueAtTime(fr / 7, t + 1.4);
+    g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 1.6);
+  }
+}
+function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+
+// ===================== Ввод =====================
+const keys = {};
+let wantHide = false, sprintTouch = false;
+addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'KeyE' || e.code === 'Space') wantHide = true;
+});
+addEventListener('keyup', e => { keys[e.code] = false; });
+
+const joy = { id: null, ox: 0, oy: 0, x: 0, y: 0 };
+cv.addEventListener('pointerdown', e => {
+  if (joy.id === null && e.clientX < vw * 0.6) {
+    joy.id = e.pointerId; joy.ox = joy.x = e.clientX; joy.oy = joy.y = e.clientY;
+  }
+});
+addEventListener('pointermove', e => { if (e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; } });
+const joyEnd = e => { if (e.pointerId === joy.id) joy.id = null; };
+addEventListener('pointerup', joyEnd);
+addEventListener('pointercancel', joyEnd);
+
+const runBtn = $('runBtn'), hideBtn = $('hideBtn');
+runBtn.addEventListener('pointerdown', e => { e.preventDefault(); sprintTouch = true; runBtn.classList.add('on'); });
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave'])
+  runBtn.addEventListener(ev, () => { sprintTouch = false; runBtn.classList.remove('on'); });
+hideBtn.addEventListener('pointerdown', e => { e.preventDefault(); wantHide = true; });
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// ===================== Игра =====================
+let G = null;
+let msgTimer = 0;
+function showMsg(text, t = 2.5) { const el = $('msg'); el.textContent = text; el.style.opacity = 1; msgTimer = t; }
+
+function newGame() {
+  const m = genMap(MAP_W, MAP_H);
+  const dist = distMap(m, 1, 1);
+  const floors = [], deadEnds = [];
+  for (let y = 1; y < MAP_H - 1; y++) for (let x = 1; x < MAP_W - 1; x++) {
+    if (m[y][x] === WALL || dist[y][x] === Infinity) continue;
+    floors.push({ x, y });
+    let walls = 0; for (const [dx, dy] of D4) if (m[y + dy][x + dx] === WALL) walls++;
+    if (walls === 3 && !(x === 1 && y === 1)) deadEnds.push({ x, y });
+  }
+  // выход — в самой дальней точке
+  const exit = floors.reduce((a, b) => dist[b.y][b.x] > dist[a.y][a.x] ? b : a);
+  m[exit.y][exit.x] = EXIT;
+  // ключи
+  const keyList = [];
+  for (const minGap of [8, 5, 2]) {
+    for (const f of shuffle(floors.filter(f => dist[f.y][f.x] >= 9 && m[f.y][f.x] === FLOOR))) {
+      if (keyList.length >= KEYS_NEEDED) break;
+      if (keyList.every(k => Math.abs(k.tx - f.x) + Math.abs(k.ty - f.y) >= minGap) &&
+          Math.abs(exit.x - f.x) + Math.abs(exit.y - f.y) >= 3)
+        keyList.push({ tx: f.x, ty: f.y, x: (f.x + 0.5) * T, y: (f.y + 0.5) * T, taken: false });
+    }
+    if (keyList.length >= KEYS_NEEDED) break;
+  }
+  // шкафы — в тупиках
+  let closets = 0;
+  for (const d of shuffle(deadEnds)) {
+    if (closets >= 8) break;
+    if (m[d.y][d.x] !== FLOOR || keyList.some(k => k.tx === d.x && k.ty === d.y)) continue;
+    m[d.y][d.x] = CLOSET; closets++;
+  }
+  // мужчина — далеко от игрока
+  const far = floors.filter(f => dist[f.y][f.x] >= 14 && m[f.y][f.x] === FLOOR);
+  const ms = far.length ? far[Math.random() * far.length | 0] : exit;
+
+  G = {
+    m, mapCanvas: renderMap(m), exit,
+    keys: keyList, got: 0, time: 0, state: 'play',
+    player: { x: 1.5 * T, y: 1.5 * T, a: 0, hidden: false, stam: 100, tired: false, moving: false, sprint: false },
+    man: { x: (ms.x + 0.5) * T, y: (ms.y + 0.5) * T, a: Math.PI, state: 'wander', path: [], repath: 0,
+           goal: null, lastSeen: null, searchT: 0, step: 0, sees: false, pauseT: 0, sniffed: false, moving: false },
+    hiddenSeen: false, flick: 1, flickT: 0, shake: 0, danger: 0, hb: 1, pstep: 0, exitMsgT: 0, scareT: 0,
+  };
+  updateHud();
+}
+
+function solidAt(px, py, forMan) {
+  const tx = Math.floor(px / T), ty = Math.floor(py / T);
+  const row = G.m[ty]; if (!row || row[tx] === undefined) return true;
+  const t = row[tx];
+  return t === WALL || (forMan && t === CLOSET);
+}
+function collides(x, y, r, forMan) {
+  return solidAt(x - r, y - r, forMan) || solidAt(x + r, y - r, forMan) ||
+         solidAt(x - r, y + r, forMan) || solidAt(x + r, y + r, forMan);
+}
+function moveEnt(e, dx, dy, r, forMan) {
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy)) / 4));
+  const sx = dx / steps, sy = dy / steps;
+  for (let i = 0; i < steps; i++) {
+    e.x += sx;
+    if (collides(e.x, e.y, r, forMan)) {
+      e.x -= sx;
+      // подталкиваем к центру прохода, чтобы не застревать на углах
+      const cy = (Math.floor(e.y / T) + 0.5) * T;
+      if (Math.abs(sx) > Math.abs(sy) * 0.5) e.y += clamp(cy - e.y, -Math.abs(sx), Math.abs(sx));
+    }
+    e.y += sy;
+    if (collides(e.x, e.y, r, forMan)) {
+      e.y -= sy;
+      const cx = (Math.floor(e.x / T) + 0.5) * T;
+      if (Math.abs(sy) > Math.abs(sx) * 0.5) e.x += clamp(cx - e.x, -Math.abs(sy), Math.abs(sy));
+    }
+  }
+}
+function los(x1, y1, x2, y2) {
+  const d = Math.hypot(x2 - x1, y2 - y1), n = Math.ceil(d / 8);
+  for (let i = 1; i < n; i++) {
+    const t = i / n;
+    const tx = Math.floor((x1 + (x2 - x1) * t) / T), ty = Math.floor((y1 + (y2 - y1) * t) / T);
+    if (G.m[ty][tx] === WALL) return false;
+  }
+  return true;
+}
+function castRay(x, y, ang, max) {
+  const c = Math.cos(ang), s = Math.sin(ang);
+  for (let d = 0; d < max; d += 6) {
+    const tx = Math.floor((x + c * d) / T), ty = Math.floor((y + s * d) / T);
+    if (!G.m[ty] || G.m[ty][tx] === WALL) return d + 12;
+  }
+  return max;
+}
+const tileOf = e => ({ x: Math.floor(e.x / T), y: Math.floor(e.y / T) });
+const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
+
+function randomFloorNear(cx, cy, r) {
+  for (let i = 0; i < 40; i++) {
+    const x = cx + Math.round(rand(-r, r)), y = cy + Math.round(rand(-r, r));
+    if (G.m[y] && (G.m[y][x] === FLOOR || G.m[y][x] === EXIT)) return { x, y };
+  }
+  return { x: cx, y: cy };
+}
+
+function caught(text) {
+  if (G.state !== 'play') return;
+  G.state = 'scare'; G.scareT = 0;
+  scream(); vibrate([300, 80, 500]);
+  $('loseTxt').textContent = text;
+  setControlsVisible(false);
+}
+
+function update(dt) {
+  const p = G.player, man = G.man;
+  G.time += dt;
+
+  // ---------- ввод ----------
+  let ix = 0, iy = 0;
+  if (keys.KeyA || keys.ArrowLeft) ix -= 1;
+  if (keys.KeyD || keys.ArrowRight) ix += 1;
+  if (keys.KeyW || keys.ArrowUp) iy -= 1;
+  if (keys.KeyS || keys.ArrowDown) iy += 1;
+  if (joy.id !== null) { ix += (joy.x - joy.ox) / 55; iy += (joy.y - joy.oy) / 55; }
+  const len = Math.hypot(ix, iy), mag = Math.min(1, len);
+  const wantSprint = sprintTouch || keys.ShiftLeft || keys.ShiftRight;
+
+  // ---------- прятки ----------
+  const pt = tileOf(p);
+  const onCloset = G.m[pt.y][pt.x] === CLOSET;
+  if (wantHide) {
+    wantHide = false;
+    if (p.hidden) { p.hidden = false; man.sniffed = false; G.hiddenSeen = false; }
+    else if (onCloset) {
+      p.hidden = true; p.x = (pt.x + 0.5) * T; p.y = (pt.y + 0.5) * T;
+      G.hiddenSeen = man.sees && Math.hypot(man.x - p.x, man.y - p.y) < 4 * T;
+      noiseHit(0.25, 800, 0.25);
+    }
+  }
+  hideBtn.classList.toggle('hidden', !(onCloset || p.hidden));
+  hideBtn.textContent = p.hidden ? 'Выйти' : 'Спрятаться';
+
+  // ---------- движение игрока ----------
+  p.sprint = false; p.moving = false;
+  if (!p.hidden && mag > 0.12) {
+    p.sprint = wantSprint && !p.tired;
+    const sp = (p.sprint ? 4.3 : 2.5) * T * (p.sprint ? 1 : mag);
+    const dx = ix / len, dy = iy / len;
+    moveEnt(p, dx * sp * dt, dy * sp * dt, 0.3 * T, false);
+    p.a += angDiff(p.a, Math.atan2(dy, dx)) * Math.min(1, dt * 12);
+    p.moving = true;
+    G.pstep -= dt * (p.sprint ? 1.8 : 1) * mag;
+    if (G.pstep <= 0) { G.pstep = 0.42; noiseHit(p.sprint ? 0.12 : 0.04, 500, 0.08); }
+  }
+  if (p.sprint) { p.stam -= 30 * dt; if (p.stam <= 0) { p.stam = 0; p.tired = true; showMsg('Ты выдохся…', 1.5); } }
+  else { p.stam = Math.min(100, p.stam + (p.moving ? 11 : 20) * dt); if (p.tired && p.stam > 35) p.tired = false; }
+
+  // ---------- ключи и выход ----------
+  for (const k of G.keys) {
+    if (!k.taken && Math.hypot(k.x - p.x, k.y - p.y) < 0.45 * T) {
+      k.taken = true; G.got++; chime(); vibrate(60);
+      if (G.got >= KEYS_NEEDED) showMsg('Все ключи у тебя. Найди входную дверь!', 3.5);
+      else showMsg(`Ключ найден (${G.got}/${KEYS_NEEDED}). Он услышал звон…`, 3);
+      // он слышит звон ключа
+      if (man.state !== 'chase') { man.state = 'search'; man.lastSeen = { x: p.x, y: p.y }; man.searchT = 8; man.repath = 0; }
+      updateHud();
+    }
+  }
+  G.exitMsgT -= dt;
+  if (G.m[pt.y][pt.x] === EXIT) {
+    if (G.got >= KEYS_NEEDED) { win(); return; }
+    if (G.exitMsgT <= 0) { showMsg(`Дверь заперта. Нужно ещё ключей: ${KEYS_NEEDED - G.got}`, 2.5); G.exitMsgT = 3; }
+  }
+
+  // ---------- ИИ мужчины ----------
+  const dx = p.x - man.x, dy = p.y - man.y, d = Math.hypot(dx, dy);
+  man.moving = false;
+  if (G.time > 3) {
+    const sees = !p.hidden && (d < 1.3 * T || (d < 10 * T && los(man.x, man.y, p.x, p.y)));
+    const hears = !p.hidden && p.sprint && d < 7 * T;
+    if (sees && man.state !== 'chase') { stinger(); vibrate(120); showMsg('ОН ТЕБЯ ВИДИТ. БЕГИ!', 2); }
+    man.sees = sees;
+
+    if (sees) { man.state = 'chase'; man.lastSeen = { x: p.x, y: p.y }; }
+    else if (man.state === 'chase') { man.state = 'search'; man.searchT = 7; man.repath = 0; }
+    else if (hears && man.state === 'wander') { man.state = 'search'; man.lastSeen = { x: p.x, y: p.y }; man.searchT = 7; man.repath = 0; }
+
+    // видел, как ты залез в шкаф — идёт прямо к тебе
+    if (p.hidden && G.hiddenSeen) { man.state = 'chase'; man.lastSeen = { x: p.x, y: p.y }; }
+
+    // заглядывает рядом со шкафом
+    if (p.hidden && !G.hiddenSeen && d < 1.7 * T && !man.sniffed) {
+      man.sniffed = true; man.pauseT = 2.2; vibrate([40, 200, 40]);
+    }
+
+    const speed = man.state === 'chase'  ? (2.8 + 0.3 * G.got) :
+                  man.state === 'search' ? (2.1 + 0.2 * G.got) : (1.4 + 0.15 * G.got);
+    let goal;
+    if (man.state === 'chase') goal = man.lastSeen;
+    else if (man.state === 'search') {
+      goal = man.lastSeen; man.searchT -= dt;
+      if (Math.hypot(goal.x - man.x, goal.y - man.y) < 0.3 * T) {
+        const lt = tileOf(goal), n = randomFloorNear(lt.x, lt.y, 4);
+        man.lastSeen = goal = { x: (n.x + 0.5) * T, y: (n.y + 0.5) * T }; man.repath = 0;
+      }
+      if (man.searchT <= 0) { man.state = 'wander'; man.goal = null; }
+    }
+    if (man.state === 'wander') {
+      if (!man.goal || Math.hypot(man.goal.x - man.x, man.goal.y - man.y) < 0.3 * T || !man.path.length) {
+        // бродит, но тянется в сторону игрока
+        const ptl = tileOf(p), n = randomFloorNear(ptl.x, ptl.y, 9);
+        man.goal = { x: (n.x + 0.5) * T, y: (n.y + 0.5) * T }; man.repath = 0;
+      }
+      goal = man.goal;
+    }
+
+    if (man.pauseT > 0) man.pauseT -= dt;
+    else {
+      const step = speed * T * dt;
+      if (man.state === 'chase' && sees && d < 2.2 * T) {
+        moveEnt(man, dx / d * step, dy / d * step, 0.28 * T, true);
+        man.a += angDiff(man.a, Math.atan2(dy, dx)) * Math.min(1, dt * 10);
+        man.moving = true;
+      } else {
+        man.repath -= dt;
+        if (man.repath <= 0) {
+          const mt = tileOf(man), gt = tileOf(goal);
+          man.path = findPath(G.m, mt.x, mt.y, gt.x, gt.y);
+          // если цель — шкаф, идём к соседней клетке
+          if (!man.path.length && G.m[gt.y][gt.x] === CLOSET) {
+            for (const [ox, oy] of D4) {
+              const pth = findPath(G.m, mt.x, mt.y, gt.x + ox, gt.y + oy);
+              if (pth.length || (mt.x === gt.x + ox && mt.y === gt.y + oy)) { man.path = pth; break; }
+            }
+          }
+          man.repath = man.state === 'chase' ? 0.3 : 0.8;
+        }
+        let left = step;
+        while (left > 0 && man.path.length) {
+          const wp = man.path[0], wx = (wp.x + 0.5) * T, wy = (wp.y + 0.5) * T;
+          const ex = wx - man.x, ey = wy - man.y, el = Math.hypot(ex, ey);
+          if (el < 1) { man.path.shift(); continue; }
+          const mv = Math.min(left, el);
+          man.x += ex / el * mv; man.y += ey / el * mv; left -= mv;
+          man.a += angDiff(man.a, Math.atan2(ey, ex)) * Math.min(1, dt * 8);
+          man.moving = true;
+        }
+      }
+    }
+
+    // шаги мужчины
+    if (man.moving) {
+      man.step -= dt * (man.state === 'chase' ? 1.7 : 1);
+      if (man.step <= 0) {
+        man.step = 0.6;
+        const vol = clamp(1 - d / (12 * T), 0, 1);
+        noiseHit(0.5 * vol * vol, 220, 0.18, dx < 0 ? 0.6 : -0.6);
+        if (vol > 0.6) G.shake = Math.max(G.shake, (vol - 0.6) * 6);
+      }
+    }
+
+    // поймал
+    if (!p.hidden && d < 0.5 * T) caught('Он схватил тебя в темноте.');
+    if (p.hidden && G.hiddenSeen && d < 1.15 * T) caught('Он видел, как ты залез в шкаф.');
+  }
+
+  // ---------- атмосфера ----------
+  G.danger = clamp(1 - d / (9 * T), 0, 1);
+  if (man.state === 'chase') G.danger = Math.max(G.danger, 0.65);
+  G.hb -= dt;
+  if (G.hb <= 0) {
+    G.hb = 1.2 - 0.85 * G.danger;
+    const v = 0.15 + 0.6 * G.danger;
+    thump(v); thump(v * 0.7, 0.18);
+    if (G.danger > 0.7) vibrate(25);
+  }
+  G.flickT -= dt;
+  if (G.flickT <= 0) {
+    G.flickT = rand(0.05, 0.25);
+    G.flick = (G.danger > 0.45 && Math.random() < G.danger * 0.35) ? rand(0.1, 0.5) : (Math.random() < 0.02 ? 0.6 : 1);
+  }
+  G.shake = Math.max(0, G.shake - dt * 8);
+  if (msgTimer > 0) { msgTimer -= dt; if (msgTimer <= 0) $('msg').style.opacity = 0; }
+  $('stamFill').style.width = p.stam + '%';
+  $('stamFill').style.background = p.tired ? '#a22' : '#ccc';
+}
+
+function updateHud() { $('keysTxt').textContent = `🗝 ${G.got}/${KEYS_NEEDED}`; }
+
+function win() {
+  G.state = 'won';
+  const t = G.time;
+  $('winTxt').textContent = `Время: ${fmtTime(t)}`;
+  try {
+    const best = +localStorage.getItem('onryadom_best') || 0;
+    if (!best || t < best) localStorage.setItem('onryadom_best', t.toFixed(1));
+  } catch (e) {}
+  setControlsVisible(false);
+  showScreen('win');
+  chime();
+}
+const fmtTime = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+
+// ===================== Отрисовка =====================
+const grain = document.createElement('canvas'); grain.width = grain.height = 128;
+(() => {
+  const g = grain.getContext('2d'), img = g.createImageData(128, 128);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = Math.random() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 40;
+  }
+  g.putImageData(img, 0, 0);
+})();
+
+function visPoly(x, y, a0, a1, n, range) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + (a1 - a0) * i / n;
+    const d = castRay(x, y, a, range);
+    pts.push(x + Math.cos(a) * d, y + Math.sin(a) * d);
+  }
+  return pts;
+}
+function fillPoly(c, cx, cy, pts) {
+  c.beginPath(); c.moveTo(cx, cy);
+  for (let i = 0; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]);
+  c.closePath(); c.fill();
+}
+
+function drawMan(c, man) {
+  const sway = man.moving ? Math.sin(G.time * 9) * 2 : 0;
+  c.save(); c.translate(man.x, man.y); c.rotate(man.a);
+  c.fillStyle = 'rgba(0,0,0,0.5)'; c.beginPath(); c.ellipse(4, 4, 26, 20, 0, 0, 7); c.fill();
+  // пальто
+  c.fillStyle = '#0b0b0d'; c.beginPath(); c.ellipse(0, 0, 16, 23 + sway * 0.3, 0, 0, 7); c.fill();
+  // длинные руки
+  c.fillStyle = '#0b0b0d';
+  c.fillRect(2, -26 - sway, 22, 6); c.fillRect(2, 20 + sway, 22, 6);
+  c.fillStyle = '#c8c0b0';
+  c.beginPath(); c.arc(26, -23 - sway, 4, 0, 7); c.arc(26, 23 + sway, 4, 0, 7); c.fill();
+  // шляпа
+  c.fillStyle = '#050505'; c.beginPath(); c.arc(0, 0, 15, 0, 7); c.fill();
+  c.strokeStyle = '#222'; c.lineWidth = 2; c.stroke();
+  c.fillStyle = '#111'; c.beginPath(); c.arc(0, 0, 9, 0, 7); c.fill();
+  c.restore();
+}
+function drawPlayer(c, p) {
+  c.save(); c.translate(p.x, p.y); c.rotate(p.a);
+  c.fillStyle = 'rgba(0,0,0,0.4)'; c.beginPath(); c.ellipse(3, 3, 17, 14, 0, 0, 7); c.fill();
+  c.fillStyle = '#3b4655'; c.beginPath(); c.ellipse(0, 0, 11, 17, 0, 0, 7); c.fill();
+  c.fillStyle = '#d9b99b'; c.beginPath(); c.arc(2, 0, 8, 0, 7); c.fill();
+  c.fillStyle = '#3a2614'; c.beginPath(); c.arc(0, 0, 8, Math.PI * 0.55, Math.PI * 1.45); c.fill();
+  c.fillStyle = '#777'; c.fillRect(10, 8, 12, 4); // фонарик
+  c.restore();
+}
+function drawKey(c, k) {
+  const b = Math.sin(G.time * 3 + k.x) * 2;
+  c.save(); c.translate(k.x, k.y + b);
+  c.strokeStyle = '#d4af37'; c.fillStyle = '#d4af37'; c.lineWidth = 3;
+  c.beginPath(); c.arc(-8, 0, 6, 0, 7); c.stroke();
+  c.fillRect(-2, -1.5, 16, 3); c.fillRect(10, 0, 3, 6); c.fillRect(5, 0, 3, 5);
+  c.restore();
+}
+
+function draw() {
+  const p = G.player, man = G.man;
+  const s = dpr * zoom;
+  const shx = rand(-1, 1) * G.shake, shy = rand(-1, 1) * G.shake;
+  const camX = p.x - vw / zoom / 2 + shx, camY = p.y - vh / zoom / 2 + shy;
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(s, 0, 0, s, -camX * s, -camY * s);
+  ctx.drawImage(G.mapCanvas, 0, 0);
+  for (const k of G.keys) if (!k.taken) drawKey(ctx, k);
+  if (!p.hidden) drawPlayer(ctx, p);
+  drawMan(ctx, man);
+
+  // ---------- свет ----------
+  lctx.setTransform(1, 0, 0, 1, 0, 0);
+  lctx.globalCompositeOperation = 'source-over';
+  lctx.fillStyle = 'rgba(0,0,0,0.97)'; lctx.fillRect(0, 0, lc.width, lc.height);
+  lctx.setTransform(s, 0, 0, s, -camX * s, -camY * s);
+  lctx.globalCompositeOperation = 'destination-out';
+  if (!p.hidden) {
+    lctx.globalAlpha = G.flick;
+    const range = 6.5 * T;
+    let gr = lctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, range);
+    gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(0.55, 'rgba(0,0,0,0.85)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    lctx.fillStyle = gr;
+    fillPoly(lctx, p.x, p.y, visPoly(p.x, p.y, p.a - 0.55, p.a + 0.55, 48, range));
+    lctx.globalAlpha = 1;
+    gr = lctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 2.4 * T);
+    gr.addColorStop(0, 'rgba(0,0,0,0.95)'); gr.addColorStop(0.4, 'rgba(0,0,0,0.6)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    lctx.fillStyle = gr;
+    fillPoly(lctx, p.x, p.y, visPoly(p.x, p.y, 0, Math.PI * 2, 40, 2.4 * T));
+  } else {
+    // сквозь щели шкафа
+    const gr = lctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 2.6 * T);
+    gr.addColorStop(0, 'rgba(0,0,0,0.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    lctx.fillStyle = gr;
+    fillPoly(lctx, p.x, p.y, visPoly(p.x, p.y, 0, Math.PI * 2, 40, 2.6 * T));
+  }
+  lctx.globalCompositeOperation = 'source-over';
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(lc, 0, 0);
+
+  // ---------- светящиеся объекты в темноте ----------
+  ctx.setTransform(s, 0, 0, s, -camX * s, -camY * s);
+  const dMan = Math.hypot(man.x - p.x, man.y - p.y);
+  if (dMan < 10 * T && los(p.x, p.y, man.x, man.y)) {
+    const ex = man.x + Math.cos(man.a) * 10, ey = man.y + Math.sin(man.a) * 10;
+    const px = -Math.sin(man.a) * 5, py = Math.cos(man.a) * 5;
+    ctx.save(); ctx.shadowColor = '#f00'; ctx.shadowBlur = 12; ctx.fillStyle = '#ff3030';
+    ctx.globalAlpha = 0.6 + 0.4 * Math.random();
+    ctx.beginPath(); ctx.arc(ex + px, ey + py, 2.4, 0, 7); ctx.arc(ex - px, ey - py, 2.4, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+  for (const k of G.keys) {
+    if (k.taken || Math.hypot(k.x - p.x, k.y - p.y) > 7 * T || !los(p.x, p.y, k.x, k.y)) continue;
+    ctx.save(); ctx.globalAlpha = 0.25 + 0.25 * Math.sin(G.time * 4 + k.x);
+    ctx.fillStyle = '#ffd86b'; ctx.shadowColor = '#ffd86b'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(k.x, k.y, 3, 0, 7); ctx.fill(); ctx.restore();
+  }
+  if (G.got >= KEYS_NEEDED) {
+    const ex = (G.exit.x + 0.5) * T, ey = (G.exit.y + 0.5) * T;
+    ctx.save(); ctx.globalAlpha = 0.35 + 0.2 * Math.sin(G.time * 3);
+    const gr = ctx.createRadialGradient(ex, ey, 0, ex, ey, T);
+    gr.addColorStop(0, '#9fdc9f'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gr; ctx.fillRect(ex - T, ey - T, 2 * T, 2 * T); ctx.restore();
+  }
+
+  // ---------- экранные эффекты ----------
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (p.hidden) {
+    ctx.fillStyle = 'rgba(10,5,0,0.85)';
+    const gap = 26;
+    for (let y = 0; y < vh; y += gap) ctx.fillRect(0, y, vw, gap - 7);
+    ctx.fillStyle = 'rgba(200,200,200,0.7)'; ctx.font = '15px Georgia'; ctx.textAlign = 'center';
+    ctx.fillText('Ты в шкафу. Не дыши…', vw / 2, vh - 40);
+  }
+  if (G.danger > 0.05) {
+    const pulse = 0.75 + 0.25 * Math.sin(G.time * (4 + 8 * G.danger));
+    const gr = ctx.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.25, vw / 2, vh / 2, Math.max(vw, vh) * 0.75);
+    gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, `rgba(130,0,0,${G.danger * 0.7 * pulse})`);
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, vw, vh);
+  }
+  ctx.globalAlpha = 0.35;
+  ctx.fillStyle = ctx.createPattern(grain, 'repeat');
+  ctx.save(); ctx.translate(-rand(0, 128), -rand(0, 128)); ctx.fillRect(0, 0, vw + 128, vh + 128); ctx.restore();
+  ctx.globalAlpha = 1;
+
+  if (joy.id !== null) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(joy.ox, joy.oy, 55, 0, 7); ctx.stroke();
+    let jx = joy.x - joy.ox, jy = joy.y - joy.oy; const jl = Math.hypot(jx, jy);
+    if (jl > 55) { jx *= 55 / jl; jy *= 55 / jl; }
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath(); ctx.arc(joy.ox + jx, joy.oy + jy, 24, 0, 7); ctx.fill();
+  }
+}
+
+function drawScare() {
+  const t = G.scareT;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = Math.random() < 0.3 ? '#300' : '#000'; ctx.fillRect(0, 0, vw, vh);
+  const sz = Math.min(vw, vh) * (0.7 + t * 0.5);
+  ctx.save();
+  ctx.translate(vw / 2 + rand(-12, 12), vh / 2 + rand(-12, 12));
+  ctx.scale(sz / 400, sz / 400);
+  // лицо
+  const gr = ctx.createRadialGradient(0, -20, 20, 0, 0, 230);
+  gr.addColorStop(0, '#e2dccd'); gr.addColorStop(1, '#5a554a');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(0, 10, 150, 200, 0, 0, 7); ctx.fill();
+  // глаза
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.ellipse(-60, -30, 40, 55, -0.2, 0, 7); ctx.ellipse(60, -30, 40, 55, 0.2, 0, 7); ctx.fill();
+  ctx.fillStyle = '#f22'; ctx.shadowColor = '#f00'; ctx.shadowBlur = 20;
+  ctx.beginPath(); ctx.arc(-55 + rand(-3, 3), -25, 7, 0, 7); ctx.arc(55 + rand(-3, 3), -25, 7, 0, 7); ctx.fill();
+  ctx.shadowBlur = 0;
+  // рот
+  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.ellipse(0, 105, 55, 75 + Math.sin(t * 40) * 8, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ddd';
+  for (let i = -4; i <= 4; i++) {
+    ctx.beginPath(); ctx.moveTo(i * 12 - 6, 45); ctx.lineTo(i * 12 + 6, 45); ctx.lineTo(i * 12, 70); ctx.fill();
+  }
+  // шляпа
+  ctx.fillStyle = '#050505';
+  ctx.fillRect(-210, -150, 420, 30); ctx.fillRect(-120, -290, 240, 150);
+  ctx.restore();
+}
+
+// ===================== Экраны и цикл =====================
+function showScreen(id) {
+  for (const s of ['menu', 'lose', 'win']) $(s).classList.toggle('hidden', s !== id);
+}
+function setControlsVisible(v) {
+  $('hud').classList.toggle('hidden', !v);
+  runBtn.classList.toggle('hidden', !v);
+  if (!v) { hideBtn.classList.add('hidden'); $('msg').style.opacity = 0; }
+}
+function start() {
+  initAudio();
+  try {
+    const el = document.documentElement;
+    if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  } catch (e) {}
+  newGame();
+  showScreen(null);
+  setControlsVisible(true);
+  joy.id = null; sprintTouch = false; wantHide = false;
+  showMsg('Где-то в доме скрипнула половица…', 3);
+}
+$('startBtn').addEventListener('click', start);
+document.querySelectorAll('[data-restart]').forEach(b => b.addEventListener('click', start));
+try {
+  const best = +localStorage.getItem('onryadom_best');
+  if (best) $('bestTxt').textContent = `Лучшее время: ${fmtTime(best)}`;
+} catch (e) {}
+
+document.addEventListener('visibilitychange', () => {
+  if (!AC) return;
+  if (document.hidden) AC.suspend(); else AC.resume();
+});
+
+let last = 0;
+function loop(t) {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, (t - last) / 1000 || 0); last = t;
+  if (!G || document.hidden) return;
+  if (G.state === 'play') { update(dt); if (G.state === 'play') draw(); }
+  else if (G.state === 'scare') {
+    G.scareT += dt; drawScare();
+    if (G.scareT > 1.5) { G.state = 'dead'; showScreen('lose'); }
+  }
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
