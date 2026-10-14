@@ -212,6 +212,37 @@ def main():
         tm.apply_translation([dx - c[0], dy - c[1], 0])
         scene.add_geometry(tm, node_name=name)
     scene.export(os.path.join(OUT, "flamingo_set.3mf"))
+    export_3d()
+
+
+def export_3d():
+    out = os.path.join(os.path.dirname(OUT), "3d")
+    os.makedirs(out, exist_ok=True)
+    zr = STAND_H + POST_H + R - BELLY_CUT
+    pos = [-PIN_X, POST_Y, zr]
+    pink = [240, 98, 146, 255]
+    grey = [120, 130, 140, 255]
+    items = [
+        ("stand", stand(), grey),
+        ("fuselage", fuselage_printable().translate(pos), pink),
+        ("wing", wing_part().translate([-PIN_X, POST_Y, zr + WING_Z]), pink),
+        ("tail", tail_shape().translate(pos), pink),
+    ]
+    y_up = trimesh.transformations.rotation_matrix(-np.pi / 2, [1, 0, 0])
+    scene = trimesh.Scene()
+    for name, man, color in items:
+        tm = to_trimesh(man)
+        tm.apply_scale(0.001)
+        tm.apply_transform(y_up)
+        mat = trimesh.visual.material.PBRMaterial(
+            name="rocket_pink" if color is pink else "stand_grey", baseColorFactor=color, metallicFactor=0.0, roughnessFactor=0.6)
+        tm.visual = trimesh.visual.TextureVisuals(material=mat)
+        scene.add_geometry(tm, node_name=name, geom_name=name)
+    scene.export(os.path.join(out, "flamingo.glb"))
+    scene.export(os.path.join(out, "flamingo.obj"), mtl_name="flamingo.mtl")
+    whole = trimesh.util.concatenate([to_trimesh(m) for _, m, _ in items])
+    whole.export(os.path.join(out, "flamingo_assembly.stl"))
+    whole.export(os.path.join(out, "flamingo_assembly.ply"))
 
 
 if __name__ == "__main__":

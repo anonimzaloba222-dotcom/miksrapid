@@ -17,6 +17,19 @@
 | `rocket_full.stl` | Ракета цілком однією деталлю | Для фотополімерного принтера або FDM з підтримками |
 | `flamingo_set.3mf` | Набір деталей, уже розкладений на столі | Відкрити в слайсері (Cura, PrusaSlicer, Bambu Studio, Orca) |
 
+## 3D-модель для Blender та інших програм (`3d/`)
+
+Зібрана модель (ракета на підставці) з кольорами, кожна деталь — окремий об'єкт.
+
+| Файл | Де відкрити |
+|---|---|
+| `flamingo.glb` | Blender (File → Import → glTF), Windows 3D Viewer, онлайн-переглядачі, Unity, Three.js |
+| `flamingo.obj` + `flamingo.mtl` | Blender (File → Import → Wavefront OBJ), 3ds Max, Cinema 4D, Fusion 360 |
+| `flamingo_assembly.stl` | Будь-який CAD або слайсер (без кольорів, у мм) |
+| `flamingo_assembly.ply` | Blender, MeshLab (у мм) |
+
+Одиниці: GLB та OBJ — у метрах (у Blender модель має реальний розмір 0.14 × 0.058 × 0.055 м), STL та PLY — у міліметрах.
+
 ## Рекомендовані налаштування (FDM)
 
 - Сопло 0.4 мм, шар 0.12–0.16 мм (для дрібних деталей і напису)
