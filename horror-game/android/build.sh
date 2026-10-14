@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Собирает Android-приложение «Он рядом» (APK) из ../index.html.
+# Собирает Android-приложение «Он рядом» (APK) из ../index.html и ../three.min.js.
 # Нужны: Java 11+, Python 3 с Pillow, npm, curl. Android SDK не нужен.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -26,7 +26,7 @@ if [ ! -f "$KS" ]; then
     -alias onryadom -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=On Ryadom" >/dev/null 2>&1
 fi
 
-cp ../index.html app/assets/index.html
+cp ../index.html ../three.min.js app/assets/
 python3 make_icon.py app/res
 java -jar "$TOOLS/apktool.jar" b app -o build/unsigned.apk -p "$TOOLS/framework"
 # старый apksig заглядывает во внутренний класс JDK
