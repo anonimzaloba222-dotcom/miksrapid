@@ -1,0 +1,5 @@
+.tools/
+build/
+keystore.p12
+app/assets/
+app/res/mipmap-*/

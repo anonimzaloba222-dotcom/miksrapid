@@ -851,7 +851,8 @@ function start() {
   initAudio();
   try {
     const el = document.documentElement;
-    if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    // внутри Android-приложения (WebView) полноэкранный режим даёт само приложение
+    if (!/; wv\)/.test(navigator.userAgent) && !document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => {});
   } catch (e) {}
   newGame();
   showScreen(null);
