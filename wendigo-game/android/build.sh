@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Собирает Wendigo.apk: игра (../index.html, ../js, ../three.min.js) + Java-код сети.
+# Собирает Wendigo2.apk: игра (../index.html, ../js, ../three.min.js) + Java-код сети.
 # Нужны: Java 11+, Python 3 с Pillow, npm, curl. Android SDK не нужен.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -37,5 +37,5 @@ with zipfile.ZipFile(src) as zi, zipfile.ZipFile(dst, 'w') as zo:
         zo.writestr(it, zi.read(it.filename), compress_type=it.compress_type)
     zo.write('build/classes.dex', 'classes.dex', compress_type=zipfile.ZIP_DEFLATED)
 PY
-java --add-exports java.base/sun.security.x509=ALL-UNNAMED -cp "$TOOLS/apksig.jar" Sign.java "$KS" "$PASS" wendigo build/withdex.apk ../Wendigo.apk
-echo "Готово: wendigo-game/Wendigo.apk"
+java --add-exports java.base/sun.security.x509=ALL-UNNAMED -cp "$TOOLS/apksig.jar" Sign.java "$KS" "$PASS" wendigo build/withdex.apk ../Wendigo2.apk
+echo "Готово: wendigo-game/Wendigo2.apk"
