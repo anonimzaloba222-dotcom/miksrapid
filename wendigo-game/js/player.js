@@ -3,7 +3,7 @@
 //  Игрок: управление, движение, потребности, инвентарь, действия
 // =====================================================================
 const P = { id: 1, name: 'Игрок', x: 9, z: -4.5, yaw: Math.PI, pitch: 0, hp: 100, food: 85, water: 80, stam: 100, tired: false,
-            battery: 100, light: false, money: 100, inv: { canned: 1, bread: 1, water: 1, soda: 0, bandage: 1, battery: 0 },
+            battery: 100, light: false, money: 100, inv: { canned: 1, bread: 1, water: 1, soda: 0, bandage: 1, battery: 0, lockpick: 1 },
             alive: true, house: -1, inShop: false, hiddenDoor: false, running: false, moving: false, bob: 0, stepIdx: 0, hurt: 0, lamp: false };
 const keys = {};
 const inp = { lookX: 0, lookY: 0, act: false, light: false };
@@ -90,7 +90,13 @@ const ray = new THREE.Raycaster(), CENTER = new THREE.Vector2(0, 0);
 let target = null;
 function interLabel(t) {
   if (!t) return '';
-  if (t.type === 'door') return t.ref.broken ? 'Дверь выбита' : t.ref.open ? 'Закрыть дверь' : 'Открыть дверь';
+  if (t.type === 'door') {
+    const d = t.ref; if (d.broken) return 'Дверь выбита';
+    if (d.locked) return P.inv.lockpick > 0 && P.house !== d.owner ? '🔒 Заперто — вскрыть отмычкой (' + P.inv.lockpick + ')' : '🔒 Заперто';
+    return d.open ? 'Закрыть дверь' : 'Открыть дверь';
+  }
+  if (t.type === 'lock') return t.ref.broken || P.house !== t.ref.owner ? '' : t.ref.locked ? 'Отпереть замок' : t.ref.open ? '' : 'Запереть замок';
+  if (t.type === 'curtain') return t.ref.has && P.house === t.ref.house ? (t.ref.closed ? 'Открыть шторы' : 'Закрыть шторы') : '';
   if (t.type === 'loot') return t.ref.looted ? 'Пусто' : t.ref.kind === 'fridge' ? 'Обыскать холодильник' : 'Обыскать шкаф';
   if (t.type === 'shop') return shopOpen() ? 'Купить' : 'Продавца нет';
   return '';
@@ -128,7 +134,7 @@ function updatePlayer(dt) {
   P.house = -1; P.inShop = false;
   for (const h of Town.houses) { const b = h.bounds; if (P.x > b.x0 && P.x < b.x1 && P.z > b.z0 && P.z < b.z1) { P.house = h.id; break; } }
   const sb = Town.shop.bounds; if (P.x > sb.x0 && P.x < sb.x1 && P.z > sb.z0 && P.z < sb.z1) P.inShop = true;
-  P.hiddenDoor = P.house >= 0 ? !Town.houses[P.house].door.open : P.inShop ? !(Town.shop.door.open || Town.shop.door2.open) : false;
+  P.hiddenDoor = P.house >= 0 ? (!Town.houses[P.house].door.open && Town.houses[P.house].wins.every(w => w.has && w.closed)) : P.inShop ? !(Town.shop.door.open || Town.shop.door2.open) : false;
   P.lamp = !!lampLitAt(P.x, P.z);
 
   // покачивание и шаги
@@ -150,7 +156,7 @@ function updatePlayer(dt) {
   if (near.length) {
     ray.setFromCamera(CENTER, camera); ray.far = 2.6;
     const h = ray.intersectObjects(near, false)[0];
-    if (h) { const it = h.object.userData.inter; if (it.type === 'door' || sightClear(P.x, P.z, it.pos.x, it.pos.z)) target = it; }
+    if (h) { const it = h.object.userData.inter; if (it.type === 'door' || it.type === 'lock' || it.type === 'curtain' || sightClear(P.x, P.z, it.pos.x, it.pos.z)) target = it; }
   }
   setHint(interLabel(target));
   if (inp.act) { inp.act = false; if (target) doAction(target); }
@@ -158,6 +164,8 @@ function updatePlayer(dt) {
 function onRoad(x, z) { return STREETS_Z.some(s => Math.abs(z - s) < 6) || STREETS_X.some(s => Math.abs(x - s) < 6); }
 function doAction(t) {
   if (t.type === 'door') requestDoor(t.ref);
+  else if (t.type === 'lock') { if (t.ref.owner === P.house && !t.ref.broken && (t.ref.locked || !t.ref.open)) requestLock(t.ref, !t.ref.locked); }
+  else if (t.type === 'curtain') { if (t.ref.has && P.house === t.ref.house) requestCurtain(t.ref); }
   else if (t.type === 'loot') { if (t.ref.looted) showMsg('Здесь уже пусто', 1.5); else requestLoot(t.ref); }
   else if (t.type === 'shop') { if (shopOpen()) openShop(); else showMsg('Продавец ушёл. Магазин работает с 7:00 до 21:00', 2.5); }
 }
@@ -166,7 +174,7 @@ function setHint(t) {
   if (t === hintText) return; hintText = t;
   $('hint').textContent = t; $('cross').classList.toggle('on', !!t);
   const b = $('bAct'); b.classList.toggle('hidden', !t || !isTouch);
-  b.textContent = t.startsWith('Обыскать') ? 'ОБЫСКАТЬ' : t.includes('Открыть') ? 'ОТКРЫТЬ' : t.includes('Закрыть') ? 'ЗАКРЫТЬ' : t === 'Купить' ? 'КУПИТЬ' : '…';
+  b.textContent = t.includes('Заперто') ? 'ВСКРЫТЬ' : t.includes('замок') ? 'ЗАМОК' : t.includes('шторы') ? 'ШТОРЫ' : t.startsWith('Обыскать') ? 'ОБЫСКАТЬ' : t.includes('Открыть') ? 'ОТКРЫТЬ' : t.includes('Закрыть') ? 'ЗАКРЫТЬ' : t === 'Купить' ? 'КУПИТЬ' : '…';
 }
 
 // ---------------------------------------------------------------------
@@ -177,7 +185,7 @@ function updateHud(force) {
   hudT -= 0.016; if (!force && hudT > 0) return; hudT = 0.1;
   const bar = (id, v, low) => { const e = $(id); e.style.width = v + '%'; e.classList.toggle('low', v < low); };
   bar('bHp', P.hp, 30); bar('bFood', P.food, 20); bar('bWater', P.water, 20); bar('bStam', P.stam, 20);
-  $('money').textContent = '₽ ' + P.money;
+  $('money').textContent = '₽ ' + P.money + '  🗝️ ' + (P.inv.lockpick || 0);
   $('battery').textContent = '🔦 ' + Math.round(P.battery) + '%';
   $('qFood').textContent = P.inv.canned + P.inv.bread; $('qWater').textContent = P.inv.water + P.inv.soda;
   $('qBand').textContent = P.inv.bandage; $('qBat').textContent = P.inv.battery;

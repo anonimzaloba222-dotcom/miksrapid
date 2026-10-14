@@ -95,6 +95,8 @@ function hostMsg(from, m) {
     if (num(s.yaw)) r.tyaw = s.yaw; if (num(s.pitch)) r.pitch = s.pitch; if (num(s.hp)) r.hp = s.hp;
     r.light = !!s.light; r.alive = !!s.alive; r.running = !!s.running; r.lamp = !!s.lamp; r.house = s.house | 0; r.hiddenDoor = !!s.hd;
   } else if (m.k === 'door') { const d = Town.doors[m.d | 0]; if (d) toggleDoor(d, true); }
+  else if (m.k === 'lock') { const d = Town.doors[m.d | 0]; if (d && d.owner >= 0) { if (m.l) setLockHost(d, true); else if (d.locked) { applyLock(d, false); netSend(0, { k: 'lock', d: d.id, l: 0 }); makeNoise(d.x, d.z, 12); } } }
+  else if (m.k === 'curt') toggleCurtain(Town.windows[m.w | 0]);
   else if (m.k === 'loot') {
     const ct = Town.containers[m.c | 0]; if (!ct || ct.looted) return;
     ct.looted = true; netSend(0, { k: 'looted', c: ct.id, by: from });
@@ -105,7 +107,7 @@ function hostMsg(from, m) {
   }
 }
 function worldState() {
-  return { clock: G.clock, day: G.day, night: G.night, doors: Town.doors.map(d => (d.open ? 1 : 0) + (d.broken ? 2 : 0)),
+  return { clock: G.clock, day: G.day, night: G.night, doors: Town.doors.map(d => (d.open ? 1 : 0) + (d.broken ? 2 : 0) + (d.locked ? 4 : 0)), curt: Town.windows.map(w => (w.has ? 1 : 0) + (w.closed ? 2 : 0)),
            looted: Town.containers.filter(c => c.looted).map(c => c.id), lamps: Town.lamps.filter(l => l.broken).map(l => l.i),
            stock: Town.shop.stock, players: NET.lobby };
 }
@@ -148,6 +150,8 @@ function clientMsg(m) {
     }
     for (const id of [...REMOTES.keys()]) if (!seen.has(id)) dropRemote(id);
   } else if (m.k === 'door') applyDoor(Town.doors[m.d | 0], !!m.o, !!m.b);
+  else if (m.k === 'lock') applyLock(Town.doors[m.d | 0], !!m.l);
+  else if (m.k === 'curt') applyCurtain(Town.windows[m.w | 0], !!m.c);
   else if (m.k === 'looted') { const ct = Town.containers[m.c | 0]; if (ct) { const was = ct.looted; ct.looted = true; if (m.by === NET.myId && !was) addItems(ct.items, ct.money); } }
   else if (m.k === 'stock') { Town.shop.stock = m.stock; renderShop(); }
   else if (m.k === 'bought') shopBought(String(m.it));

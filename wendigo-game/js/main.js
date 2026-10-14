@@ -38,7 +38,9 @@ function onNightStart() {
 function onDawn(day) {
   G.day = day; G.nightsSurvived = day - 1;
   if (day > DAYS_TO_WIN) { if (NET.mode !== 'client') netSend(0, { k: 'win' }); winGame(); return; }
-  if (Town.shop) Town.shop.stock = { canned: 6, bread: 6, water: 8, soda: 8, bandage: 3, battery: 4 };
+  if (Town.shop) Town.shop.stock = { canned: 6, bread: 6, water: 8, soda: 8, bandage: 3, battery: 4, lockpick: 4 };
+  applyLayout(day); // новый расклад замков и штор
+  if (P.house >= 0 && Town.houses[P.house].door.locked) showMsg('Утро. Замки и шторы в посёлке поменялись.', 4);
   if (!P.alive) respawn();
   showMsg(`Рассвет. День ${day}. Вендиго ушёл в лес — до заката нужно запастись едой и водой.`, 5);
 }
@@ -51,14 +53,47 @@ function respawn() {
 // ---------------------------------------------------------------------
 //  Действия, которые согласует хост
 // ---------------------------------------------------------------------
+function makeNoise(x, z, r) { if (NET.mode !== 'client') WD.noise = { x, z, r }; }
+function requestLock(d, lock) {
+  if (NET.mode === 'client') { netSend(1, { k: 'lock', d: d.id, l: lock ? 1 : 0 }); return; }
+  setLockHost(d, lock);
+}
+function setLockHost(d, lock) {
+  if (d.broken || (lock && d.open)) return;
+  applyLock(d, lock, true); netSend(0, { k: 'lock', d: d.id, l: lock ? 1 : 0 });
+  makeNoise(d.x, d.z, 9);
+}
+function applyLock(d, lock, sfx) {
+  if (!d) return; setDoorLocked(d, lock);
+  if (sfx || true) { const s = spatial(d.x, d.z, 22); SFX.click(Math.max(0.15, s.vol), s.pan); }
+}
+function pickLock(d) {
+  if (P.inv.lockpick <= 0) { showMsg('Заперто. Нужна отмычка — их продают в магазине и находят в шкафах', 2.5); return; }
+  P.inv.lockpick--; updateHud(true); showMsg('Замок вскрыт', 1.5);
+  if (NET.mode === 'client') netSend(1, { k: 'lock', d: d.id, l: 0 }); else { applyLock(d, false); netSend(0, { k: 'lock', d: d.id, l: 0 }); makeNoise(d.x, d.z, 16); }
+}
+function requestCurtain(w) {
+  if (NET.mode === 'client') { netSend(1, { k: 'curt', w: w.id }); return; }
+  toggleCurtain(w);
+}
+function toggleCurtain(w) {
+  if (!w || !w.has) return;
+  applyCurtain(w, !w.closed); netSend(0, { k: 'curt', w: w.id, c: w.closed ? 1 : 0 });
+  makeNoise(w.x, w.z, 6);
+}
+function applyCurtain(w, closed) {
+  if (!w) return; w.closed = !!closed; applyWindowCollision(w);
+  const s = spatial(w.x, w.z, 18); SFX.click(Math.max(0.1, s.vol * 0.7), s.pan);
+}
 function requestDoor(d) {
   if (d.broken) { showMsg('Дверь выбита — её не закрыть', 1.5); return; }
+  if (d.locked) { if (P.house === d.owner) showMsg('Дверь заперта — отопри замок', 1.5); else pickLock(d); return; }
   if (d.owner === -1 && !shopOpen() && !P.inShop) { showMsg('Магазин закрыт до 7:00', 2); return; }
   if (NET.mode === 'client') netSend(1, { k: 'door', d: d.id }); else toggleDoor(d, false);
 }
 function doorPair(d) { return d.owner === -1 ? [Town.shop.door, Town.shop.door2] : [d]; }
 function toggleDoor(d, fromNet) {
-  if (d.broken) return;
+  if (d.broken || d.locked) return;
   const open = !d.open;
   if (!open) {
     // не закрываем дверь на стоящем в проёме
@@ -67,6 +102,7 @@ function toggleDoor(d, fromNet) {
     if (WD.state !== 'away' && doorPair(d).some(dd => Math.hypot(WD.x - dd.x, WD.z - dd.z) < 0.9)) return;
   }
   for (const dd of doorPair(d)) { applyDoor(dd, open, false); netSend(0, { k: 'door', d: dd.id, o: open ? 1 : 0, b: 0 }); }
+  if (isNight()) makeNoise(d.x, d.z, 12);
   if (d.owner === -1 && open && shopOpen()) SFX.bell();
 }
 function applyDoor(d, open, broken) {
@@ -183,7 +219,8 @@ function startGameWorld(seed, world) {
 }
 function applyWorldState(w) {
   G.clock = w.clock; G.day = w.day; G.night = w.night;
-  w.doors.forEach((v, i) => { const d = Town.doors[i]; if (d) { d.open = !!(v & 1); d.broken = !!(v & 2); d.ang = d.open ? 1 : 0; applyDoorCollision(d); } });
+  w.doors.forEach((v, i) => { const d = Town.doors[i]; if (d) { d.open = !!(v & 1); d.broken = !!(v & 2); d.ang = d.open ? 1 : 0; setDoorLocked(d, !!(v & 4)); applyDoorCollision(d); } });
+  (w.curt || []).forEach((v, i) => { const c = Town.windows[i]; if (c) { c.has = !!(v & 1); c.closed = !!(v & 2); } }); snapCurtains();
   for (const c of w.looted) if (Town.containers[c]) Town.containers[c].looted = true;
   for (const i of w.lamps) if (Town.lamps[i]) Town.lamps[i].broken = true;
   Town.shop.stock = w.stock;
@@ -311,7 +348,7 @@ function loop(t) {
   if (G.state === 'play') updatePlayer(dt); else if (G.state === 'dead') spectate(dt);
   if (isHostOrSolo()) wendigoAI(dt, isNight()); else wendigoClient(dt);
   animateWendigo(dt, G.time);
-  updateRemotes(dt); updateDoors(dt);
+  updateRemotes(dt); updateDoors(dt); updateCurtains(dt);
   const dk = updateSky(G.clock, camera.position.x, camera.position.z);
   updateLamps(dt, dk, camera.position.x, camera.position.z);
   updateFlashlight(dt, P.light && P.alive && G.state !== 'dead', G.flick, dk);

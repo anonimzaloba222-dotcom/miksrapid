@@ -153,6 +153,11 @@ function wendigoAI(dt, night) {
   if (WD.state === 'howl') { WD.anim = 'howl'; WD.speed = 0; WD.waitT -= dt; if (WD.waitT <= 0) setWState('roam'); return; }
   updateAvoid();
 
+  // ---- слух: шум за стенами (двери, замки, шторы) ----
+  if (WD.noise) {
+    const nz = WD.noise; WD.noise = null;
+    if ((WD.state === 'roam' || WD.state === 'search' || WD.state === 'investigate') && Math.hypot(nz.x - WD.x, nz.z - WD.z) < nz.r + 8) { setWState('investigate'); WD.lastSeen = { x: nz.x, z: nz.z, t: G.time }; }
+  }
   // ---- чувства ----
   WD.senseT -= dt;
   if (WD.senseT <= 0) {

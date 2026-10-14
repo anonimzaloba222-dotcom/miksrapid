@@ -4,7 +4,7 @@
 // =====================================================================
 const STREETS_Z = [-36, 0, 36], STREETS_X = [-48, 0, 48];
 const LOT_X = [-74, -64, -31, -17, 17, 31, 64, 74];
-const Town = { seed: 0, houses: [], shop: null, lamps: [], doors: [], containers: [], inter: [], spawn: { x: 13, z: -2.5 }, trees: [] };
+const Town = { seed: 0, windows: [], houses: [], shop: null, lamps: [], doors: [], containers: [], inter: [], spawn: { x: 13, z: -2.5 }, trees: [] };
 const C = h => new THREE.Color(h);
 
 // ---------------------------------------------------------------------
@@ -68,9 +68,10 @@ const ITEMS = {
   soda: { name: 'Газировка', icon: '🥤', food: 5, water: 22, price: 15 },
   bandage: { name: 'Бинт', icon: '✚', heal: 30, price: 50 },
   battery: { name: 'Батарейки', icon: '🔋', price: 35 },
+  lockpick: { name: 'Отмычка', icon: '🗝️', price: 30 },
 };
 function rollLoot(kind) {
-  const table = kind === 'fridge' ? ['water', 'water', 'soda', 'soda', 'canned', 'bread'] : ['canned', 'canned', 'bread', 'bandage', 'battery', 'water', 'soda'];
+  const table = kind === 'fridge' ? ['water', 'water', 'soda', 'soda', 'canned', 'bread'] : ['canned', 'canned', 'bread', 'bandage', 'battery', 'water', 'soda', 'lockpick'];
   const items = []; const n = RNG() < 0.25 ? 0 : RNG() < 0.65 ? 1 : 2;
   for (let i = 0; i < n; i++) items.push(spick(table));
   return { items, money: RNG() < 0.5 ? (5 + RNG() * 50 | 0) : 0 };
@@ -93,6 +94,12 @@ function makeDoor(F, lx, lz, width, h, mat, owner, glass, mirror) {
   d.cells = fsolid(F, lx, lz - 0.1, lx + width, lz + 0.12, DOORF);
   const c = F.pt(lx + width / 2, 0, lz); d.x = c[0]; d.z = c[2];
   addInter('door', c[0], 1.1, c[2], 1.0, 2.0, 0.4, d);
+  d.locked = false;
+  if (!glass) { // замок: накладной засов на двери и интерактивная зона изнутри
+    const lk = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.2, 0.14), new THREE.MeshStandardMaterial({ color: 0xc8a040, metalness: 0.8, roughness: 0.3 }));
+    lk.position.set(width - 0.1, 0.88, 0); lk.visible = false; pivot.add(lk); d.lockMesh = lk;
+    const li = F.pt(lx + width - 0.14, 1.15, lz + 0.3); d.lockInter = addInter('lock', li[0], 1.15, li[2], 0.28, 0.3, 0.28, d);
+  }
   Town.doors.push(d); applyDoorCollision(d);
   return d;
 }
@@ -111,14 +118,23 @@ function buildHouse(GB, h) {
   const F = Frame(h.x, h.zf, h.rot), col = h.col, white = C('#d8d4c8'), wood = C('#f2dcc0'), fab = h.fab;
   const ext = GB.siding, int = GB.wall;
   const W = 4, D = 8, T = 0.2, HH = 3;
-  // стены: снаружи обшивка, внутри обои
-  fbox(ext, F, -W, 0, 0, -0.55, HH, T, col, 1, 'nz py nx px'); fbox(int, F, -W + T, 0, T, -0.55, HH, T + 0.001, white, 1, 'pz');
-  fbox(ext, F, 0.55, 0, 0, W, HH, T, col, 1, 'nz py px nx'); fbox(int, F, 0.55, 0, T, W - T, HH, T + 0.001, white, 1, 'pz');
+  // стены с проёмами под окна: снаружи брёвна, внутри обои. Окна прозрачны изнутри
+  const WHW = 0.55, WH0 = 1.0, WH1 = 2.3;
+  const pieces = (lo, hi, cs) => { const out = []; let cur = lo; for (const c of cs) { out.push([cur, c - WHW, 0, HH], [c - WHW, c + WHW, 0, WH0], [c - WHW, c + WHW, WH1, HH]); cur = c + WHW; } out.push([cur, hi, 0, HH]); return out.filter(p => p[1] - p[0] > 0.001); };
+  for (const [lo, hi, cs] of [[-W, -0.55, [-2.4]], [0.55, W, [2.4]]]) for (const [p, q, y0, y1] of pieces(lo, hi, cs)) { fbox(ext, F, p, y0, 0, q, y1, T, col, 1, 'nz py ny nx px'); fbox(int, F, p, y0, T, q, y1, T + 0.001, white, 1, 'pz'); }
   fbox(ext, F, -0.55, 2.2, 0, 0.55, HH, T, col, 1, 'nz py ny'); fbox(int, F, -0.55, 2.2, T, 0.55, HH, T + 0.001, white, 1, 'pz');
-  fbox(ext, F, -W, 0, D - T, W, HH, D, col, 1, 'pz py px nx'); fbox(int, F, -W + T, 0, D - T - 0.001, W - T, HH, D - T, white, 1, 'nz');
-  fbox(ext, F, -W, 0, T, -W + T, HH, D - T, col, 1, 'nx py'); fbox(int, F, -W + T, 0, T, -W + T + 0.001, HH, D - T, white, 1, 'px');
-  fbox(ext, F, W - T, 0, T, W, HH, D - T, col, 1, 'px py'); fbox(int, F, W - T - 0.001, 0, T, W - T, HH, D - T, white, 1, 'nx');
+  for (const [p, q, y0, y1] of pieces(-W, W, [0])) { fbox(ext, F, p, y0, D - T, q, y1, D, col, 1, 'pz py ny nx px'); fbox(int, F, p, y0, D - T - 0.001, q, y1, D - T, white, 1, 'nz'); }
+  for (const [p, q, y0, y1] of pieces(T, D - T, [4.0])) {
+    fbox(ext, F, -W, y0, p, -W + T, y1, q, col, 1, 'nx py ny nz pz'); fbox(int, F, -W + T, y0, p, -W + T + 0.001, y1, q, white, 1, 'px');
+    fbox(ext, F, W - T, y0, p, W, y1, q, col, 1, 'px py ny nz pz'); fbox(int, F, W - T - 0.001, y0, p, W - T, y1, q, white, 1, 'nx');
+  }
   for (const [a, b, c, d] of [[-W, 0, -0.55, T], [0.55, 0, W, T], [-W, D - T, W, D], [-W, T, -W + T, D - T], [W - T, T, W, D - T]]) fsolid(F, a, b, c, d, SOLID | OPAQUE);
+  // перегородки: спальня и кухня (проёмы шире метра, чтобы проходить)
+  const part = (lx0, lz0, lx1, lz1) => { fbox(int, F, lx0, 0, lz0, lx1, HH, lz1, white, 1, 'px nx pz nz py'); fsolid(F, lx0, lz0, lx1, lz1, SOLID | OPAQUE); };
+  part(-W + T, 5.0, -2.2, 5.12); part(-0.4, 5.0, -0.28, D - T);
+  fbox(int, F, -2.2, 2.15, 5.0, -0.4, HH, 5.12, white, 1, 'px nx pz nz ny py');
+  part(2.4, 5.5, W - T, 5.62);
+  fbox(GB.dwood, F, -2.2, 0, 4.98, -2.12, 2.15, 5.14, h.trim, 1); fbox(GB.dwood, F, -0.48, 0, 4.98, -0.4, 2.15, 5.14, h.trim, 1); fbox(GB.dwood, F, -2.2, 2.15, 4.98, -0.4, 2.25, 5.14, h.trim, 1);
   // фронтоны и крыша
   for (const sx of [-1, 1]) {
     const x = sx * W, a = F.pt(x, HH, 0), b = F.pt(x, HH, D), c = F.pt(x, 5.05, D / 2), n = F.n(sx, 0, 0);
@@ -136,20 +152,47 @@ function buildHouse(GB, h) {
   fquad(GB.ceil, F, [-W + T, 2.95, T], [W - T, 2.95, T], [W - T, 2.95, D - T], [-W + T, 2.95, D - T], [0, -1, 0], 2, 2, white);
   fbox(GB.concrete, F, -1.1, 0, -1.1, 1.1, 0.14, 0, white, 0.5, 'py pz nz px nx');
   fquad(GB.concrete, F, [-0.6, 0.035, -1.1], [0.6, 0.035, -1.1], [0.6, 0.035, -2.5], [-0.6, 0.035, -2.5], [0, 1, 0], 0.6, 0.7, white);
-  // окна (снаружи могут светиться ночью)
-  const wins = [[-2.4, 0, -1], [2.4, 0, -1]], winB = h.lit ? GB.winL : GB.win;
-  for (const [lx] of wins) {
-    fquad(winB, F, [lx + 0.55, 1.0, -0.006], [lx - 0.55, 1.0, -0.006], [lx - 0.55, 2.3, -0.006], [lx + 0.55, 2.3, -0.006], [0, 0, -1], 1, 1, white);
-    fquad(GB.win, F, [lx - 0.55, 1.0, T + 0.004], [lx + 0.55, 1.0, T + 0.004], [lx + 0.55, 2.3, T + 0.004], [lx - 0.55, 2.3, T + 0.004], [0, 0, 1], 1, 1, white);
-    fbox(GB.plain, F, lx - 0.65, 0.92, -0.12, lx + 0.65, 1.0, 0, C('#cfcabc'), 1, 'py nz px nx');
-  }
-  for (const sx of [-1, 1]) {
-    const x = sx * (W + 0.006), xi = sx * (W - T - 0.004);
-    const a = [x, 1.0, 3.4], b = [x, 1.0, 4.6], c = [x, 2.3, 4.6], d = [x, 2.3, 3.4];
-    if (sx > 0) fquad(winB, F, b, a, d, c, [1, 0, 0], 1, 1, white); else fquad(winB, F, a, b, c, d, [-1, 0, 0], 1, 1, white);
-    if (sx > 0) fquad(GB.win, F, [xi, 1.0, 3.4], [xi, 1.0, 4.6], [xi, 2.3, 4.6], [xi, 2.3, 3.4], [-1, 0, 0], 1, 1, white);
-    else fquad(GB.win, F, [xi, 1.0, 4.6], [xi, 1.0, 3.4], [xi, 2.3, 3.4], [xi, 2.3, 4.6], [1, 0, 0], 1, 1, white);
-  }
+  // окна: снаружи тёмное/светящееся стекло (изнутри его не видно), внутри — прозрачное стекло с рамой
+  const winB = h.lit ? GB.winL : GB.win;
+  h.wins = [];
+  const addWin = (side, c) => {
+    // side: f/b — вдоль x, l/r — вдоль z
+    const quadOut = (pts, n) => fquad(winB, F, pts[0], pts[1], pts[2], pts[3], n, 1, 1, white);
+    let ctr, nrm, rotY;
+    if (side === 'f') { quadOut([[c + WHW, WH0, -0.006], [c - WHW, WH0, -0.006], [c - WHW, WH1, -0.006], [c + WHW, WH1, -0.006]], [0, 0, -1]); ctr = [c, 0, T]; nrm = [0, 0, 1]; }
+    else if (side === 'b') { quadOut([[c - WHW, WH0, D + 0.006], [c + WHW, WH0, D + 0.006], [c + WHW, WH1, D + 0.006], [c - WHW, WH1, D + 0.006]], [0, 0, 1]); ctr = [c, 0, D - T]; nrm = [0, 0, -1]; }
+    else if (side === 'l') { quadOut([[-W - 0.006, WH0, c - WHW], [-W - 0.006, WH0, c + WHW], [-W - 0.006, WH1, c + WHW], [-W - 0.006, WH1, c - WHW]], [-1, 0, 0]); ctr = [-W + T, 0, c]; nrm = [1, 0, 0]; }
+    else { quadOut([[W + 0.006, WH0, c + WHW], [W + 0.006, WH0, c - WHW], [W + 0.006, WH1, c - WHW], [W + 0.006, WH1, c + WHW]], [1, 0, 0]); ctr = [W - T, 0, c]; nrm = [-1, 0, 0]; }
+    // внутренняя стеклянная панель + рама + импост
+    const al = side === 'f' || side === 'b', e = 0.004, gx = ctr[0], gz = ctr[2];
+    if (al) { const zz = gz + nrm[2] * e; const A = [gx - WHW, WH0, zz], B = [gx + WHW, WH0, zz], Cc = [gx + WHW, WH1, zz], Dd = [gx - WHW, WH1, zz]; if (nrm[2] > 0) fquad(GB.glassWin, F, A, B, Cc, Dd, nrm, 1, 1, white); else fquad(GB.glassWin, F, B, A, Dd, Cc, nrm, 1, 1, white); }
+    else { const xx = gx + nrm[0] * e; const A = [xx, WH0, gz + WHW], B = [xx, WH0, gz - WHW], Cc = [xx, WH1, gz - WHW], Dd = [xx, WH1, gz + WHW]; if (nrm[0] > 0) fquad(GB.glassWin, F, A, B, Cc, Dd, nrm, 1, 1, white); else fquad(GB.glassWin, F, B, A, Dd, Cc, nrm, 1, 1, white); }
+    const fr = C('#e8e4d8'), th = 0.05, dep = 0.07;
+    if (al) {
+      const z0 = side === 'f' ? T : D - T - dep, z1 = side === 'f' ? T + dep : D - T;
+      fbox(GB.dwood, F, gx - WHW, WH0, z0, gx + WHW, WH0 + th, z1, fr, 1); fbox(GB.dwood, F, gx - WHW, WH1 - th, z0, gx + WHW, WH1, z1, fr, 1);
+      fbox(GB.dwood, F, gx - WHW, WH0, z0, gx - WHW + th, WH1, z1, fr, 1); fbox(GB.dwood, F, gx + WHW - th, WH0, z0, gx + WHW, WH1, z1, fr, 1);
+      fbox(GB.dwood, F, gx - 0.02, WH0, z0, gx + 0.02, WH1, z1, fr, 1); fbox(GB.dwood, F, gx - WHW, 1.65, z0, gx + WHW, 1.69, z1, fr, 1);
+      fbox(GB.dwood, F, gx - WHW - 0.08, WH0 - 0.04, side === 'f' ? T : D - T - 0.2, gx + WHW + 0.08, WH0, side === 'f' ? T + 0.2 : D - T, fr, 1);
+    } else {
+      const x0 = side === 'l' ? -W + T : W - T - dep, x1 = side === 'l' ? -W + T + dep : W - T;
+      fbox(GB.dwood, F, x0, WH0, gz - WHW, x1, WH0 + th, gz + WHW, fr, 1); fbox(GB.dwood, F, x0, WH1 - th, gz - WHW, x1, WH1, gz + WHW, fr, 1);
+      fbox(GB.dwood, F, x0, WH0, gz - WHW, x1, WH1, gz - WHW + th, fr, 1); fbox(GB.dwood, F, x0, WH0, gz + WHW - th, x1, WH1, gz + WHW, fr, 1);
+      fbox(GB.dwood, F, x0, WH0, gz - 0.02, x1, WH1, gz + 0.02, fr, 1); fbox(GB.dwood, F, x0, 1.65, gz - WHW, x1, 1.69, gz + WHW, fr, 1);
+      fbox(GB.dwood, F, side === 'l' ? -W + T : W - T - 0.2, WH0 - 0.04, gz - WHW - 0.08, side === 'l' ? -W + T + 0.2 : W - T, WH0, gz + WHW + 0.08, fr, 1);
+    }
+    // ячейки коллизии окна: SOLID остаётся, OPAQUE снимается, когда нет закрытой шторы
+    let cells;
+    if (side === 'f') cells = fsolid(F, c - 0.45, 0, c + 0.45, T, 0); else if (side === 'b') cells = fsolid(F, c - 0.45, D - T, c + 0.45, D, 0);
+    else if (side === 'l') cells = fsolid(F, -W, c - 0.45, -W + T, c + 0.45, 0); else cells = fsolid(F, W - T, c - 0.45, W, c + 0.45, 0);
+    const p = F.pt(ctr[0] + nrm[0] * 0.3, 1.65, ctr[2] + nrm[2] * 0.3);
+    const w = { id: Town.windows.length, house: h.id, side, cells, has: false, closed: false, t: 0, x: p[0], z: p[2], rotY: (al ? 0 : Math.PI / 2), nx: 0, nz: 0, inst: -1 };
+    const nn = F.n(nrm[0], 0, nrm[2]); w.nx = nn[0]; w.nz = nn[2];
+    Town.windows.push(w); h.wins.push(w);
+    w.inter = addInter('curtain', p[0], 1.65, p[2], al ? 1.5 : 0.6, 1.6, al ? 0.6 : 1.5, w);
+    w.px = F.pt(ctr[0] + nrm[0] * 0.07, 0, ctr[2] + nrm[2] * 0.07);
+  };
+  addWin('f', -2.4); addWin('f', 2.4); addWin('b', 0); addWin('l', 4.0); addWin('r', 4.0);
   // штакетник с воротцами
   const fc = h.fence, FX = 4.9;
   for (let lx = -FX; lx <= FX; lx += 0.3) if (Math.abs(lx) > 0.95) fbox(GB.plain, F, lx - 0.04, 0, -2.45, lx + 0.04, 1.0 + ((lx * 10 | 0) % 2 ? 0.04 : 0), -2.39, fc, 1, 'px nx py pz nz');
@@ -191,11 +234,11 @@ function buildHouse(GB, h) {
   fbox(GB.wood, F, -3.7, 0, 5.6, -2.1, 0.42, 7.75, wood, 1); fbox(GB.fabric, F, -3.65, 0.42, 5.65, -2.15, 0.62, 7.7, fab, 1);
   fbox(GB.fabric, F, -3.6, 0.62, 7.2, -2.2, 0.74, 7.6, C('#c8c2b0'), 1); fbox(GB.wood, F, -3.75, 0, 7.72, -2.05, 1.1, 7.8, wood, 1);
   fsolid(F, -3.7, 5.6, -2.1, 7.8, SOLID);
-  fbox(GB.wood, F, 0.6, 0.74, 4.1, 1.8, 0.79, 4.9, wood, 1);
-  for (const [a, b] of [[0.65, 4.15], [1.7, 4.15], [0.65, 4.8], [1.7, 4.8]]) fbox(GB.wood, F, a, 0, b, a + 0.06, 0.74, b + 0.06, wood, 1);
-  for (const lz of [3.6, 5.3]) { fbox(GB.wood, F, 0.95, 0.44, lz - 0.2, 1.4, 0.48, lz + 0.2, wood, 1); fbox(GB.wood, F, 0.95, 0.48, lz > 4.5 ? lz + 0.16 : lz - 0.2, 1.4, 0.95, lz > 4.5 ? lz + 0.2 : lz - 0.16, wood, 1); }
-  fsolid(F, 0.6, 4.1, 1.8, 4.9, SOLID);
-  fquad(GB.fabric, F, [-1.6, 0.025, 5.2], [0.4, 0.025, 5.2], [0.4, 0.025, 2.4], [-1.6, 0.025, 2.4], [0, 1, 0], 1, 1.4, h.rug);
+  fbox(GB.wood, F, 1.6, 0.74, 4.1, 2.8, 0.79, 4.9, wood, 1);
+  for (const [a, b] of [[1.65, 4.15], [2.7, 4.15], [1.65, 4.8], [2.7, 4.8]]) fbox(GB.wood, F, a, 0, b, a + 0.06, 0.74, b + 0.06, wood, 1);
+  for (const lz of [3.6, 5.3]) { fbox(GB.wood, F, 1.95, 0.44, lz - 0.2, 2.4, 0.48, lz + 0.2, wood, 1); fbox(GB.wood, F, 1.95, 0.48, lz > 4.5 ? lz + 0.16 : lz - 0.2, 2.4, 0.95, lz > 4.5 ? lz + 0.2 : lz - 0.16, wood, 1); }
+  fsolid(F, 1.6, 4.1, 2.8, 4.9, SOLID);
+  fquad(GB.fabric, F, [-1.2, 0.025, 4.0], [0.4, 0.025, 4.0], [0.4, 0.025, 1.6], [-1.2, 0.025, 1.6], [0, 1, 0], 1, 1.4, h.rug);
   fbox(GB.wood, F, 0.8, 0, 7.2, 3.0, 0.9, 7.8, wood, 1); fbox(GB.plain, F, 0.78, 0.9, 7.15, 3.02, 0.95, 7.8, C('#b9b3a4'), 1);
   fsolid(F, 0.8, 7.2, 3.0, 7.8, SOLID);
   fbox(GB.wood, F, 3.4, 0, 1.0, 3.78, 1.8, 2.4, wood, 1); fsolid(F, 3.4, 1.0, 3.8, 2.4, SOLID);
@@ -256,6 +299,49 @@ function buildShop(GB, s) {
   fbox(GB.paint, F, 4.0, 1.05, 1.7, 4.5, 1.35, 2.1, C('#333'), 1); fsolid(F, 3.2, 1.6, 7.5, 2.3, SOLID);
   // лампы дневного света
   for (const lx of [-5, 0, 5]) fbox(GB.fluor, F, lx - 1.2, HH - 0.12, 4.9, lx + 1.2, HH - 0.06, 5.1, white, 1, 'ny');
+  // ---- убранство магазина ----
+  // плитка: шахматный пол
+  for (let i = 0; i < 17; i++) for (let j = 0; j < 9; j++) if ((i + j) % 2) fquad(GB.plain, F, [-W + 0.3 + i, 0.024, 0.3 + j + 1], [-W + 1.3 + i, 0.024, 0.3 + j + 1], [-W + 1.3 + i, 0.024, 0.3 + j], [-W + 0.3 + i, 0.024, 0.3 + j], [0, 1, 0], 1, 1, C('#8e8a80'));
+  // ценники на полках
+  for (const lx0 of [-6.5, -2.5, 1.5]) for (let y = 0.25; y < 1.8; y += 0.45) for (let x = lx0 + 0.15; x < lx0 + 2.7; x += 0.55) { fbox(GB.paint, F, x, y - 0.04, 3.86, x + 0.2, y + 0.02, 3.88, spick([C('#d8c030'), C('#e8e8e0'), C('#c83a2a')]), 1, 'nz'); fbox(GB.paint, F, x, y - 0.04, 4.72, x + 0.2, y + 0.02, 4.74, C('#e8e8e0'), 1, 'pz'); }
+  // таблички над рядами
+  for (const [lx0, col] of [[-6.5, '#2a6a3a'], [-2.5, '#2a4a8a'], [1.5, '#8a2a2a']]) fbox(GB.paint, F, lx0 + 0.6, 1.95, 3.95, lx0 + 2.2, 2.3, 4.0, C(col), 1, 'nz pz');
+  // овощной лоток у входа
+  for (const [lx, col] of [[-8.0, '#b8321f'], [-6.9, '#4f8a2a'], [-5.8, '#7a5a30'], [-4.7, '#c87a1e']]) {
+    fbox(GB.wood, F, lx, 0, 0.8, lx + 1.0, 0.55, 1.7, C('#c9a574'), 1); fsolid(F, lx, 0.8, lx + 1.0, 1.7, SOLID);
+    for (let k = 0; k < 14; k++) fbox(GB.paint, F, lx + 0.1 + (k % 5) * 0.16, 0.55, 0.9 + ((k / 5) | 0) * 0.28, lx + 0.24 + (k % 5) * 0.16, 0.69, 1.04 + ((k / 5) | 0) * 0.28, C(col), 1);
+  }
+  // хлебная полка вдоль левой стены
+  fbox(GB.wood, F, -W + T, 0, 5.2, -W + 0.7, 1.5, 8.2, C('#a8814e'), 1); fsolid(F, -W + T, 5.2, -W + 0.7, 8.2, SOLID);
+  for (const y of [0.4, 0.8, 1.2]) for (let z = 5.35; z < 8.1; z += 0.3) fbox(GB.paint, F, -W + 0.4, y, z, -W + 0.68, y + 0.14, z + 0.22, C(['#c8964a', '#b07a38', '#d8aa60'][(z * 5 | 0) % 3]), 1);
+  // морозильные лари
+  for (const lx of [3.2, 6.0]) {
+    fbox(GB.metal, F, lx, 0, 8.0, lx + 2.4, 0.9, 9.4, C('#e0e0dc'), 1); fbox(GB.plain, F, lx + 0.1, 0.9, 8.1, lx + 2.3, 0.94, 9.3, C('#9fc0d0'), 1, 'py'); fsolid(F, lx, 8.0, lx + 2.4, 9.4, SOLID);
+  }
+  // корзины у входа
+  for (let k = 0; k < 4; k++) fbox(GB.paint, F, -2.9, k * 0.17, 0.5, -2.2, k * 0.17 + 0.16, 1.1, C('#c83a2a'), 1, 'px nx pz nz py');
+  fsolid(F, -2.9, 0.5, -2.2, 1.1, SOLID);
+  // плакаты и часы
+  for (const [lz, col] of [[2.5, '#d8b03a'], [4.2, '#3a6aa8'], [6.0, '#a83a2a']]) fbox(GB.paint, F, -W + T, 1.5, lz, -W + T + 0.02, 2.4, lz + 1.0, C(col), 1, 'px');
+  fbox(GB.plain, F, -0.4, 3.0, D - T - 0.05, 0.4, 3.8, D - T, C('#e8e4d8'), 1, 'nz'); fbox(GB.plain, F, -0.03, 3.4, D - T - 0.07, 0.03, 3.75, D - T - 0.05, C('#222'), 1, 'nz'); fbox(GB.plain, F, -0.25, 3.37, D - T - 0.07, 0.0, 3.43, D - T - 0.05, C('#222'), 1, 'nz');
+  // касса: монитор, весы, лоток
+  fbox(GB.plain, F, 4.9, 1.05, 1.75, 5.4, 1.35, 1.82, C('#1a1a1c'), 1, 'nz pz py'); fbox(GB.metal, F, 6.0, 1.05, 1.7, 6.5, 1.12, 2.1, C('#cfcfcf'), 1); fbox(GB.metal, F, 6.15, 1.12, 1.82, 6.35, 1.4, 1.98, C('#e8e8e0'), 1);
+  fbox(GB.paint, F, 7.0, 1.05, 1.75, 7.35, 1.2, 2.2, C('#d8b03a'), 1);
+  // коробки у правой стены
+  for (const [lx, lz] of [[7.9, 4.6], [7.9, 5.4], [7.6, 6.4]]) { fbox(GB.wood, F, lx, 0, lz, lx + 0.7, 0.6, lz + 0.7, C('#b08a58'), 1); fsolid(F, lx, lz, lx + 0.7, lz + 0.7, SOLID); }
+  // ---- снаружи ----
+  // козырёк в полоску
+  for (let k = 0; k < 12; k++) fbox(GB.paint, F, -3 + k * 0.5, 2.7, -1.7, -2.5 + k * 0.5, 2.8, -0.05, k % 2 ? C('#e8e4d8') : C('#a8322a'), 1);
+  for (const x of [-2.9, 2.9]) fbox(GB.metal, F, x - 0.05, 0, -1.65, x + 0.05, 2.7, -1.55, C('#6a5a4a'), 1);
+  fbox(GB.plain, F, -1.1, 0.0, -1.6, 1.1, 0.12, -0.0, C('#8a867c'), 1, 'py px nx nz');
+  // скамейка, урна, цветочные кадки, поддон с водой
+  fbox(GB.wood, F, 4.0, 0.42, -1.6, 6.0, 0.48, -1.2, C('#9a7448'), 1); fbox(GB.wood, F, 4.0, 0.7, -1.22, 6.0, 1.0, -1.18, C('#9a7448'), 1); for (const x of [4.1, 5.9]) fbox(GB.metal, F, x - 0.04, 0, -1.58, x + 0.04, 0.42, -1.22, C('#333'), 1);
+  fsolid(F, 4.0, -1.6, 6.0, -1.2, SOLID);
+  fbox(GB.metal, F, -4.4, 0, -1.2, -3.9, 0.8, -0.8, C('#3a4a3a'), 1); fsolid(F, -4.4, -1.2, -3.9, -0.8, SOLID);
+  for (const x of [-7.6, 7.6]) { fbox(GB.plain, F, x - 0.3, 0, -1.0, x + 0.3, 0.5, -0.4, C('#7a4a30'), 1); fbox(GB.plain, F, x - 0.25, 0.5, -0.95, x + 0.25, 0.8, -0.45, C('#3f6a2a'), 1); fsolid(F, x - 0.3, -1.0, x + 0.3, -0.4, SOLID); }
+  for (let k = 0; k < 6; k++) fbox(GB.paint, F, -3.2 + (k % 3) * 0.3, 0.1 + ((k / 3) | 0) * 0.28, -1.3, -2.95 + (k % 3) * 0.3, 0.36 + ((k / 3) | 0) * 0.28, -1.05, C('#3a6aa8'), 1);
+  // табличка «ОТКРЫТО» и меловая доска
+  fbox(GB.paint, F, 1.3, 1.5, -0.04, 1.8, 1.8, 0.0, C('#2a6a3a'), 1, 'nz'); fbox(GB.plain, F, -2.0, 0, -2.2, -1.2, 1.0, -2.1, C('#1c2a24'), 1, 'nz pz'); fsolid(F, -2.0, -2.2, -1.2, -2.1, SOLID);
   // вывеска
   const sg = new THREE.Mesh(new THREE.PlaneGeometry(7, 1.2), MT.sign);
   const sp = F.pt(0, 3.75, -0.02); sg.position.set(sp[0], sp[1], sp[2]); sg.rotation.y = F.k > 0 ? Math.PI : 0; scene.add(sg); s.signMesh = sg;
@@ -268,7 +354,7 @@ function buildShop(GB, s) {
   s.lights = lp.map(p => { const l = new THREE.PointLight(0xe8f0ff, 0, 14, 2); l.position.set(p[0], p[1], p[2]); scene.add(l); return l; });
   const a = F.pt(-W, 0, 0), b = F.pt(W, 0, D);
   s.bounds = { x0: Math.min(a[0], b[0]), x1: Math.max(a[0], b[0]), z0: Math.min(a[2], b[2]), z1: Math.max(a[2], b[2]) };
-  s.stock = { canned: 6, bread: 6, water: 8, soda: 8, bandage: 3, battery: 4 };
+  s.stock = { canned: 6, bread: 6, water: 8, soda: 8, bandage: 3, battery: 4, lockpick: 4 };
 }
 function makeKeeper() {
   const g = new THREE.Group(); scene.add(g);
@@ -346,7 +432,7 @@ function buildCar(GB, x, z, alongX, col) {
 function buildWorld(seed) {
   Town.seed = seed; RNG = mulberry32(seed);
   const GB = {};
-  for (const k of ['siding', 'wall', 'roof', 'plain', 'brick', 'floor', 'ceil', 'concrete', 'win', 'winL', 'wood', 'fabric', 'paint', 'metal', 'glassShop', 'fridgeGlow', 'fluor', 'glassCar', 'asphalt', 'dwood', 'puddle', 'mark']) GB[k] = new Geo();
+  for (const k of ['siding', 'wall', 'roof', 'plain', 'brick', 'floor', 'ceil', 'concrete', 'win', 'winL', 'wood', 'fabric', 'paint', 'metal', 'glassShop', 'fridgeGlow', 'fluor', 'glassCar', 'asphalt', 'dwood', 'puddle', 'glassWin', 'mark']) GB[k] = new Geo();
 
   // ---- земля и дороги ----
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 200), MT.grass); ground.rotation.x = -Math.PI / 2;
@@ -442,7 +528,7 @@ function buildWorld(seed) {
     paint: GB.paint.mesh(MT.paint), metal: GB.metal.mesh(MT.metal), glassShop: GB.glassShop.mesh(MT.shopGlass = new THREE.MeshStandardMaterial({ color: 0x9ab0c0, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide }), false),
     fridge: GB.fridgeGlow.mesh(MT.fridgeGlow = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.9, 2.2) }), false),
     fluor: GB.fluor.mesh(MT.fluor, false), glassCar: GB.glassCar.mesh(MT.glass), asphalt: GB.asphalt.mesh(MT.asphalt, false),
-    dwood: GB.dwood.mesh(MT.dwood), puddle: GB.puddle.mesh(new THREE.MeshStandardMaterial({ color: 0x1c2228, map: TX.pool, roughness: 0.04, metalness: 0.5, transparent: true, opacity: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), false),
+    dwood: GB.dwood.mesh(MT.dwood), glassWin: GB.glassWin.mesh(MT.glassWin = new THREE.MeshStandardMaterial({ color: 0xaac4d8, roughness: 0.03, metalness: 0.4, transparent: true, opacity: 0.1, depthWrite: false }), false), puddle: GB.puddle.mesh(new THREE.MeshStandardMaterial({ color: 0x1c2228, map: TX.pool, roughness: 0.04, metalness: 0.5, transparent: true, opacity: 1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 }), false),
     mark: GB.mark.mesh(new THREE.MeshStandardMaterial({ color: 0x1e1812, roughness: 1, transparent: true, opacity: 0.45, polygonOffset: true, polygonOffsetFactor: -2 }), false),
   };
   Town.meshes = meshes;
@@ -450,7 +536,74 @@ function buildWorld(seed) {
   // границы карты
   markRect(-112, -86, 112, -84.5, SOLID | OPAQUE); markRect(-112, 84.5, 112, 86, SOLID | OPAQUE);
   markRect(-112, -86, -110.5, 86, SOLID | OPAQUE); markRect(110.5, -86, 112, 86, SOLID | OPAQUE);
+  buildCurtains(); applyLayout(1);
   buildNav();
+}
+
+
+// ---------------------------------------------------------------------
+//  Шторы (инстансы) и замки: расклад меняется каждый новый день
+// ---------------------------------------------------------------------
+const CURT_COLS = ['#a8483e', '#e8dcb8', '#4e78a0', '#7aa06a', '#d8bcd0', '#c8a050'].map(C);
+function applyWindowCollision(w) {
+  const blocked = w.has && w.closed;
+  for (const i of w.cells) { if (blocked) COL[i] |= OPAQUE; else COL[i] &= ~OPAQUE; }
+}
+function buildCurtains() {
+  const n = Town.windows.length * 2;
+  const mat = new THREE.MeshStandardMaterial({ map: TX.fabric, roughness: 1, side: THREE.DoubleSide });
+  const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mat, n);
+  im.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3);
+  im.frustumCulled = false; im.castShadow = false; scene.add(im);
+  Town.curtains = im;
+  Town.windows.forEach((w, i) => { w.inst = i * 2; });
+}
+const _curtObj = new THREE.Object3D();
+function setCurtainMatrix(w) {
+  const im = Town.curtains; if (!im || w.inst < 0) return;
+  const al = w.rotY === 0, width = lerp(0.2, 0.62, w.t), off = 0.6 - width / 2;
+  for (let s = 0; s < 2; s++) {
+    const sg = s ? 1 : -1;
+    if (!w.has) { _curtObj.scale.set(0, 0, 0); _curtObj.position.set(w.px[0], -9, w.px[2]); }
+    else {
+      _curtObj.position.set(w.px[0] + (al ? sg * off : 0), 1.62, w.px[2] + (al ? 0 : sg * off));
+      _curtObj.rotation.set(0, w.rotY, 0); _curtObj.scale.set(width, 1.62, 0.045);
+    }
+    _curtObj.updateMatrix(); im.setMatrixAt(w.inst + s, _curtObj.matrix);
+  }
+  im.instanceMatrix.needsUpdate = true;
+}
+function updateCurtains(dt) {
+  let dirty = false;
+  for (const w of Town.windows) {
+    const tgt = w.has && w.closed ? 1 : 0;
+    if (Math.abs(w.t - tgt) > 0.002) { w.t = lerp(w.t, tgt, Math.min(1, dt * 4)); if (Math.abs(w.t - tgt) < 0.01) w.t = tgt; setCurtainMatrix(w); dirty = true; }
+  }
+  return dirty;
+}
+function snapCurtains() {
+  for (const w of Town.windows) { w.t = w.has && w.closed ? 1 : 0; applyWindowCollision(w); setCurtainMatrix(w); }
+}
+function setDoorLocked(d, locked) {
+  d.locked = !!locked; if (d.lockMesh) d.lockMesh.visible = d.locked;
+}
+// детерминированный расклад по зерну мира и дню: ~60% домов заперты, у ~85% есть шторы
+function applyLayout(day) {
+  const r = mulberry32(((Town.seed | 0) ^ Math.imul(day | 0, 2654435761) ^ 0x5bd1e995) >>> 0);
+  const cc = Town.curtains && Town.curtains.instanceColor;
+  for (const h of Town.houses) {
+    const d = h.door, lock = r() < 0.6, has = r() < 0.85, col = CURT_COLS[(r() * CURT_COLS.length) | 0];
+    if (d.broken) { setDoorLocked(d, false); }
+    else {
+      setDoorLocked(d, lock); d.hp = lock ? 6 : 3;
+      if (lock && d.open) { d.open = false; applyDoorCollision(d); }
+    }
+    for (const w of h.wins) {
+      w.has = has; w.closed = has && r() < 0.5;
+      if (cc) { const k = w.inst; for (let s = 0; s < 2; s++) { cc.setXYZ(k + s, col.r, col.g, col.b); } cc.needsUpdate = true; }
+    }
+  }
+  snapCurtains();
 }
 
 // ---------------------------------------------------------------------
