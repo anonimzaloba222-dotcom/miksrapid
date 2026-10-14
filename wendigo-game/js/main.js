@@ -44,7 +44,7 @@ function onDawn(day) {
 }
 function respawn() {
   P.alive = true; P.hp = 50; P.food = Math.max(P.food, 40); P.water = Math.max(P.water, 40); P.stam = 100;
-  P.x = Town.spawn.x + (P.id % 4) * 1.2; P.z = Town.spawn.z; P.yaw = Math.PI;
+  { const sp = freeSpot(Town.spawn.x + (P.id % 4) * 1.2, Town.spawn.z, 0.4); P.x = sp.x; P.z = sp.z; } P.yaw = Math.PI;
   G.state = 'play'; setControls(true); $('deadOv').classList.add('hidden'); updatePlayerList();
 }
 
@@ -174,7 +174,7 @@ function startGameWorld(seed, world) {
     }
     if (world) applyWorldState(world);
     else { G.clock = 7 * 60; G.day = 1; }
-    P.x = Town.spawn.x + (P.id % 4) * 1.2; P.z = Town.spawn.z; P.yaw = Math.PI * 0.95;
+    { const sp = freeSpot(Town.spawn.x + (P.id % 4) * 1.2, Town.spawn.z, 0.4); P.x = sp.x; P.z = sp.z; } P.yaw = Math.PI * 0.95;
     G.lastNight = isNight();
     renderer.compile(scene, camera);
     showScreen(null); G.state = 'play'; setControls(true); updateHud(true); updatePlayerList();

@@ -4,7 +4,7 @@
 // =====================================================================
 const STREETS_Z = [-36, 0, 36], STREETS_X = [-48, 0, 48];
 const LOT_X = [-74, -64, -31, -17, 17, 31, 64, 74];
-const Town = { seed: 0, houses: [], shop: null, lamps: [], doors: [], containers: [], inter: [], spawn: { x: 9, z: -5 }, trees: [] };
+const Town = { seed: 0, houses: [], shop: null, lamps: [], doors: [], containers: [], inter: [], spawn: { x: 13, z: -2.5 }, trees: [] };
 const C = h => new THREE.Color(h);
 
 // ---------------------------------------------------------------------
@@ -400,7 +400,7 @@ function buildWorld(seed) {
   }
   for (let i = 0; i < 40; i++) { // берёзы вдоль дорог
     const zs = spick(STREETS_Z), x = srand(-98, 98), z = zs + (RNG() < 0.5 ? -1 : 1) * srand(4.6, 5.6);
-    if (STREETS_X.some(xs => Math.abs(x - xs) < 6) || houseLots.some(l => l.zs === zs && Math.abs(l.x - x) < 5.6 && Math.sign(z - zs) === l.sd)) continue;
+    if ((x > 2 && x < 40 && Math.abs(z) < 12) || STREETS_X.some(xs => Math.abs(x - xs) < 6) || houseLots.some(l => l.zs === zs && Math.abs(l.x - x) < 5.6 && Math.sign(z - zs) === l.sd)) continue;
     trees.push({ x, z, s: srand(0.7, 1.0), h: srand(0.9, 1.2), r: srand(0, 6.3), b: true });
   }
   Town.trees = trees; buildTrees(trees);

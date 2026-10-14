@@ -55,6 +55,15 @@ function circleFree(x, z, r) {
   }
   return true;
 }
+// ближайшая свободная точка (спираль) — чтобы никто не застревал в стенах и деревьях
+function freeSpot(x, z, r) {
+  if (circleFree(x, z, r)) return { x, z };
+  for (let rad = 0.5; rad < 20; rad += 0.5) for (let a = 0; a < 6.283; a += 0.35) {
+    const px = x + Math.cos(a) * rad, pz = z + Math.sin(a) * rad;
+    if (circleFree(px, pz, r)) return { x: px, z: pz };
+  }
+  return { x, z };
+}
 // видно ли от точки к точке (стены, деревья, закрытые двери)
 function sightClear(x1, z1, x2, z2) {
   const dx = x2 - x1, dz = z2 - z1, d = Math.hypot(dx, dz), n = Math.ceil(d / 0.35);

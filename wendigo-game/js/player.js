@@ -110,6 +110,7 @@ function updatePlayer(dt) {
   if (P.running) { mx /= mag; mz /= mag; }
   const sp = P.running ? 5.4 : 2.6;
   const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw);
+  if (!circleFree(P.x, P.z, 0.3)) { const sp = freeSpot(P.x, P.z, 0.3); P.x = sp.x; P.z = sp.z; } // выталкиваем из стены/дерева
   if (P.moving) moveCircle(P, (rx * mx + fx * mz) * sp * dt, (rz * mx + fz * mz) * sp * dt, 0.3);
 
   // выносливость и потребности
