@@ -205,7 +205,7 @@ function startGameWorld(seed, world) {
   showScreen('loading');
   setTimeout(() => {
     if (!G.built) {
-      buildWorld(G.seed); buildWendigoModel(); buildSnow();
+      buildWorld(G.seed); buildWendigoModel(); buildSnow(); buildRealism();
       G.built = true;
     }
     if (world) applyWorldState(world);
@@ -352,6 +352,7 @@ function loop(t) {
   const dk = updateSky(G.clock, camera.position.x, camera.position.z);
   updateLamps(dt, dk, camera.position.x, camera.position.z);
   updateFlashlight(dt, P.light && P.alive && G.state !== 'dead', G.flick, dk);
+  updateRealism(dt, dk);
   const hb = P.house >= 0 ? Town.houses[P.house].bounds : P.inShop ? null : null;
   if (hb) { FL.room.position.set((hb.x0 + hb.x1) / 2, 2.4, (hb.z0 + hb.z1) / 2); FL.room.intensity = 0.9 * dk; } else FL.room.intensity = 0;
   updateSnow(dt, G.time, camera.position.x, camera.position.z);
