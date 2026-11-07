@@ -1158,7 +1158,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.1, 500);
+const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.5, 400);
 camera.position.set(20, 9, 46);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -1204,7 +1204,7 @@ const PH = 15.8;             // высота (158 мм)
 const T = 0.45;              // толщина половины (4.5 мм)
 const GAP = 0.05;            // зазор в сложенном виде (итого 9.5 мм)
 const PIV_Z = T / 2 + GAP / 2; // ось петли
-const ZS = T / 2 + 0.0035;   // поверхность внутреннего экрана
+const ZS = T / 2 + 0.006;    // поверхность внутреннего экрана
 const CORNER = 0.95;         // радиус скругления углов
 const BEND = 0.55;           // полуширина зоны изгиба экрана
 
@@ -1274,10 +1274,12 @@ os.render(innerSurf, 'wide'); os.render(outerSurf, 'phone');
 const innerMat = new THREE.MeshStandardMaterial({
   color: 0x000000, roughness: 0.12, metalness: 0, emissive: 0xffffff, emissiveMap: innerTex,
   alphaMap: roundMask(IS_W, IS_H, 0.8), alphaTest: 0.5, toneMapped: false,
+  polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8,
 });
 const outerMat = new THREE.MeshStandardMaterial({
   color: 0x000000, roughness: 0.12, metalness: 0, emissive: 0xffffff, emissiveMap: outerTex,
   alphaMap: roundMask(OS_W, OS_H, 0.75), alphaTest: 0.5, toneMapped: false,
+  polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8,
 });
 
 /* =====================================================================
@@ -1411,7 +1413,7 @@ function buildPhone(){
   for (let i = 0; i < pos.count; i++) innerBaseX[i] = pos.getX(i);
   innerScreen = new THREE.Mesh(geo, innerMat);
   innerScreen.name = 'innerScreen';
-  innerScreen.receiveShadow = true;
+  innerScreen.receiveShadow = false;
   foldRoot.add(innerScreen);
 }
 
