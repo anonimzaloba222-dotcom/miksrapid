@@ -14,8 +14,8 @@
   --panelW:360px;
   --text:#eef1f7;
   --muted:#9aa3b5;
-  --accent:#7aa2ff;
-  --accent2:#b38bff;
+  --accent:#ff5a74;
+  --accent2:#c2185b;
   --ok:#4ade80;
   --line:rgba(255,255,255,.12);
 }
@@ -24,9 +24,9 @@ html,body{margin:0;height:100%;overflow:hidden;color:var(--text);
   font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
 body{
   background:
-    radial-gradient(1100px 800px at 18% 8%,#1c2347 0%,transparent 60%),
-    radial-gradient(900px 700px at 88% 92%,#2b1739 0%,transparent 60%),
-    radial-gradient(700px 500px at 60% 40%,#0f1a2a 0%,transparent 70%),
+    radial-gradient(1100px 800px at 18% 8%,#3a0d1d 0%,transparent 60%),
+    radial-gradient(900px 700px at 88% 92%,#2a0b1f 0%,transparent 60%),
+    radial-gradient(700px 500px at 60% 40%,#1a0a14 0%,transparent 70%),
     linear-gradient(180deg,#0a0c12,#06070a);
   background-color:#07080c;
 }
@@ -47,7 +47,7 @@ button{font-family:inherit}
 /* Шапка */
 .brand{position:fixed;top:16px;left:16px;padding:12px 16px;z-index:5;max-width:calc(100vw - var(--panelW) - 64px)}
 .brand h1{margin:0;font-size:22px;font-weight:800;letter-spacing:.02em;
-  background:linear-gradient(90deg,#fff,#b9c8ff 60%,#d6b8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  background:linear-gradient(90deg,#fff,#ffb3c1 60%,#ff7a92);-webkit-background-clip:text;background-clip:text;color:transparent}
 .brand p{margin:2px 0 0;font-size:12px;color:var(--muted)}
 
 /* Нижняя панель управления */
@@ -62,8 +62,8 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--accent);height:24px}
   transition:background .2s,border-color .2s,transform .15s,opacity .2s}
 .btn:hover{background:rgba(255,255,255,.14)}
 .btn:active{transform:scale(.97)}
-.btn.active{background:linear-gradient(135deg,rgba(122,162,255,.38),rgba(179,139,255,.38));border-color:rgba(170,185,255,.55)}
-.btn.primary{background:linear-gradient(135deg,rgba(122,162,255,.28),rgba(179,139,255,.22));border-color:rgba(160,180,255,.4)}
+.btn.active{background:linear-gradient(135deg,rgba(255,90,116,.4),rgba(194,24,91,.4));border-color:rgba(255,140,160,.55)}
+.btn.primary{background:linear-gradient(135deg,rgba(255,90,116,.3),rgba(194,24,91,.24));border-color:rgba(255,140,160,.4)}
 body.busy #toolbar .btn:not([data-act=screen]):not([data-act=front]):not([data-act=back]),
 body.busy .test-btn, body.busy #fold{opacity:.4;pointer-events:none}
 body.exploded [data-act=fold], body.exploded [data-act=unfold], body.exploded #fold{opacity:.4;pointer-events:none}
@@ -89,7 +89,7 @@ body.exploded [data-act=fold], body.exploded [data-act=unfold], body.exploded #f
 .dur{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
 .dur:last-child{border-bottom:0}
 .dur .ico{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:grid;place-items:center;font-size:18px;
-  background:linear-gradient(135deg,rgba(122,162,255,.25),rgba(179,139,255,.18));border:1px solid var(--line)}
+  background:linear-gradient(135deg,rgba(255,90,116,.25),rgba(194,24,91,.18));border:1px solid var(--line)}
 .dur .txt{flex:1;min-width:0}
 .dur .txt b{display:block;font-size:14px;font-weight:600}
 .dur .txt span{font-size:12px;color:var(--muted)}
@@ -133,7 +133,7 @@ body.exploded [data-act=fold], body.exploded [data-act=unfold], body.exploded #f
 #loader.hide{opacity:0;visibility:hidden}
 .ld-box{text-align:center;width:min(280px,80vw)}
 .ld-logo{font-size:56px;font-weight:800;letter-spacing:.04em;
-  background:linear-gradient(90deg,#fff,#9fb6ff,#d2b3ff,#fff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  background:linear-gradient(90deg,#fff,#ff9fb2,#ff5a74,#fff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
   animation:shine 2.4s linear infinite}
 @keyframes shine{to{background-position:-300% 0}}
 .ld-sub{color:var(--muted);font-size:13px;margin:4px 0 18px}
@@ -232,14 +232,14 @@ body.exploded [data-act=fold], body.exploded [data-act=unfold], body.exploded #f
       <div class="spec"><dt>Накопитель</dt><dd>128 ГБ UFS 4.0</dd></div>
       <div class="spec"><dt>Внутренний экран</dt><dd>7.8″ гибкий LTPO OLED, 1–120 Гц, UTG + CPI</dd></div>
       <div class="spec"><dt>Внешний экран</dt><dd>6.3″ LTPO OLED, 1–120 Гц<br><span class="live">Режим: <b id="hzLive">LTPO 1–120 Гц</b></span></dd></div>
-      <div class="spec"><dt>Основные камеры</dt><dd>48 МП + 48 МП, блок без выступа (заподлицо), вспышка</dd></div>
+      <div class="spec"><dt>Основные камеры</dt><dd>48 МП (ОИС) + 48 МП сверхширокая, выступающий блок камер, ToF-датчик, вспышка</dd></div>
       <div class="spec"><dt>Фронтальная камера</dt><dd>18 МП, подэкранная</dd></div>
       <div class="spec"><dt>Батарея</dt><dd>5600 мАч Si-C (две ячейки — по одной в каждой половине)</dd></div>
       <div class="spec"><dt>Зарядка</dt><dd>66 Вт проводная · 50 Вт беспроводная</dd></div>
       <div class="spec"><dt>Связь</dt><dd>5G · Wi-Fi 7 · Bluetooth 5.4 · NFC · UWB</dd></div>
       <div class="spec"><dt>Система</dt><dd>Android 16</dd></div>
       <div class="spec"><dt>Размеры</dt><dd>Сложенный: 73 × 158 × 9.5 мм<br>Раскрытый: 146 × 158 × 4.5 мм</dd></div>
-      <div class="spec"><dt>Материалы</dt><dd>Рама — титан, задняя панель — матовое стекло, каплевидная петля</dd></div>
+      <div class="spec"><dt>Материалы</dt><dd>Рама — титан с бордовым анодированием, задняя панель — бордовое матовое стекло, каплевидная петля</dd></div>
     </dl>
   </div>
   <div class="tab-body hidden" id="tab-dur">
@@ -426,8 +426,8 @@ class MiniOS {
   }
   get pal(){
     return this.settings.dark
-      ? { fg: '#ffffff', sub: 'rgba(255,255,255,.62)', tint: 'rgba(255,255,255,.10)', tintStrong: 'rgba(14,16,28,.55)', track: 'rgba(255,255,255,.12)', accent: '#8fb0ff' }
-      : { fg: '#10131a', sub: 'rgba(16,19,26,.6)', tint: 'rgba(255,255,255,.38)', tintStrong: 'rgba(255,255,255,.55)', track: 'rgba(0,0,0,.08)', accent: '#3d6bff' };
+      ? { fg: '#ffffff', sub: 'rgba(255,255,255,.62)', tint: 'rgba(255,255,255,.10)', tintStrong: 'rgba(14,16,28,.55)', track: 'rgba(255,255,255,.12)', accent: '#ff8fa3' }
+      : { fg: '#10131a', sub: 'rgba(16,19,26,.6)', tint: 'rgba(255,255,255,.38)', tintStrong: 'rgba(255,255,255,.55)', track: 'rgba(0,0,0,.08)', accent: '#c2185b' };
   }
   /* --- Обновление состояния (пружины, музыка, баннер) --- */
   update(dt){
@@ -464,12 +464,12 @@ class MiniOS {
     const sharp = document.createElement('canvas'); sharp.width = w; sharp.height = h;
     const c = sharp.getContext('2d');
     const g = c.createLinearGradient(0, 0, w * 0.4, h);
-    if (dark){ g.addColorStop(0, '#0c1033'); g.addColorStop(0.55, '#1d0f36'); g.addColorStop(1, '#05060f'); }
-    else { g.addColorStop(0, '#d7e6ff'); g.addColorStop(0.55, '#f3dcff'); g.addColorStop(1, '#ffe9d6'); }
+    if (dark){ g.addColorStop(0, '#2a0614'); g.addColorStop(0.55, '#1a0718'); g.addColorStop(1, '#070308'); }
+    else { g.addColorStop(0, '#ffe1e8'); g.addColorStop(0.55, '#f6dcef'); g.addColorStop(1, '#ffeadb'); }
     c.fillStyle = g; c.fillRect(0, 0, w, h);
     const blobs = dark
-      ? [['#3b6dff', .25, .2, .55], ['#ff4f9a', .85, .42, .5], ['#1fd1a5', .3, .82, .45], ['#9b5cff', .75, .9, .4]]
-      : [['#7aa8ff', .2, .18, .55], ['#ff9cc8', .85, .4, .5], ['#7ef0cf', .3, .85, .45], ['#c7a2ff', .8, .92, .4]];
+      ? [['#d81b47', .25, .2, .55], ['#ff5a7a', .85, .42, .5], ['#ff8a3d', .3, .82, .42], ['#7b1fa2', .75, .92, .45]]
+      : [['#ff8fa8', .2, .18, .55], ['#ffb3c7', .85, .4, .5], ['#ffd0a6', .3, .85, .45], ['#e3a6ff', .8, .92, .4]];
     for (const [col, bx, by, br] of blobs){
       const rg = c.createRadialGradient(bx * w, by * h, 0, bx * w, by * h, br * Math.max(w, h));
       rg.addColorStop(0, col); rg.addColorStop(1, 'rgba(0,0,0,0)');
@@ -774,7 +774,7 @@ class MiniOS {
       const r = this.iconRect('wide', i, w, h, S);
       if (this.app === a.id){
         ctx.save(); rr(ctx, r.x - 6 * S, r.y - 6 * S, r.s + 12 * S, r.s + 12 * S, r.s * .32);
-        ctx.fillStyle = 'rgba(143,176,255,.25)'; ctx.fill(); ctx.restore();
+        ctx.fillStyle = 'rgba(255,110,140,.25)'; ctx.fill(); ctx.restore();
       }
       this.drawIcon(s, wall, i, r.x, r.y, r.s);
       ctx.fillStyle = P.fg; ctx.textAlign = 'center'; ctx.font = F(500, 13 * S); ctx.textBaseline = 'alphabetic';
@@ -945,7 +945,7 @@ class MiniOS {
     rr(ctx, x, y, w, h, h / 2); ctx.fillStyle = P.track; ctx.fill();
     const sw = w / labels.length;
     const g = ctx.createLinearGradient(x, y, x + w, y + h);
-    g.addColorStop(0, '#6f97ff'); g.addColorStop(1, '#a97dff');
+    g.addColorStop(0, '#ff4d6d'); g.addColorStop(1, '#b3264a');
     rr(ctx, x + sw * sel + 3 * S, y + 3 * S, sw - 6 * S, h - 6 * S, (h - 6 * S) / 2); ctx.fillStyle = g; ctx.fill();
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = F(600, 13 * S);
     labels.forEach((l, i) => {
@@ -990,7 +990,7 @@ class MiniOS {
     label('Тёмная тема', null, y + 4 * S);
     const swx = x + w - 70 * S, swy = y + 18 * S, k = clamp(this.knob.v, -0.2, 1.2);
     rr(ctx, swx, swy, 54 * S, 30 * S, 15 * S);
-    ctx.fillStyle = st.dark ? '#5d86ff' : P.track; ctx.fill();
+    ctx.fillStyle = st.dark ? '#e0355a' : P.track; ctx.fill();
     ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(swx + 15 * S + k * 24 * S, swy + 15 * S, 12 * S, 0, 7); ctx.fill();
     hit(x, y, w, 64 * S, () => { st.dark = !st.dark; this.knob.set(st.dark ? 1 : 0); this.changed(); });
     y += 76 * S;
@@ -1209,16 +1209,21 @@ const CORNER = 0.95;         // радиус скругления углов
 const BEND = 0.55;           // полуширина зоны изгиба экрана
 
 const MAT = {
-  titanium: new THREE.MeshPhysicalMaterial({ color: 0x9c9ea2, metalness: 0.9, roughness: 0.3, clearcoat: 0.25, clearcoatRoughness: 0.4 }),
-  backGlass: new THREE.MeshPhysicalMaterial({ color: 0x5c6677, metalness: 0, roughness: 0.55, transmission: 0.15, thickness: 0.2, ior: 1.5, clearcoat: 1, clearcoatRoughness: 0.35 }),
+  // Бордовый анодированный титан (рама, кожух петли, остров камер)
+  titanium: new THREE.MeshPhysicalMaterial({ color: 0x8a1830, metalness: 0.9, roughness: 0.3, clearcoat: 0.45, clearcoatRoughness: 0.22 }),
+  titaniumPolished: new THREE.MeshPhysicalMaterial({ color: 0xb03a50, metalness: 1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 }),
+  // Матовое стекло бордового цвета
+  backGlass: new THREE.MeshPhysicalMaterial({ color: 0x5e0f20, metalness: 0, roughness: 0.5, transmission: 0.12, thickness: 0.2, ior: 1.5,
+    clearcoat: 1, clearcoatRoughness: 0.35, sheen: 0.5, sheenColor: new THREE.Color(0xff7088), sheenRoughness: 0.6 }),
   blackGlass: new THREE.MeshPhysicalMaterial({ color: 0x040507, metalness: 0.1, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.05 }),
-  camPanel: new THREE.MeshPhysicalMaterial({ color: 0x1a1d23, metalness: 0.2, roughness: 0.25, clearcoat: 1, clearcoatRoughness: 0.1 }),
+  camPanel: new THREE.MeshPhysicalMaterial({ color: 0x1c070d, metalness: 0.3, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.05 }),
   lensGlass: new THREE.MeshPhysicalMaterial({ color: 0x020306, metalness: 0.3, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0.02 }),
   lensCoat: new THREE.MeshPhysicalMaterial({ color: 0x0a0f22, metalness: 0.5, roughness: 0.05, iridescence: 1, iridescenceIOR: 1.7, clearcoat: 1 }),
-  ring: new THREE.MeshPhysicalMaterial({ color: 0x74777c, metalness: 1, roughness: 0.2 }),
+  ring: new THREE.MeshPhysicalMaterial({ color: 0x7a7d82, metalness: 1, roughness: 0.2 }),
   flash: new THREE.MeshStandardMaterial({ color: 0xfff3d6, emissive: 0xffe9b0, emissiveIntensity: 0.25, roughness: 0.3 }),
   port: new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.8 }),
-  fingerprint: new THREE.MeshPhysicalMaterial({ color: 0x3a3d43, metalness: 0.8, roughness: 0.18, clearcoat: 1 }),
+  fingerprint: new THREE.MeshPhysicalMaterial({ color: 0x2a0b12, metalness: 0.8, roughness: 0.18, clearcoat: 1 }),
+  antenna: new THREE.MeshStandardMaterial({ color: 0x2a0c14, roughness: 0.65, metalness: 0.1 }),
 };
 
 /* Скруглённый прямоугольник как контур THREE.Shape/Path (углы задаются отдельно) */
@@ -1262,25 +1267,33 @@ function shadowAll(obj){ obj.traverse(o => { if (o.isMesh){ o.castShadow = true;
    МИНИ-ОС: поверхности и текстуры экранов
    ===================================================================== */
 const os = new MiniOS();
-const IS_W = 2 * HALF_W - 0.3, IS_H = PH - 0.3;     // внутренний экран 7.8″
-const OS_W = 6.55, OS_H = 15.0;                      // внешний экран 6.3″
-const innerSurf = os.createSurface(1024, Math.round(1024 * IS_H / IS_W));
-const outerSurf = os.createSurface(512, Math.round(512 * OS_H / OS_W));
+const IS_W = 2 * HALF_W - 0.2, IS_H = PH - 0.2;     // внутренний экран 7.8″ (тонкие рамки)
+const OS_W = 6.8, OS_H = 15.35;                      // внешний экран 6.3″
+// Разрешение текстур экранов: выше на компьютере, экономнее на телефоне
+const IS_MOBILE = matchMedia('(max-width: 820px)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+const INNER_PX = IS_MOBILE ? 1152 : 1600, OUTER_PX = IS_MOBILE ? 600 : 840;
+const innerSurf = os.createSurface(INNER_PX, Math.round(INNER_PX * IS_H / IS_W));
+const outerSurf = os.createSurface(OUTER_PX, Math.round(OUTER_PX * OS_H / OS_W));
 const innerTex = new THREE.CanvasTexture(innerSurf.canvas);
 const outerTex = new THREE.CanvasTexture(outerSurf.canvas);
-[innerTex, outerTex].forEach(t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); });
+[innerTex, outerTex].forEach(t => {
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+});
 os.render(innerSurf, 'wide'); os.render(outerSurf, 'phone');
 
-const innerMat = new THREE.MeshStandardMaterial({
-  color: 0x000000, roughness: 0.12, metalness: 0, emissive: 0xffffff, emissiveMap: innerTex,
-  alphaMap: roundMask(IS_W, IS_H, 0.8), alphaTest: 0.5, toneMapped: false,
-  polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8,
-});
-const outerMat = new THREE.MeshStandardMaterial({
-  color: 0x000000, roughness: 0.12, metalness: 0, emissive: 0xffffff, emissiveMap: outerTex,
-  alphaMap: roundMask(OS_W, OS_H, 0.75), alphaTest: 0.5, toneMapped: false,
-  polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8,
-});
+/* Экран: чёрное стекло с зеркальным покрытием (clearcoat) + светящаяся мини-ОС */
+function screenMaterial(tex, w, h, r){
+  return new THREE.MeshPhysicalMaterial({
+    color: 0x000000, roughness: 0.05, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02,
+    emissive: 0xffffff, emissiveMap: tex,
+    alphaMap: roundMask(w, h, r), alphaTest: 0.5, toneMapped: false,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8,
+  });
+}
+const innerMat = screenMaterial(innerTex, IS_W, IS_H, 0.85);
+const outerMat = screenMaterial(outerTex, OS_W, OS_H, 0.8);
 
 /* =====================================================================
    3D-МОДЕЛЬ ТЕЛЕФОНА
@@ -1295,31 +1308,41 @@ scene.add(phoneRoot);
 let leftHalf, rightPivot, rightHalf, hingePivot, innerScreen, outerScreen, frontCamDot, innerBaseX;
 const backGlassMeshes = [];
 
-/* Одна половина корпуса. side = -1 (левая, с камерами) или +1 (правая, с внешним экраном) */
+/* Одна половина корпуса. side = -1 (левая, с блоком камер) или +1 (правая, с внешним экраном) */
 function buildHalf(side){
   const g = new THREE.Group();
-  const bev = 0.035;
-  // Титановая рама (корпус-основа)
+  const bev = 0.045;
+  // Рама из бордового титана
   const [x0, y0, x1, y1] = halfRect(side, bev);
-  const frame = new THREE.Mesh(extrude(roundedRectPath(new THREE.Shape(), x0, y0, x1, y1, sideC(side, CORNER - bev)), T - 2 * bev, bev, 28), MAT.titanium);
+  const frame = new THREE.Mesh(extrude(roundedRectPath(new THREE.Shape(), x0, y0, x1, y1, sideC(side, CORNER - bev)), T - 2 * bev, bev, 32), MAT.titanium);
   frame.position.z = -T / 2 + bev;
   g.add(frame);
-  // Чёрная рамка-подложка внутреннего экрана
-  const [fx0, fy0, fx1, fy1] = halfRect(side, 0.07, 0);
-  const bezel = new THREE.Mesh(extrude(roundedRectPath(new THREE.Shape(), fx0, fy0, fx1, fy1, sideC(side, CORNER - 0.07)), 0.002), MAT.blackGlass);
+  // Чёрная подложка внутреннего экрана
+  const [fx0, fy0, fx1, fy1] = halfRect(side, 0.06, 0);
+  const bezel = new THREE.Mesh(extrude(roundedRectPath(new THREE.Shape(), fx0, fy0, fx1, fy1, sideC(side, CORNER - 0.06)), 0.002), MAT.blackGlass);
   bezel.position.z = T / 2;
   g.add(bezel);
   // Задняя панель
   const [bx0, by0, bx1, by1] = halfRect(side, 0.07);
   const backShape = roundedRectPath(new THREE.Shape(), bx0, by0, bx1, by1, sideC(side, CORNER - 0.07));
   if (side < 0){
-    // Матовое стекло + камеры
     const back = new THREE.Mesh(extrude(backShape, 0.003), MAT.backGlass);
     back.position.z = -T / 2 - 0.003;
     g.add(back); backGlassMeshes.push(back);
-    buildCameraBlock(g);
+    buildCameraIsland(g);
+    // Логотип «Duo» на задней панели
+    const logoTex = canvasTex(512, 160, (c, w, h) => {
+      c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#fff'; c.font = `800 118px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('Duo', w / 2, h / 2 + 6);
+    }, false);
+    const logo = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.6),
+      new THREE.MeshPhysicalMaterial({ color: 0xf0b8c4, metalness: 1, roughness: 0.22, alphaMap: logoTex, transparent: true, depthWrite: false }));
+    logo.rotation.y = Math.PI;
+    logo.position.set(-HALF_W / 2, -5.7, -T / 2 - 0.0045);
+    logo.userData.noRay = true;
+    g.add(logo);
   } else {
-    // Чёрное стекло вокруг внешнего экрана
     const back = new THREE.Mesh(extrude(backShape, 0.003), MAT.blackGlass);
     back.position.z = -T / 2 - 0.003;
     g.add(back);
@@ -1328,17 +1351,28 @@ function buildHalf(side){
     outerScreen.position.set(HALF_W / 2 + 0.02, 0, -T / 2 - 0.0045);
     outerScreen.name = 'outerScreen';
     g.add(outerScreen);
-    // Кнопки на внешнем торце: питание со сканером и громкость
-    const capsule = (len, mat) => { const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, len, 6, 16), mat); m.scale.set(0.55, 1, 1); return m; };
+    // Кнопки на внешнем торце: питание со сканером отпечатка и громкость
+    const capsule = (len, mat) => { const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, len, 8, 20), mat); m.scale.set(0.55, 1, 1); return m; };
     const power = capsule(1.15, MAT.fingerprint); power.position.set(HALF_W + 0.02, 2.4, 0); g.add(power);
-    const fpRing = new THREE.Mesh(new THREE.CapsuleGeometry(0.105, 1.18, 4, 16), MAT.ring); fpRing.scale.set(0.4, 1, 1.02); fpRing.position.set(HALF_W + 0.012, 2.4, 0); g.add(fpRing);
-    const vol = capsule(1.7, MAT.titanium); vol.position.set(HALF_W + 0.02, 4.75, 0); g.add(vol);
-    // Решётка разговорного динамика сверху
+    const fpRing = new THREE.Mesh(new THREE.CapsuleGeometry(0.105, 1.18, 4, 20), MAT.titaniumPolished); fpRing.scale.set(0.4, 1, 1.02); fpRing.position.set(HALF_W + 0.012, 2.4, 0); g.add(fpRing);
+    const vol = capsule(1.7, MAT.titaniumPolished); vol.position.set(HALF_W + 0.02, 4.75, 0); g.add(vol);
+    // Разговорный динамик сверху
     for (let i = 0; i < 8; i++){
       const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 10), MAT.port);
       hole.position.set(2.6 + i * 0.16, PH / 2, 0); g.add(hole);
     }
+    // Лоток nano-SIM снизу
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.012, 0.24), MAT.titaniumPolished);
+    tray.position.set(4.7, -PH / 2 - 0.002, 0); g.add(tray);
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.02, 10), MAT.port);
+    pin.position.set(5.6, -PH / 2, 0); g.add(pin);
   }
+  // Антенные разрезы на торцах рамы
+  const ant = (x, y, sx, sy) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, T * 0.86), MAT.antenna); m.position.set(x, y, 0); g.add(m); };
+  ant(side * HALF_W, PH / 2 - 1.9, 0.03, 0.05);
+  ant(side * HALF_W, -PH / 2 + 1.9, 0.03, 0.05);
+  ant(side * (HALF_W - 1.9), PH / 2, 0.05, 0.03);
+  ant(side * (HALF_W - 1.9), -PH / 2, 0.05, 0.03);
   // Нижний торец: динамики, USB-C (на левой половине)
   const holesX = side < 0 ? [-2.7, -1.2] : [1.4, 2.9];
   for (let i = 0; i < 10; i++){
@@ -1348,13 +1382,15 @@ function buildHalf(side){
   if (side < 0){
     const usb = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.62, 6, 16), MAT.port);
     usb.rotation.z = Math.PI / 2; usb.position.set(-HALF_W / 2, -PH / 2, 0); g.add(usb);
+    const usbRim = new THREE.Mesh(new THREE.CapsuleGeometry(0.115, 0.64, 6, 16), MAT.titaniumPolished);
+    usbRim.rotation.z = Math.PI / 2; usbRim.scale.set(1, 0.3, 1); usbRim.position.set(-HALF_W / 2, -PH / 2 + 0.001, 0); g.add(usbRim);
     const tongue = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.05), MAT.ring);
-    tongue.position.set(-HALF_W / 2, -PH / 2 + 0.005, 0); g.add(tongue);
+    tongue.position.set(-HALF_W / 2, -PH / 2 + 0.012, 0); g.add(tongue);
     const mic = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 10), MAT.port);
     mic.position.set(-5.6, -PH / 2, 0); g.add(mic);
     // Подэкранная фронталка 18 МП — едва заметный круг
     frontCamDot = new THREE.Mesh(new THREE.CircleGeometry(0.13, 32),
-      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }));
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6 }));
     frontCamDot.position.set(-HALF_W / 2, PH / 2 - 0.8, ZS + 0.001);
     frontCamDot.userData.noRay = true;
     g.add(frontCamDot);
@@ -1363,29 +1399,74 @@ function buildHalf(side){
   return g;
 }
 
-/* Блок камер без выступа: две линзы 48 МП + вспышка */
-const CAM_X = -1.75, CAM_Y = 5.15;
-function buildCameraBlock(g){
-  const z = -T / 2 - 0.0035;
-  const panel = new THREE.Mesh(extrude(roundedRectPath(new THREE.Shape(), CAM_X - 0.95, CAM_Y - 2.05, CAM_X + 0.95, CAM_Y + 2.05, allC(0.9)), 0.0015, 0, 32), MAT.camPanel);
-  panel.position.z = z - 0.0015;
-  g.add(panel);
-  [CAM_Y + 1.05, CAM_Y - 1.05].forEach(y => {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.66, 0.035, 12, 64), MAT.ring);
-    ring.position.set(CAM_X, y, z - 0.004); g.add(ring);
-    const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.004, 64), MAT.lensGlass);
-    lens.rotation.x = Math.PI / 2; lens.position.set(CAM_X, y, z - 0.004); g.add(lens);
-    const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.003, 48), MAT.lensCoat);
-    inner.rotation.x = Math.PI / 2; inner.position.set(CAM_X, y, z - 0.0065); g.add(inner);
-    const innerRing = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.012, 8, 48), MAT.ring);
-    innerRing.position.set(CAM_X, y, z - 0.006); g.add(innerRing);
+/* Выступающий остров камер: две линзы 48 МП, вспышка, ToF-датчик */
+const ISL = { x: -5.25, y: 5.45, w: 3.3, h: 3.9, r: 1.15 };
+const ISL_DEPTH = 0.13;   // выступ 1.3 мм
+const LENSES = [{ x: ISL.x + 0.72, y: ISL.y + 0.95, r: 0.7 }, { x: ISL.x - 0.72, y: ISL.y - 0.95, r: 0.7 }];
+const FLASH = { x: ISL.x - 0.85, y: ISL.y + 1.12 }, TOF = { x: ISL.x + 0.85, y: ISL.y - 1.12 };
+
+/* Объектив: выступающее кольцо (LatheGeometry), бленда, стекло с покрытием, внутренние кольца */
+function buildLens(r){
+  const g = new THREE.Group();
+  const prof = [[r + 0.09, 0], [r + 0.09, 0.045], [r + 0.075, 0.065], [r + 0.02, 0.07], [r - 0.005, 0.05], [r - 0.01, 0.0]]
+    .map(([a, b]) => new THREE.Vector2(a, b));
+  const bezel = new THREE.Mesh(new THREE.LatheGeometry(prof, 72), MAT.titaniumPolished);
+  bezel.rotation.x = -Math.PI / 2;
+  g.add(bezel);
+  const disc = (rad, z, mat, h = 0.004) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, h, 64), mat);
+    m.rotation.x = Math.PI / 2; m.position.z = z; g.add(m); return m;
+  };
+  disc(r - 0.01, 0.01, MAT.port, 0.02);          // чёрная бленда
+  disc(r * 0.86, -0.004, MAT.lensGlass);         // защитное стекло
+  disc(r * 0.6, -0.007, MAT.lensCoat);           // просветляющее покрытие
+  disc(r * 0.22, -0.009, MAT.lensGlass);         // центральная линза
+  [[0.78, 0.012], [0.5, 0.008], [0.3, 0.006]].forEach(([k, tube]) => {
+    const t = new THREE.Mesh(new THREE.TorusGeometry(r * k, tube, 8, 64), MAT.ring);
+    t.position.z = -0.006; g.add(t);
   });
-  const flash = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.004, 32), MAT.flash);
-  flash.rotation.x = Math.PI / 2; flash.position.set(CAM_X - 1.45, CAM_Y + 1.05, z - 0.002); g.add(flash);
-  const fr = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.02, 8, 32), MAT.ring);
-  fr.position.set(CAM_X - 1.45, CAM_Y + 1.05, z - 0.002); g.add(fr);
-  const mic = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.004, 12), MAT.port);
-  mic.rotation.x = Math.PI / 2; mic.position.set(CAM_X - 1.45, CAM_Y + 0.4, z - 0.002); g.add(mic);
+  return g;
+}
+
+function buildCameraIsland(g){
+  const zb = -T / 2 - 0.001;
+  const bev = 0.03;
+  const shape = roundedRectPath(new THREE.Shape(), ISL.x - ISL.w / 2 + bev, ISL.y - ISL.h / 2 + bev, ISL.x + ISL.w / 2 - bev, ISL.y + ISL.h / 2 - bev, allC(ISL.r - bev));
+  const base = new THREE.Mesh(extrude(shape, ISL_DEPTH - 2 * bev, bev, 48), MAT.titanium);
+  base.position.z = zb - ISL_DEPTH + bev;
+  g.add(base);
+  const zTop = zb - ISL_DEPTH;
+  // Тёмное стекло на острове
+  const topShape = roundedRectPath(new THREE.Shape(), ISL.x - ISL.w / 2 + 0.12, ISL.y - ISL.h / 2 + 0.12, ISL.x + ISL.w / 2 - 0.12, ISL.y + ISL.h / 2 - 0.12, allC(ISL.r - 0.12));
+  const top = new THREE.Mesh(extrude(topShape, 0.004, 0, 48), MAT.camPanel);
+  top.position.z = zTop - 0.004;
+  g.add(top);
+  const zs = zTop - 0.004;
+  LENSES.forEach(L => { const lens = buildLens(L.r); lens.position.set(L.x, L.y, zs); g.add(lens); });
+  // Вспышка
+  const flash = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.006, 40), MAT.flash);
+  flash.rotation.x = Math.PI / 2; flash.position.set(FLASH.x, FLASH.y, zs - 0.003); g.add(flash);
+  const fr = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.022, 8, 40), MAT.titaniumPolished);
+  fr.position.set(FLASH.x, FLASH.y, zs - 0.004); g.add(fr);
+  // ToF-датчик глубины
+  const tof = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.006, 40), MAT.lensCoat);
+  tof.rotation.x = Math.PI / 2; tof.position.set(TOF.x, TOF.y, zs - 0.003); g.add(tof);
+  const tr = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.018, 8, 40), MAT.ring);
+  tr.position.set(TOF.x, TOF.y, zs - 0.004); g.add(tr);
+  // Микрофон
+  const mic = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.006, 12), MAT.port);
+  mic.rotation.x = Math.PI / 2; mic.position.set(FLASH.x, ISL.y + 0.4, zs - 0.002); g.add(mic);
+  // Гравировка «48 MP · OIS»
+  const txt = canvasTex(512, 128, (c, w, h) => {
+    c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#fff'; c.font = `600 64px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('48MP · OIS', w / 2, h / 2 + 2);
+  }, false);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.3),
+    new THREE.MeshBasicMaterial({ color: 0xc89aa4, alphaMap: txt, transparent: true, depthWrite: false }));
+  label.rotation.y = Math.PI; label.position.set(TOF.x, ISL.y - 0.5, zs - 0.001);
+  label.userData.noRay = true;
+  g.add(label);
 }
 
 function buildPhone(){
@@ -1402,7 +1483,7 @@ function buildPhone(){
   hingePivot = new THREE.Group();
   hingePivot.position.set(0, 0, PIV_Z);
   const R = PIV_Z + T / 2 - 0.006;
-  const cover = new THREE.Mesh(new THREE.CylinderGeometry(R, R, PH - 0.5, 48, 1, false, Math.PI / 2, Math.PI), MAT.titanium);
+  const cover = new THREE.Mesh(new THREE.CylinderGeometry(R, R, PH - 0.5, 64, 1, false, Math.PI / 2 + 0.09, Math.PI - 0.18), MAT.titanium);
   cover.castShadow = true;
   hingePivot.add(cover);
   foldRoot.add(hingePivot);
@@ -1480,20 +1561,20 @@ const gears = [];
 
 const PART_INFO = {
   coating:    { n: 1,  name: 'Защитное покрытие внешнего экрана', specs: ['Многослойный ударопоглощающий стек', 'Закалённое стекло + амортизирующая плёнка', 'Олеофобный слой против отпечатков'] },
-  outerOled:  { n: 2,  name: 'Внешний экран LTPO OLED', specs: ['Диагональ 6.3″', 'LTPO 1–120 Гц', '2520 × 1080, до 2600 нит'] },
-  innerScreen:{ n: 3,  name: 'Внутренний гибкий экран', specs: ['7.8″ LTPO OLED, 1–120 Гц', 'UTG — ультратонкое стекло 30 мкм', 'CPI — прозрачный полиимидный слой', 'Подэкранная фронтальная камера 18 МП'] },
-  hinge:      { n: 4,  name: 'Каплевидная петля (waterdrop)', specs: ['Шестерёнчатая синхронизация половин', 'Экран складывается «каплей» — складка почти незаметна', 'Ресурс 500 000 сгибов', 'Титановый сплав + нержавеющая сталь'] },
-  frame:      { n: 5,  name: 'Рама из титана', specs: ['Титан Grade 5', 'Сложенный: 73 × 158 × 9.5 мм', 'Раскрытый: 146 × 158 × 4.5 мм'] },
-  board:      { n: 6,  name: 'Главная плата', specs: ['Многослойная HDI-плата', 'Процессор, память, накопитель, модем', 'Гибкий шлейф через петлю'] },
+  outerOled:  { n: 2,  name: 'Внешний экран LTPO OLED', specs: ['Диагональ 6.3″', 'LTPO 1–120 Гц', '2520 × 1080, до 2600 нит', 'Драйвер дисплея на гибком шлейфе'] },
+  innerScreen:{ n: 3,  name: 'Внутренний гибкий экран', specs: ['7.8″ LTPO OLED, 1–120 Гц', 'UTG — ультратонкое стекло 30 мкм', 'CPI — прозрачный полиимидный слой', 'Опорная пластина с решёткой в зоне сгиба', 'Подэкранная фронтальная камера 18 МП'] },
+  hinge:      { n: 4,  name: 'Каплевидная петля (waterdrop)', specs: ['Шестерёнчатая синхронизация половин', 'Пружины и кулачки фиксируют любой угол', 'Экран складывается «каплей» — складка почти незаметна', 'Ресурс 500 000 сгибов'] },
+  frame:      { n: 5,  name: 'Рама из титана', specs: ['Титан Grade 5, бордовое анодирование', 'Средние пластины жёсткости', 'Антенные разрезы на торцах', 'Сложенный: 73 × 158 × 9.5 мм · раскрытый: 146 × 158 × 4.5 мм'] },
+  board:      { n: 6,  name: 'Главная плата', specs: ['L-образная многослойная HDI-плата', 'Экраны (shield) над чипами', 'Межплатные разъёмы BTB', 'Гибкий шлейф через петлю'] },
   soc:        { n: 6,  name: 'Процессор «Duo X1» (концепт)', specs: ['16 ядер: 2 Prime + 6 Performance + 8 Efficiency', 'Техпроцесс 3 нм', 'Встроенные GPU и NPU'] },
   ram:        { n: 6,  name: 'ОЗУ 12 ГБ LPDDR5X', specs: ['До 9600 МТ/с', '+ виртуальная ОЗУ до 4 ГБ'] },
   ufs:        { n: 6,  name: 'Накопитель 128 ГБ UFS 4.0', specs: ['Чтение до 4200 МБ/с', 'Запись до 2800 МБ/с'] },
   modem:      { n: 6,  name: 'Модем 5G', specs: ['5G SA/NSA', 'Wi-Fi 7 · Bluetooth 5.4', 'NFC · UWB'] },
-  vapor:      { n: 7,  name: 'Испарительная камера охлаждения', specs: ['Медная пластина', 'Площадь ≈ 4000 мм²', 'Отводит тепло от процессора'] },
-  battery:    { n: 8,  name: 'Две батареи Si-C', specs: ['По одной ячейке в каждой половине', 'Суммарно 5600 мАч', 'Кремний-углеродный анод', '66 Вт проводная / 50 Вт беспроводная'] },
-  cameras:    { n: 9,  name: 'Модули камер', specs: ['Основная 48 МП', 'Вторая 48 МП (сверхширокая)', 'Фронтальная 18 МП — подэкранная'] },
-  modules:    { n: 10, name: 'Динамики, вибромотор, зарядка, USB-C', specs: ['Стереодинамики', 'Линейный вибромотор', 'Катушка беспроводной зарядки 50 Вт', 'Порт USB-C, 66 Вт'] },
-  seals:      { n: 11, name: 'Уплотнители IP68', specs: ['Резиновые прокладки по периметру', 'Вода: 1.5 м / 30 мин', 'Пыль: IP6X'] },
+  vapor:      { n: 7,  name: 'Испарительная камера охлаждения', specs: ['Медная пластина + тепловая трубка', 'Площадь ≈ 4000 мм²', 'Графитовая плёнка в правой половине'] },
+  battery:    { n: 8,  name: 'Две батареи Si-C', specs: ['По одной ячейке в каждой половине', 'Суммарно 5600 мАч', 'Кремний-углеродный анод, свой контроллер BMS', '66 Вт проводная / 50 Вт беспроводная'] },
+  cameras:    { n: 9,  name: 'Модули камер', specs: ['Основная 48 МП, f/1.7, оптическая стабилизация', 'Сверхширокая 48 МП, 120°', 'ToF-датчик глубины и вспышка', 'Фронтальная 18 МП — подэкранная'] },
+  modules:    { n: 10, name: 'Динамики, вибромотор, зарядка, USB-C', specs: ['Стереодинамики', 'Линейный вибромотор', 'Катушка беспроводной зарядки 50 Вт + NFC-антенна', 'Порт USB-C, 66 Вт · лоток nano-SIM'] },
+  seals:      { n: 11, name: 'Уплотнители IP68', specs: ['Резиновые прокладки по периметру', 'Отдельные уплотнители камер, кнопок, порта и SIM', 'Вода: 1.5 м / 30 мин · пыль: IP6X'] },
 };
 
 function addPart(id, base, exp){
@@ -1548,35 +1629,108 @@ function halfRing(side, outerInset, innerInset, depth){
   return extrude(shape, depth, 0, 24);
 }
 
+/* Кривые для пружин петли и катушки зарядки */
+class HelixCurve extends THREE.Curve {
+  constructor(r, len, turns){ super(); this.r = r; this.len = len; this.turns = turns; }
+  getPoint(t, target = new THREE.Vector3()){
+    const a = t * this.turns * Math.PI * 2;
+    return target.set(Math.cos(a) * this.r, (t - 0.5) * this.len, Math.sin(a) * this.r);
+  }
+}
+class SpiralCurve extends THREE.Curve {
+  constructor(r0, r1, turns){ super(); this.r0 = r0; this.r1 = r1; this.turns = turns; }
+  getPoint(t, target = new THREE.Vector3()){
+    const a = t * this.turns * Math.PI * 2, r = lerp(this.r0, this.r1, t);
+    return target.set(Math.cos(a) * r, Math.sin(a) * r, 0);
+  }
+}
+/* Прямоугольная рамка (экран-shield, уплотнитель, NFC-петля) */
+function rectRingGeo(w, h, t, depth, r = 0.08){
+  const s = roundedRectPath(new THREE.Shape(), -w / 2, -h / 2, w / 2, h / 2, allC(r));
+  s.holes.push(roundedRectPath(new THREE.Path(), -w / 2 + t, -h / 2 + t, w / 2 - t, h / 2 - t, allC(Math.max(0.01, r - t))));
+  return extrude(s, depth, 0, 12);
+}
+/* Скруглённая «подушка» (корпус батареи, модуля) */
+function padGeo(w, h, d, r = 0.2, bev = 0.03){
+  const s = roundedRectPath(new THREE.Shape(), -w / 2 + bev, -h / 2 + bev, w / 2 - bev, h / 2 - bev, allC(Math.max(0.02, r - bev)));
+  const geo = extrude(s, d - 2 * bev, bev, 16);
+  geo.translate(0, 0, -d / 2 + bev);
+  return geo;
+}
+
 function buildInternals(){
-  // 3. Внутренний гибкий экран: OLED + CPI + UTG
+  const steel = new THREE.MeshPhysicalMaterial({ color: 0xc3c7cf, metalness: 1, roughness: 0.22 });
+  const darkSteel = new THREE.MeshPhysicalMaterial({ color: 0x5d6168, metalness: 1, roughness: 0.35 });
+  const alu = new THREE.MeshStandardMaterial({ color: 0x9da3ad, metalness: 0.85, roughness: 0.4 });
+  const copper = new THREE.MeshPhysicalMaterial({ color: 0xc8804a, metalness: 1, roughness: 0.3, clearcoat: 0.3 });
+  const blackPl = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.7 });
+  const flexMat = new THREE.MeshStandardMaterial({ color: 0xd9822b, roughness: 0.45, metalness: 0.1 });
+  const gold = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.3 });
+  const greenPcb = new THREE.MeshStandardMaterial({ color: 0x1d4a30, roughness: 0.6, metalness: 0.2 });
+
+  // 3. Внутренний гибкий экран: OLED + CPI + UTG + опорная пластина с решёткой + драйвер
   {
-    const g = addPart('innerScreen', 0.2, 5.6);
+    const g = addPart('innerScreen', 0.2, 5.8);
     const oled = pmesh('innerScreen', g, new THREE.BoxGeometry(IS_W, IS_H, 0.02),
       new THREE.MeshStandardMaterial({ color: 0x050507, emissive: 0xffffff, emissiveMap: innerTex, emissiveIntensity: 0.9, roughness: 0.3 }));
+    oled.userData.spread = [0, 0];
     const cpi = pmesh('innerScreen', g, new THREE.BoxGeometry(IS_W, IS_H, 0.01),
-      new THREE.MeshPhysicalMaterial({ color: 0xffb347, transparent: true, opacity: 0.32, roughness: 0.2, depthWrite: false }));
+      new THREE.MeshPhysicalMaterial({ color: 0xffb347, transparent: true, opacity: 0.3, roughness: 0.2, depthWrite: false }));
+    cpi.userData.spread = [0.02, 0.45];
     const utg = pmesh('innerScreen', g, new THREE.BoxGeometry(IS_W, IS_H, 0.012),
-      new THREE.MeshPhysicalMaterial({ color: 0xbfe3ff, transparent: true, opacity: 0.22, roughness: 0.03, clearcoat: 1, depthWrite: false }));
-    oled.userData.spread = [0, 0]; cpi.userData.spread = [0.02, 0.45]; utg.userData.spread = [0.035, 0.9];
+      new THREE.MeshPhysicalMaterial({ color: 0xbfe3ff, transparent: true, opacity: 0.2, roughness: 0.03, clearcoat: 1, depthWrite: false }));
+    utg.userData.spread = [0.035, 0.9];
+    // опорные пластины (SUS) — по одной на половину
+    [-1, 1].forEach(sx => {
+      const p = pmesh('innerScreen', g, new THREE.BoxGeometry(HALF_W - 0.8, IS_H - 0.1, 0.012), steel, sx * (HALF_W / 2 + 0.3), 0, -0.02);
+      p.userData.spread = [-0.02, -0.38];
+    });
+    // решётка в зоне сгиба
+    const lattice = canvasTex(128, 1024, (c, w, h) => {
+      c.fillStyle = '#fff'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#000';
+      for (let y = 0; y < h; y += 16) for (let x = (y / 16) % 2 ? 8 : 0; x < w; x += 32) c.fillRect(x + 4, y + 3, 18, 6);
+    }, false);
+    const lat = pmesh('innerScreen', g, new THREE.PlaneGeometry(1.6, IS_H - 0.1),
+      new THREE.MeshStandardMaterial({ color: 0xc3c7cf, metalness: 1, roughness: 0.3, alphaMap: lattice, alphaTest: 0.5, side: THREE.DoubleSide }), 0, 0, -0.02);
+    lat.userData.spread = [-0.02, -0.38];
+    // драйвер дисплея на шлейфе
+    const fl = pmesh('innerScreen', g, new THREE.BoxGeometry(2.4, 1.0, 0.01), flexMat, -3.6, -IS_H / 2 - 0.35, -0.01);
+    fl.userData.spread = [-0.01, -0.5];
+    const ic = pmesh('innerScreen', g, new THREE.BoxGeometry(1.1, 0.35, 0.05), blackPl, -3.6, -IS_H / 2 - 0.4, -0.03);
+    ic.userData.spread = [-0.03, -0.55];
   }
-  // 4. Каплевидная петля с шестернями
+
+  // 4. Каплевидная петля: оси, шестерни, кулачки, пружины, рычаги, профили «капли»
   {
     const g = addPart('hinge', 0, 3.9);
-    const steel = new THREE.MeshPhysicalMaterial({ color: 0xb8bcc4, metalness: 1, roughness: 0.25 });
-    const dark = new THREE.MeshPhysicalMaterial({ color: 0x5d6168, metalness: 1, roughness: 0.35 });
-    const housing = pmesh('hinge', g, new THREE.CylinderGeometry(0.42, 0.42, 14.8, 40, 1, true, Math.PI / 2, Math.PI), dark);
+    const housing = pmesh('hinge', g, new THREE.CylinderGeometry(0.42, 0.42, 14.8, 48, 1, true, Math.PI / 2, Math.PI), MAT.titanium);
     housing.material.side = THREE.DoubleSide;
-    pmesh('hinge', g, new THREE.BoxGeometry(0.7, 14.4, 0.06), steel, 0, 0, -0.05);
+    [-7.4, 7.4].forEach(y => pmesh('hinge', g, new THREE.CylinderGeometry(0.42, 0.42, 0.06, 32, 1, false, Math.PI / 2, Math.PI), MAT.titaniumPolished, 0, y, 0));
+    pmesh('hinge', g, new THREE.BoxGeometry(0.75, 14.4, 0.06), steel, 0, 0, -0.06);
+    // оси вдоль петли
+    [-1, 1].forEach(sx => pmesh('hinge', g, new THREE.CylinderGeometry(0.05, 0.05, 14.2, 16), steel, sx * 0.235, 0, 0.05));
+    // кулачок фиксации
+    const cam = new THREE.Shape();
+    for (let i = 0; i <= 64; i++){
+      const a = i / 64 * Math.PI * 2, r = 0.2 + 0.035 * Math.max(0, Math.cos(a * 3));
+      i ? cam.lineTo(Math.cos(a) * r, Math.sin(a) * r) : cam.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    const camHole = new THREE.Path(); camHole.absarc(0, 0, 0.06, 0, Math.PI * 2, true); cam.holes.push(camHole);
+    const springGeo = new THREE.TubeGeometry(new HelixCurve(0.11, 0.55, 7), 120, 0.016, 6, false);
     [-6.2, -2.3, 2.3, 6.2].forEach(y => {
       [-1, 1].forEach(sx => {
-        const gm = pmesh('hinge', g, extrude(gearShape(0.24, 12), 0.16, 0, 6), steel, sx * 0.235, y + 0.08, 0.05);
-        gm.rotation.x = Math.PI / 2;
-        gm.userData.spin = sx;
-        gears.push(gm);
+        const gm = pmesh('hinge', g, extrude(gearShape(0.24, 14), 0.14, 0, 6), steel, sx * 0.235, y + 0.07, 0.05);
+        gm.rotation.x = Math.PI / 2; gm.userData.spin = sx; gears.push(gm);
+        const cm = pmesh('hinge', g, extrude(cam, 0.08, 0, 4), darkSteel, sx * 0.235, y + 0.42, 0.05);
+        cm.rotation.x = Math.PI / 2;
+        pmesh('hinge', g, springGeo, steel, sx * 0.235, y + 0.85, 0.05);
+        // рычаг, связывающий ось с половиной корпуса
+        const arm = pmesh('hinge', g, new THREE.BoxGeometry(1.7, 0.42, 0.07), darkSteel, sx * 1.05, y - 0.45, 0.08);
+        arm.rotation.z = sx * 0.06;
+        pmesh('hinge', g, new THREE.CylinderGeometry(0.07, 0.07, 0.1, 16), steel, sx * 1.75, y - 0.45, 0.13).rotation.x = Math.PI / 2;
       });
-      // кронштейны, соединяющие петлю с половинами
-      pmesh('hinge', g, new THREE.BoxGeometry(2.4, 0.7, 0.1), dark, 0, y + 0.75, 0.0);
+      pmesh('hinge', g, new THREE.BoxGeometry(2.6, 0.32, 0.09), steel, 0, y + 1.35, 0.0);
     });
     // профили «капли»
     const drop = new THREE.Shape();
@@ -1589,128 +1743,223 @@ function buildInternals(){
       d.rotation.x = Math.PI / 2;
     });
   }
-  // 5. Рама из титана
+
+  // 5. Рама из титана + средние пластины + антенные разрезы
   {
-    const g = addPart('frame', -0.2, 2.5);
-    [-1, 1].forEach(side => pmesh('frame', g, halfRing(side, 0, 0.24, 0.4), MAT.titanium));
-    const btn = pmesh('frame', g, new THREE.CapsuleGeometry(0.1, 1.15, 6, 12), MAT.fingerprint, HALF_W + 0.02, 2.4, 0.2);
-    btn.scale.x = 0.55;
-    const vol = pmesh('frame', g, new THREE.CapsuleGeometry(0.1, 1.7, 6, 12), MAT.titanium, HALF_W + 0.02, 4.75, 0.2);
-    vol.scale.x = 0.55;
+    const g = addPart('frame', -0.2, 2.6);
+    [-1, 1].forEach(side => {
+      pmesh('frame', g, halfRing(side, 0, 0.24, 0.4), MAT.titanium);
+      // средняя пластина жёсткости (с вырезом под камеры на левой половине)
+      const [a0, b0, a1, b1] = halfRect(side, 0.22);
+      const s = roundedRectPath(new THREE.Shape(), a0, b0, a1, b1, sideC(side, CORNER - 0.22));
+      if (side < 0) s.holes.push(roundedRectPath(new THREE.Path(), ISL.x - ISL.w / 2 + 0.1, ISL.y - ISL.h / 2 + 0.1, ISL.x + ISL.w / 2 - 0.1, ISL.y + ISL.h / 2 - 0.1, allC(ISL.r - 0.1)));
+      else s.holes.push(roundedRectPath(new THREE.Path(), 1.4, 5.0, 6.0, 7.2, allC(0.3)));
+      pmesh('frame', g, extrude(s, 0.04, 0, 24), alu, 0, 0, 0.12);
+      // антенные разрезы
+      [[side * HALF_W, PH / 2 - 1.9, 0.06, 0.06], [side * HALF_W, -PH / 2 + 1.9, 0.06, 0.06], [side * (HALF_W - 1.9), PH / 2, 0.06, 0.06], [side * (HALF_W - 1.9), -PH / 2, 0.06, 0.06]]
+        .forEach(([x, y, sx, sy]) => pmesh('frame', g, new THREE.BoxGeometry(sx, sy, 0.38), MAT.antenna, x, y, 0.2));
+    });
+    const btn = pmesh('frame', g, new THREE.CapsuleGeometry(0.1, 1.15, 6, 12), MAT.fingerprint, HALF_W + 0.02, 2.4, 0.2); btn.scale.x = 0.55;
+    const vol = pmesh('frame', g, new THREE.CapsuleGeometry(0.1, 1.7, 6, 12), MAT.titaniumPolished, HALF_W + 0.02, 4.75, 0.2); vol.scale.x = 0.55;
   }
-  // 7. Испарительная камера (медь)
+
+  // 7. Испарительная камера (медь) + тепловая трубка + графитовая плёнка
   {
     const g = addPart('vapor', 0.12, 1.35);
-    const copper = new THREE.MeshPhysicalMaterial({ color: 0xc27a45, metalness: 1, roughness: 0.32, clearcoat: 0.3 });
-    pmesh('vapor', g, extrude(roundedRectPath(new THREE.Shape(), -6.6, 0.4, -1.0, 7.3, allC(0.5)), 0.04, 0.01), copper);
-    const pipe = pmesh('vapor', g, new THREE.CylinderGeometry(0.09, 0.09, 6.2, 16), copper, -1.4, -2.6, 0.03);
-    pipe.rotation.z = 0;
+    pmesh('vapor', g, extrude(roundedRectPath(new THREE.Shape(), -3.55, 0.8, -0.95, 7.3, allC(0.45)), 0.04, 0.01), copper);
+    pmesh('vapor', g, new THREE.CylinderGeometry(0.09, 0.09, 4.4, 16), copper, -1.4, -1.4, 0.03);
+    pmesh('vapor', g, new THREE.SphereGeometry(0.09, 12, 8), copper, -1.4, -3.6, 0.03);
+    pmesh('vapor', g, new THREE.BoxGeometry(5.2, 10.8, 0.01), new THREE.MeshStandardMaterial({ color: 0x22252b, roughness: 0.35, metalness: 0.6 }), 3.75, -0.6, 0);
   }
-  // 6. Главная плата с чипами
+
+  // 6. Главная плата (L-образная) с чипами, экранами, разъёмами
   {
     const g = addPart('board', 0, 0.3);
     subPart('soc'); subPart('ram'); subPart('ufs'); subPart('modem');
-    const pcbTex = canvasTex(512, 600, (c, w, h) => {
+    const pcbTex = canvasTex(512, 512, (c, w, h) => {
       c.fillStyle = '#123824'; c.fillRect(0, 0, w, h);
       const rnd = mulberry(42);
-      c.strokeStyle = '#c9a646'; c.globalAlpha = 0.55;
-      for (let i = 0; i < 90; i++){
-        c.lineWidth = 1 + rnd() * 2.5;
+      c.strokeStyle = '#c9a646'; c.globalAlpha = 0.5;
+      for (let i = 0; i < 120; i++){
+        c.lineWidth = 1 + rnd() * 2.2;
         let x = rnd() * w, y = rnd() * h;
         c.beginPath(); c.moveTo(x, y);
-        for (let j = 0; j < 4; j++){ if (rnd() > .5) x += (rnd() - .5) * 160; else y += (rnd() - .5) * 160; c.lineTo(x, y); }
+        for (let j = 0; j < 4; j++){ if (rnd() > .5) x += (rnd() - .5) * 150; else y += (rnd() - .5) * 150; c.lineTo(x, y); }
         c.stroke();
       }
       c.globalAlpha = 1; c.fillStyle = '#d8b54d';
-      for (let i = 0; i < 160; i++){ c.beginPath(); c.arc(rnd() * w, rnd() * h, 2 + rnd() * 3, 0, 7); c.fill(); }
+      for (let i = 0; i < 220; i++){ c.beginPath(); c.arc(rnd() * w, rnd() * h, 1.5 + rnd() * 3, 0, 7); c.fill(); }
     });
+    pcbTex.wrapS = pcbTex.wrapT = THREE.RepeatWrapping;
+    pcbTex.repeat.set(1 / 6.0, 1 / 6.9); pcbTex.offset.set(6.7 / 6.0, -0.6 / 6.9);
     const pcb = new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.6, metalness: 0.2 });
-    pmesh('board', g, new THREE.BoxGeometry(5.9, 6.8, 0.06), pcb, -3.75, 3.95, 0);
-    pmesh('board', g, new THREE.BoxGeometry(2.6, 2.2, 0.06), pcb, 4.4, 5.9, 0);
-    pmesh('board', g, new THREE.BoxGeometry(2.6, 0.5, 0.02), new THREE.MeshStandardMaterial({ color: 0xd9822b, roughness: 0.5 }), 0.2, 5.6, 0.02);
-    pmesh('soc', g, new THREE.BoxGeometry(1.5, 1.5, 0.14), chipMat('Duo X1', '16C · 3 нм', '#202329'), -3.3, 4.5, 0.1);
-    pmesh('ram', g, new THREE.BoxGeometry(1.35, 1.0, 0.1), chipMat('12 ГБ', 'LPDDR5X'), -5.45, 5.7, 0.08);
-    pmesh('ufs', g, new THREE.BoxGeometry(1.2, 1.4, 0.1), chipMat('128 ГБ', 'UFS 4.0'), -5.45, 3.5, 0.08);
-    pmesh('modem', g, new THREE.BoxGeometry(1.1, 1.1, 0.1), chipMat('5G', 'модем', '#1f2430'), -1.75, 6.4, 0.08);
+    const L = new THREE.Shape();
+    L.moveTo(-6.7, 0.6); L.lineTo(-0.8, 0.6); L.lineTo(-0.8, 7.4); L.lineTo(-3.45, 7.4); L.lineTo(-3.45, 3.3); L.lineTo(-6.7, 3.3); L.lineTo(-6.7, 0.6);
+    pmesh('board', g, extrude(L, 0.06, 0, 4), pcb, 0, 0, -0.03);
+    // чипы
+    const chips = [
+      ['soc', 1.5, 1.5, 0.14, chipMat('Duo X1', '16C · 3 нм', '#202329'), -2.15, 4.7],
+      ['modem', 1.05, 1.05, 0.1, chipMat('5G', 'модем', '#1f2430'), -2.15, 6.55],
+      ['ram', 1.35, 1.0, 0.1, chipMat('12 ГБ', 'LPDDR5X'), -5.7, 1.95],
+      ['ufs', 1.2, 1.35, 0.1, chipMat('128 ГБ', 'UFS 4.0'), -4.2, 1.95],
+      ['board', 0.8, 0.8, 0.08, chipMat('PMIC', 'питание'), -1.5, 1.6],
+      ['board', 0.8, 0.8, 0.08, chipMat('Wi-Fi 7', 'BT 5.4'), -2.8, 1.6],
+      ['board', 0.6, 0.6, 0.07, chipMat('UWB', 'NFC'), -1.5, 2.75],
+    ];
+    const occupied = [];
+    chips.forEach(([id, w, h, d, mat, x, y]) => {
+      pmesh(id, g, new THREE.BoxGeometry(w, h, d), mat, x, y, 0.03 + d / 2);
+      occupied.push([x, y, w / 2 + 0.15, h / 2 + 0.15]);
+    });
+    // металлические экраны (shield) вокруг чипов
+    [[-2.15, 4.7, 1.9, 1.9], [-2.15, 6.55, 1.4, 1.4], [-4.95, 1.95, 3.0, 1.75]].forEach(([x, y, w, h]) => {
+      pmesh('board', g, rectRingGeo(w, h, 0.06, 0.12, 0.06), steel, x, y, 0.03);
+    });
+    // разъёмы BTB
+    const btb = (x, y, w = 0.9) => {
+      pmesh('board', g, new THREE.BoxGeometry(w, 0.26, 0.08), blackPl, x, y, 0.07);
+      pmesh('board', g, new THREE.BoxGeometry(w - 0.1, 0.12, 0.02), gold, x, y, 0.12);
+    };
+    btb(-1.25, 3.6); btb(-3.0, 0.85); btb(-6.0, 0.85); btb(-2.9, 7.1, 0.7);
+    // стойки под винты
+    [[-6.5, 0.8], [-1.0, 0.8], [-1.0, 7.2], [-3.25, 7.2], [-6.5, 3.1], [-3.25, 3.5]].forEach(([x, y]) => {
+      const s = pmesh('board', g, new THREE.CylinderGeometry(0.1, 0.1, 0.12, 16), steel, x, y, 0.05); s.rotation.x = Math.PI / 2;
+    });
+    // мелкие SMD-компоненты
     const rnd = mulberry(7);
     const smd = new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.5, metalness: 0.4 });
-    for (let i = 0; i < 36; i++){
-      const x = -6.5 + rnd() * 5.4, y = 0.8 + rnd() * 6.3;
-      if (Math.abs(x + 3.3) < 0.95 && Math.abs(y - 4.5) < 0.95) continue;
-      pmesh('board', g, new THREE.BoxGeometry(0.12 + rnd() * 0.25, 0.08 + rnd() * 0.2, 0.06), smd, x, y, 0.06);
+    const cap = new THREE.MeshStandardMaterial({ color: 0xa88a5a, roughness: 0.5, metalness: 0.3 });
+    const inBoard = (x, y) => (y > 0.75 && y < 3.15 && x > -6.55 && x < -0.95) || (x > -3.3 && x < -0.95 && y > 0.75 && y < 7.25);
+    for (let i = 0, n = 0; i < 600 && n < 90; i++){
+      const x = -6.6 + rnd() * 5.8, y = 0.7 + rnd() * 6.6;
+      if (!inBoard(x, y) || occupied.some(([ox, oy, hw, hh]) => Math.abs(x - ox) < hw && Math.abs(y - oy) < hh)) continue;
+      const w = 0.08 + rnd() * 0.22, h = 0.06 + rnd() * 0.16;
+      pmesh('board', g, new THREE.BoxGeometry(w, h, 0.05), rnd() > 0.6 ? cap : smd, x, y, 0.055);
+      n++;
     }
+    // дополнительная плата в правой половине
+    pmesh('board', g, new THREE.BoxGeometry(2.9, 2.0, 0.06), greenPcb, 4.6, 6.2, 0);
+    pmesh('board', g, new THREE.BoxGeometry(0.7, 0.7, 0.07), chipMat('NFC', 'ctrl'), 4.0, 6.3, 0.065);
+    pmesh('board', g, new THREE.BoxGeometry(0.6, 0.45, 0.06), chipMat('Аудио', 'кодек'), 5.1, 6.6, 0.06);
+    btb(5.1, 5.5, 0.7);
+    // шлейфы: через петлю и к нижней плате USB
+    pmesh('board', g, new THREE.BoxGeometry(4.6, 0.45, 0.012), flexMat, 1.1, 5.7, 0.02);
+    pmesh('board', g, new THREE.BoxGeometry(3.4, 0.35, 0.012), flexMat, 1.1, 1.2, 0.02);
+    pmesh('board', g, new THREE.BoxGeometry(0.4, 7.2, 0.012), flexMat, -0.55, -3.0, 0.02);
   }
-  // 8. Две батареи Si-C
+
+  // 8. Две батареи Si-C в мягком корпусе + контроллеры BMS
   {
-    const g = addPart('battery', -0.06, -1.0);
-    const bat = (label) => {
-      const tex = canvasTex(256, 384, (c, w, h) => {
-        const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#2b2f38'); gr.addColorStop(1, '#16181d');
-        c.fillStyle = gr; c.fillRect(0, 0, w, h);
-        c.fillStyle = '#7aa2ff'; c.fillRect(0, h * .12, w, 6);
-        c.fillStyle = '#e8ecf5'; c.textAlign = 'center';
-        c.font = `800 46px ${FONT}`; c.fillText('Si-C', w / 2, h * .42);
-        c.font = `600 28px ${FONT}`; c.fillText(label, w / 2, h * .54);
-        c.font = `400 18px ${FONT}`; c.fillStyle = '#9aa3b5'; c.fillText('Duo · 3.89 В', w / 2, h * .64);
-      });
-      const side = new THREE.MeshStandardMaterial({ color: 0x23262d, roughness: 0.5, metalness: 0.3 });
-      return [side, side, side, side, new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5 }), side];
-    };
-    pmesh('battery', g, new THREE.BoxGeometry(5.8, 7.4, 0.3), bat('2500 мАч'), -3.75, -3.4, 0);
-    pmesh('battery', g, new THREE.BoxGeometry(5.8, 11.6, 0.3), bat('3100 мАч'), 3.75, -1.4, 0);
-  }
-  // 9. Модули камер
-  {
-    const g = addPart('cameras', -0.1, -2.15);
-    const body = new THREE.MeshStandardMaterial({ color: 0x1d1f24, roughness: 0.45, metalness: 0.5 });
-    [CAM_Y + 1.05, CAM_Y - 1.05].forEach(y => {
-      pmesh('cameras', g, new THREE.BoxGeometry(1.35, 1.35, 0.3), body, CAM_X, y, 0);
-      const barrel = pmesh('cameras', g, new THREE.CylinderGeometry(0.56, 0.6, 0.22, 40), MAT.ring, CAM_X, y, -0.25);
-      barrel.rotation.x = Math.PI / 2;
-      const lens = pmesh('cameras', g, new THREE.CylinderGeometry(0.42, 0.42, 0.02, 40), MAT.lensCoat, CAM_X, y, -0.37);
-      lens.rotation.x = Math.PI / 2;
+    const g = addPart('battery', -0.06, -1.05);
+    const pouch = new THREE.MeshPhysicalMaterial({ color: 0x2a2d35, roughness: 0.4, metalness: 0.5, clearcoat: 0.5 });
+    const label = (text) => canvasTex(256, 384, (c, w, h) => {
+      const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#2d3039'); gr.addColorStop(1, '#17191e');
+      c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#c2185b'; c.fillRect(0, h * .12, w, 7);
+      c.fillStyle = '#e8ecf5'; c.textAlign = 'center';
+      c.font = `800 46px ${FONT}`; c.fillText('Si-C', w / 2, h * .42);
+      c.font = `600 28px ${FONT}`; c.fillText(text, w / 2, h * .54);
+      c.font = `400 18px ${FONT}`; c.fillStyle = '#9aa3b5'; c.fillText('Duo · 3.89 В · Li-ion', w / 2, h * .64);
+      c.strokeStyle = 'rgba(255,255,255,.15)'; c.lineWidth = 2; c.strokeRect(14, h * .76, w - 28, h * .14);
     });
-    // фронтальная подэкранная 18 МП
-    pmesh('cameras', g, new THREE.BoxGeometry(0.55, 0.55, 0.2), body, -HALF_W / 2, PH / 2 - 0.8, 0.1);
-    const fl = pmesh('cameras', g, new THREE.CylinderGeometry(0.15, 0.15, 0.06, 24), MAT.lensCoat, -HALF_W / 2, PH / 2 - 0.8, 0.22);
-    fl.rotation.x = Math.PI / 2;
-    pmesh('cameras', g, new THREE.BoxGeometry(0.5, 0.5, 0.12), MAT.flash, CAM_X - 1.45, CAM_Y + 1.05, 0);
+    [[-3.75, -3.4, 5.8, 7.4, '2500 мАч'], [3.75, -1.3, 5.8, 11.6, '3100 мАч']].forEach(([x, y, w, h, t]) => {
+      pmesh('battery', g, padGeo(w, h, 0.3, 0.3, 0.05), pouch, x, y, 0);
+      pmesh('battery', g, new THREE.PlaneGeometry(w - 0.6, h - 0.8), new THREE.MeshStandardMaterial({ map: label(t), roughness: 0.5 }), x, y, 0.151);
+      pmesh('battery', g, new THREE.BoxGeometry(2.2, 0.5, 0.08), greenPcb, x, y + h / 2 + 0.2, 0.05);
+      pmesh('battery', g, new THREE.BoxGeometry(0.5, 0.3, 0.05), chipMat('BMS', ''), x - 0.5, y + h / 2 + 0.2, 0.11);
+      pmesh('battery', g, new THREE.BoxGeometry(0.4, 0.7, 0.012), flexMat, x + 0.7, y + h / 2 + 0.55, 0.06);
+    });
   }
-  // 10. Динамики, вибромотор, катушка беспроводной зарядки, USB-C
+
+  // 9. Модули камер: два модуля 48 МП с оптической стабилизацией, ToF, вспышка, фронталка
   {
-    const g = addPart('modules', -0.12, -2.95);
-    const spk = new THREE.MeshStandardMaterial({ color: 0x30343c, roughness: 0.6, metalness: 0.3 });
-    pmesh('modules', g, new THREE.BoxGeometry(1.8, 0.8, 0.26), spk, -1.9, -7.2, 0);
-    pmesh('modules', g, new THREE.BoxGeometry(1.8, 0.8, 0.26), spk, 2.1, -7.2, 0);
-    pmesh('modules', g, new THREE.BoxGeometry(1.5, 0.45, 0.2), spk, 3.3, 7.3, 0);
-    pmesh('modules', g, new THREE.BoxGeometry(1.3, 0.55, 0.26), new THREE.MeshStandardMaterial({ color: 0x8b93a3, metalness: 0.8, roughness: 0.3 }), 5.6, -6.8, 0);
-    const copper = new THREE.MeshPhysicalMaterial({ color: 0xd08a52, metalness: 1, roughness: 0.3 });
-    for (let i = 0; i < 6; i++) pmesh('modules', g, new THREE.TorusGeometry(0.6 + i * 0.25, 0.05, 8, 64), copper, -3.75, -3.3, 0);
-    const ferrite = pmesh('modules', g, new THREE.CylinderGeometry(2.05, 2.05, 0.03, 64), new THREE.MeshStandardMaterial({ color: 0x111215, roughness: 0.8 }), -3.75, -3.3, -0.06);
-    ferrite.rotation.x = Math.PI / 2;
-    pmesh('modules', g, new THREE.BoxGeometry(1.0, 0.45, 0.3), MAT.ring, -HALF_W / 2, -7.55, 0);
-    pmesh('modules', g, new THREE.BoxGeometry(0.7, 0.3, 0.14), MAT.port, -HALF_W / 2, -7.62, 0);
+    const g = addPart('cameras', -0.1, -2.25);
+    const body = new THREE.MeshStandardMaterial({ color: 0x1d1f24, roughness: 0.45, metalness: 0.5 });
+    LENSES.forEach(Ln => {
+      pmesh('cameras', g, padGeo(1.55, 1.55, 0.36, 0.18, 0.03), body, Ln.x, Ln.y, 0);
+      const barrel = pmesh('cameras', g, new THREE.CylinderGeometry(0.58, 0.62, 0.3, 48), MAT.titaniumPolished, Ln.x, Ln.y, -0.3);
+      barrel.rotation.x = Math.PI / 2;
+      const lens = pmesh('cameras', g, new THREE.CylinderGeometry(0.44, 0.44, 0.02, 48), MAT.lensCoat, Ln.x, Ln.y, -0.46);
+      lens.rotation.x = Math.PI / 2;
+      // магниты/катушки OIS по бокам
+      [[0.85, 0], [-0.85, 0], [0, 0.85], [0, -0.85]].forEach(([dx, dy]) =>
+        pmesh('cameras', g, new THREE.BoxGeometry(dx ? 0.12 : 0.6, dy ? 0.12 : 0.6, 0.25), copper, Ln.x + dx, Ln.y + dy, 0));
+      pmesh('cameras', g, new THREE.BoxGeometry(0.4, 1.4, 0.012), flexMat, Ln.x + (Ln.x > ISL.x ? 0.4 : -0.4), Ln.y - 1.3, 0.1);
+    });
+    pmesh('cameras', g, padGeo(0.6, 0.6, 0.2, 0.1, 0.02), body, TOF.x, TOF.y, 0);
+    const tofL = pmesh('cameras', g, new THREE.CylinderGeometry(0.17, 0.17, 0.04, 24), MAT.lensCoat, TOF.x, TOF.y, -0.12);
+    tofL.rotation.x = Math.PI / 2;
+    pmesh('cameras', g, new THREE.BoxGeometry(0.5, 0.5, 0.12), MAT.flash, FLASH.x, FLASH.y, 0);
+    // фронтальная подэкранная 18 МП
+    pmesh('cameras', g, padGeo(0.6, 0.6, 0.22, 0.1, 0.02), body, -HALF_W / 2, PH / 2 - 0.8, 0.1);
+    const fl = pmesh('cameras', g, new THREE.CylinderGeometry(0.16, 0.16, 0.06, 24), MAT.lensCoat, -HALF_W / 2, PH / 2 - 0.8, 0.23);
+    fl.rotation.x = Math.PI / 2;
   }
+
+  // 10. Динамики, вибромотор, катушка зарядки + NFC, USB-C, SIM, микрофоны
+  {
+    const g = addPart('modules', -0.12, -3.05);
+    const grille = canvasTex(256, 128, (c, w, h) => {
+      c.fillStyle = '#2b2f37'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#0d0e11';
+      for (let y = 10; y < h; y += 14) for (let x = (y / 14) % 2 ? 14 : 7; x < w; x += 14){ c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill(); }
+    });
+    const spkSide = new THREE.MeshStandardMaterial({ color: 0x30343c, roughness: 0.6, metalness: 0.3 });
+    const spkMat = [spkSide, spkSide, spkSide, spkSide, new THREE.MeshStandardMaterial({ map: grille, roughness: 0.7 }), spkSide];
+    pmesh('modules', g, new THREE.BoxGeometry(1.9, 0.85, 0.28), spkMat, -1.95, -7.15, 0);
+    pmesh('modules', g, new THREE.BoxGeometry(1.9, 0.85, 0.28), spkMat, 2.15, -7.15, 0);
+    pmesh('modules', g, new THREE.BoxGeometry(1.5, 0.45, 0.2), spkMat, 3.3, 7.3, 0);
+    // линейный вибромотор
+    pmesh('modules', g, padGeo(1.3, 0.55, 0.26, 0.1, 0.02), new THREE.MeshStandardMaterial({ color: 0x8b93a3, metalness: 0.8, roughness: 0.3 }), 5.6, -5.9, 0);
+    pmesh('modules', g, new THREE.BoxGeometry(0.3, 0.3, 0.012), flexMat, 6.35, -5.9, 0.06);
+    // катушка беспроводной зарядки (спираль) + ферритовая подложка + NFC-петля
+    const coil = pmesh('modules', g, new THREE.TubeGeometry(new SpiralCurve(0.55, 1.85, 9), 700, 0.035, 5, false), copper, -3.75, -3.3, 0.02);
+    coil.scale.z = 0.4;
+    const ferrite = pmesh('modules', g, new THREE.CylinderGeometry(2.0, 2.0, 0.03, 64), new THREE.MeshStandardMaterial({ color: 0x111215, roughness: 0.8 }), -3.75, -3.3, -0.04);
+    ferrite.rotation.x = Math.PI / 2;
+    pmesh('modules', g, rectRingGeo(4.9, 4.9, 0.08, 0.02, 0.5), copper, -3.75, -3.3, -0.02);
+    // USB-C: корпус порта, язычок, плата
+    pmesh('modules', g, new THREE.BoxGeometry(2.4, 0.9, 0.05), greenPcb, -HALF_W / 2, -7.1, -0.08);
+    const shell = pmesh('modules', g, new THREE.CapsuleGeometry(0.13, 0.7, 6, 16), MAT.ring, -HALF_W / 2, -7.55, 0);
+    shell.rotation.z = Math.PI / 2;
+    pmesh('modules', g, new THREE.BoxGeometry(0.55, 0.35, 0.04), gold, -HALF_W / 2, -7.6, 0);
+    // лоток nano-SIM
+    pmesh('modules', g, new THREE.BoxGeometry(1.5, 1.1, 0.06), MAT.titaniumPolished, 4.7, -7.3, 0);
+    pmesh('modules', g, new THREE.BoxGeometry(0.9, 0.7, 0.02), gold, 4.6, -7.25, 0.04);
+    // микрофоны
+    [[-5.6, -7.5], [3.1, 7.55]].forEach(([x, y]) => pmesh('modules', g, new THREE.BoxGeometry(0.35, 0.25, 0.12), blackPl, x, y, 0));
+  }
+
   // 11. Уплотнители IP68
   {
-    const g = addPart('seals', -0.15, -3.85);
+    const g = addPart('seals', -0.15, -3.95);
     const rubber = new THREE.MeshStandardMaterial({ color: 0xff6a2b, roughness: 0.9, metalness: 0 });
     [-1, 1].forEach(side => pmesh('seals', g, halfRing(side, 0.12, 0.2, 0.05), rubber));
-    [CAM_Y + 1.05, CAM_Y - 1.05].forEach(y => pmesh('seals', g, new THREE.TorusGeometry(0.68, 0.045, 8, 48), rubber, CAM_X, y, 0));
-    const usbSeal = pmesh('seals', g, new THREE.TorusGeometry(0.5, 0.05, 8, 32), rubber, -HALF_W / 2, -7.45, 0);
-    usbSeal.scale.y = 0.45;
+    const isl = roundedRectPath(new THREE.Shape(), ISL.x - ISL.w / 2, ISL.y - ISL.h / 2, ISL.x + ISL.w / 2, ISL.y + ISL.h / 2, allC(ISL.r));
+    isl.holes.push(roundedRectPath(new THREE.Path(), ISL.x - ISL.w / 2 + 0.07, ISL.y - ISL.h / 2 + 0.07, ISL.x + ISL.w / 2 - 0.07, ISL.y + ISL.h / 2 - 0.07, allC(ISL.r - 0.07)));
+    pmesh('seals', g, extrude(isl, 0.05, 0, 32), rubber);
+    LENSES.forEach(Ln => pmesh('seals', g, new THREE.TorusGeometry(Ln.r + 0.05, 0.035, 8, 48), rubber, Ln.x, Ln.y, 0));
+    const usbSeal = pmesh('seals', g, new THREE.TorusGeometry(0.5, 0.05, 8, 32), rubber, -HALF_W / 2, -7.45, 0); usbSeal.scale.y = 0.45;
+    const simSeal = pmesh('seals', g, rectRingGeo(1.6, 0.4, 0.06, 0.05, 0.15), rubber, 4.7, -7.75, 0);
+    [[2.4, 1.3], [4.75, 1.85]].forEach(([y, len]) => {
+      const s = pmesh('seals', g, new THREE.TorusGeometry(0.14, 0.03, 8, 24), rubber, HALF_W - 0.05, y, 0);
+      s.scale.y = len / 0.28; s.rotation.y = Math.PI / 2;
+    });
   }
-  // 2. Внешний LTPO OLED
+
+  // 2. Внешний LTPO OLED + драйвер на шлейфе
   {
-    const g = addPart('outerOled', -0.2, -4.95);
+    const g = addPart('outerOled', -0.2, -5.05);
     pmesh('outerOled', g, new THREE.BoxGeometry(OS_W, OS_H, 0.03),
       new THREE.MeshStandardMaterial({ color: 0x050507, emissive: 0xffffff, emissiveMap: outerTex, emissiveIntensity: 0.9, roughness: 0.3 }), HALF_W / 2 + 0.02, 0, 0);
+    pmesh('outerOled', g, new THREE.BoxGeometry(2.0, 0.9, 0.01), flexMat, HALF_W / 2, -OS_H / 2 - 0.3, 0.02);
+    pmesh('outerOled', g, new THREE.BoxGeometry(0.9, 0.3, 0.05), blackPl, HALF_W / 2, -OS_H / 2 - 0.35, 0.05);
   }
+
   // 1. Защитное покрытие внешнего экрана (многослойный стек)
   {
-    const g = addPart('coating', -0.23, -6.0);
-    const cols = [0xdaf0ff, 0xffc46b, 0x8fd3ff];
-    cols.forEach((col, i) => {
+    const g = addPart('coating', -0.23, -6.1);
+    [0xdaf0ff, 0xffc46b, 0x8fd3ff].forEach((col, i) => {
       const m = pmesh('coating', g, new THREE.BoxGeometry(OS_W, OS_H, 0.02),
         new THREE.MeshPhysicalMaterial({ color: col, transparent: true, opacity: 0.3 + i * 0.05, roughness: 0.05, clearcoat: 1, depthWrite: false }), HALF_W / 2 + 0.02, 0, 0);
       m.userData.spread = [-i * 0.025, -i * 0.42];
@@ -1736,7 +1985,7 @@ async function setExplode(on){
     phoneRoot.visible = false;
     internals.visible = true;
     applyExplode(0);
-    tweenCamera(new THREE.Vector3(17, 10, 26), new THREE.Vector3(0, -0.8, 0), 1.3);
+    tweenCamera(new THREE.Vector3(26, 12, 13), new THREE.Vector3(0, -0.8, 0), 1.3);
     await tween(1.2, k => applyExplode(k));
     exploded = true;
   } else {
