@@ -1,0 +1,2789 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080c">
+<title>Duo — 3D-концепт складного смартфона</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===================== БАЗОВЫЕ СТИЛИ ===================== */
+:root{
+  --panelW:360px;
+  --text:#eef1f7;
+  --muted:#9aa3b5;
+  --accent:#ff5a74;
+  --accent2:#c2185b;
+  --ok:#4ade80;
+  --line:rgba(255,255,255,.12);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;color:var(--text);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+body{
+  background:
+    radial-gradient(1100px 800px at 18% 8%,#3a0d1d 0%,transparent 60%),
+    radial-gradient(900px 700px at 88% 92%,#2a0b1f 0%,transparent 60%),
+    radial-gradient(700px 500px at 60% 40%,#1a0a14 0%,transparent 70%),
+    linear-gradient(180deg,#0a0c12,#06070a);
+  background-color:#07080c;
+}
+button{font-family:inherit}
+#scene{position:fixed;inset:0}
+#scene canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
+
+/* Стеклянные панели (glassmorphism) */
+.glass{
+  background:linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  box-shadow:0 12px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.14);
+  border-radius:20px;
+}
+
+/* Шапка */
+.brand{position:fixed;top:16px;left:16px;padding:12px 16px;z-index:5;max-width:calc(100vw - var(--panelW) - 64px)}
+.brand h1{margin:0;font-size:22px;font-weight:800;letter-spacing:.02em;
+  background:linear-gradient(90deg,#fff,#ffb3c1 60%,#ff7a92);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+
+/* Нижняя панель управления */
+#toolbar{position:fixed;left:16px;bottom:16px;right:calc(var(--panelW) + 32px);padding:12px 14px;display:flex;flex-direction:column;gap:10px;z-index:5}
+.fold-row{display:flex;align-items:center;gap:12px}
+.fold-row label{font-size:13px;font-weight:500;white-space:nowrap}
+#foldVal{font-size:13px;font-variant-numeric:tabular-nums;min-width:42px;text-align:right;color:var(--muted)}
+input[type=range]{flex:1;min-width:0;accent-color:var(--accent);height:24px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{appearance:none;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:var(--text);
+  font-size:13px;font-weight:500;padding:9px 13px;border-radius:12px;cursor:pointer;white-space:nowrap;
+  transition:background .2s,border-color .2s,transform .15s,opacity .2s}
+.btn:hover{background:rgba(255,255,255,.14)}
+.btn:active{transform:scale(.97)}
+.btn.active{background:linear-gradient(135deg,rgba(255,90,116,.4),rgba(194,24,91,.4));border-color:rgba(255,140,160,.55)}
+.btn.primary{background:linear-gradient(135deg,rgba(255,90,116,.3),rgba(194,24,91,.24));border-color:rgba(255,140,160,.4)}
+body.busy #toolbar .btn:not([data-act=screen]):not([data-act=front]):not([data-act=back]),
+body.busy .test-btn, body.busy #fold{opacity:.4;pointer-events:none}
+body.exploded [data-act=fold], body.exploded [data-act=unfold], body.exploded #fold{opacity:.4;pointer-events:none}
+
+/* Боковая панель характеристик */
+#panel{position:fixed;top:16px;right:16px;bottom:16px;width:var(--panelW);display:flex;flex-direction:column;overflow:hidden;z-index:6;
+  transition:transform .45s cubic-bezier(.2,.9,.25,1)}
+.sheet-handle{display:none}
+.tabs{display:flex;gap:6px;padding:12px 12px 0}
+.tab{flex:1;border:1px solid transparent;background:transparent;color:var(--muted);padding:10px 8px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer}
+.tab.active{color:var(--text);background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.12)}
+.tab-body{flex:1;overflow-y:auto;padding:12px 16px 8px;-webkit-overflow-scrolling:touch}
+.tab-body.hidden{display:none}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.chip{background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center}
+.chip b{display:block;font-size:15px}
+.chip span{font-size:10px;color:var(--muted)}
+.spec{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid var(--line)}
+.spec:last-child{border-bottom:0}
+.spec dt{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.spec dd{margin:0;font-size:14px;line-height:1.4}
+.live{color:var(--accent)}
+.dur{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.dur:last-child{border-bottom:0}
+.dur .ico{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:grid;place-items:center;font-size:18px;
+  background:linear-gradient(135deg,rgba(255,90,116,.25),rgba(194,24,91,.18));border:1px solid var(--line)}
+.dur .txt{flex:1;min-width:0}
+.dur .txt b{display:block;font-size:14px;font-weight:600}
+.dur .txt span{font-size:12px;color:var(--muted)}
+.test-btn{padding:8px 10px;font-size:12px}
+.note{padding:10px 16px 14px;font-size:12px;color:var(--muted);border-top:1px solid var(--line)}
+
+/* Карточка компонента */
+#card{position:fixed;z-index:20;max-width:300px;padding:14px 16px;pointer-events:none;transition:opacity .2s}
+#card.hidden{opacity:0}
+#card h3{margin:0 0 6px;font-size:15px}
+#card ul{margin:0;padding-left:18px;font-size:13px;line-height:1.5;color:#d5dbea}
+#card .tag{display:inline-block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+
+/* HUD тестов */
+#hud{position:fixed;top:84px;left:50%;transform:translateX(-50%);z-index:15;padding:14px 22px;text-align:center;min-width:220px;transition:opacity .3s}
+#hud.hidden{opacity:0;pointer-events:none}
+.hud-title{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.hud-value{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0}
+.hud-value.ok{color:var(--ok)}
+.hud-sub{font-size:13px;color:#c9d1e4}
+
+/* Тост */
+#toast{position:fixed;left:50%;top:20px;transform:translate(-50%,-220%);z-index:30;padding:10px 18px;font-size:14px;font-weight:600;transition:transform .45s cubic-bezier(.2,1.4,.4,1)}
+#toast.show{transform:translate(-50%,0)}
+
+/* Подсказка */
+#hint{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:4;padding:8px 14px;font-size:12px;color:#cfd6e6;transition:opacity .8s}
+#hint.off{opacity:0;pointer-events:none}
+
+/* Оверлей мини-ОС на весь сайт */
+#osOverlay{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;flex-direction:column;
+  background:rgba(4,5,9,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+#osOverlay.show{display:flex;animation:ovIn .45s cubic-bezier(.2,1.2,.3,1)}
+@keyframes ovIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+#ovCanvas{border-radius:28px;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 6px #15171c,0 0 0 7px rgba(255,255,255,.12);touch-action:none;cursor:pointer;display:block}
+.ov-hint{margin-top:16px;font-size:12px;color:var(--muted);text-align:center;padding:0 16px}
+.ov-close{position:absolute;top:14px;right:14px}
+
+/* Экран загрузки */
+#loader{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#07080c;transition:opacity .9s ease, visibility .9s}
+#loader.hide{opacity:0;visibility:hidden}
+.ld-box{text-align:center;width:min(280px,80vw)}
+.ld-logo{font-size:56px;font-weight:800;letter-spacing:.04em;
+  background:linear-gradient(90deg,#fff,#ff9fb2,#ff5a74,#fff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:shine 2.4s linear infinite}
+@keyframes shine{to{background-position:-300% 0}}
+.ld-sub{color:var(--muted);font-size:13px;margin:4px 0 18px}
+.ld-bar{height:4px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.ld-bar i{display:block;height:100%;width:5%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .4s}
+.ld-text{margin-top:10px;font-size:12px;color:var(--muted);min-height:16px}
+
+/* ===================== АДАПТИВ (телефон) ===================== */
+@media (max-width:820px){
+  .brand{top:10px;left:10px;padding:8px 12px;max-width:60vw}
+  .brand h1{font-size:18px}
+  .brand p{font-size:11px}
+  #hint{top:auto;bottom:178px;font-size:11px;max-width:calc(100vw - 24px);text-align:center}
+  #toolbar{left:8px;right:8px;bottom:62px;padding:10px;gap:8px;border-radius:16px}
+  .btns{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .btns::-webkit-scrollbar{display:none}
+  .btn{font-size:12px;padding:8px 11px}
+  #panel{top:auto;left:0;right:0;bottom:0;width:auto;height:72dvh;max-height:72vh;border-radius:22px 22px 0 0;
+    transform:translateY(calc(100% - 54px))}
+  #panel.open{transform:translateY(0)}
+  .sheet-handle{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;height:54px;flex:0 0 54px;padding:8px 0 0;
+    background:transparent;border:0;color:var(--text);font-size:14px;font-weight:600;cursor:pointer}
+  .sheet-handle span{width:44px;height:5px;border-radius:5px;background:rgba(255,255,255,.35)}
+  .tabs{padding-top:0}
+  #hud{top:64px;min-width:0;width:calc(100vw - 32px);max-width:340px;padding:10px 14px}
+  .hud-value{font-size:28px}
+  #card{left:12px!important;right:12px;bottom:186px;top:auto!important;max-width:none}
+}
+</style>
+<!-- Карта импортов: Three.js и аддоны с CDN -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- Экран загрузки -->
+<div id="loader">
+  <div class="ld-box">
+    <div class="ld-logo">Duo</div>
+    <div class="ld-sub">Концепт складного смартфона</div>
+    <div class="ld-bar"><i id="ldFill"></i></div>
+    <div class="ld-text" id="ldText">Подключение Three.js…</div>
+  </div>
+</div>
+
+<div id="scene"></div>
+
+<header class="brand glass">
+  <h1>Duo</h1>
+  <p>Интерактивный 3D-концепт складного смартфона</p>
+</header>
+
+<div id="hint" class="glass">Вращайте мышью или пальцем · тапните по экрану телефона, чтобы им пользоваться</div>
+
+<!-- Панель управления -->
+<div id="toolbar" class="glass">
+  <div class="fold-row">
+    <label for="fold">Складывание</label>
+    <input id="fold" type="range" min="0" max="100" value="0" step="1">
+    <span id="foldVal">0%</span>
+  </div>
+  <div class="btns">
+    <button class="btn" data-act="fold">Сложить</button>
+    <button class="btn" data-act="unfold">Раскрыть</button>
+    <button class="btn" data-act="front">Вид спереди</button>
+    <button class="btn" data-act="back">Вид сзади</button>
+    <button class="btn" data-act="auto" id="autoBtn">Авто-вращение</button>
+    <button class="btn primary" data-act="explode" id="explodeBtn">Показать внутренности</button>
+    <button class="btn" data-act="screen">Открыть экран на весь сайт</button>
+  </div>
+</div>
+
+<!-- Панель характеристик -->
+<aside id="panel" class="glass">
+  <button id="sheetHandle" class="sheet-handle"><span></span>Характеристики и тесты</button>
+  <div class="tabs">
+    <button class="tab active" data-tab="specs">Характеристики</button>
+    <button class="tab" data-tab="dur">Прочность</button>
+  </div>
+  <div class="tab-body" id="tab-specs">
+    <div class="chips">
+      <div class="chip"><b>7.8″</b><span>экран</span></div>
+      <div class="chip"><b>16</b><span>ядер</span></div>
+      <div class="chip"><b>5600</b><span>мАч</span></div>
+      <div class="chip"><b>IP68</b><span>защита</span></div>
+    </div>
+    <dl style="margin:0">
+      <div class="spec"><dt>Процессор</dt><dd>Duo X1 (концепт) — 16 ядер: 2 Prime + 6 Performance + 8 Efficiency, 3 нм</dd></div>
+      <div class="spec"><dt>Оперативная память</dt><dd>12 ГБ LPDDR5X + виртуальная до 4 ГБ<br><span class="live">Сейчас виртуальная: <b id="vramLive">4 ГБ</b></span></dd></div>
+      <div class="spec"><dt>Накопитель</dt><dd>128 ГБ UFS 4.0</dd></div>
+      <div class="spec"><dt>Внутренний экран</dt><dd>7.8″ гибкий LTPO OLED, 1–120 Гц, UTG + CPI</dd></div>
+      <div class="spec"><dt>Внешний экран</dt><dd>6.3″ LTPO OLED, 1–120 Гц<br><span class="live">Режим: <b id="hzLive">LTPO 1–120 Гц</b></span></dd></div>
+      <div class="spec"><dt>Основные камеры</dt><dd>48 МП (ОИС) + 48 МП сверхширокая, выступающий блок камер, ToF-датчик, вспышка</dd></div>
+      <div class="spec"><dt>Фронтальные камеры</dt><dd>2 × 18 МП рядом, подэкранные — полностью невидимые (стерео, 3D-распознавание лица)</dd></div>
+      <div class="spec"><dt>Батарея</dt><dd>5600 мАч Si-C (две ячейки — по одной в каждой половине)</dd></div>
+      <div class="spec"><dt>Зарядка</dt><dd>66 Вт проводная · 50 Вт беспроводная</dd></div>
+      <div class="spec"><dt>Связь</dt><dd>5G · Wi-Fi 7 · Bluetooth 5.4 · NFC · UWB</dd></div>
+      <div class="spec"><dt>Система</dt><dd>Android 16</dd></div>
+      <div class="spec"><dt>Размеры</dt><dd>Сложенный: 73 × 158 × 9.5 мм<br>Раскрытый: 146 × 158 × 4.5 мм</dd></div>
+      <div class="spec"><dt>Материалы</dt><dd>Рама — титан с бордовым анодированием, задняя панель — бордовое матовое стекло, каплевидная петля</dd></div>
+    </dl>
+  </div>
+  <div class="tab-body hidden" id="tab-dur">
+    <div class="dur"><div class="ico">⬇</div><div class="txt"><b>Падение (сложенный)</b><span>1.5 м на бетон</span></div><button class="btn test-btn" data-test="drop">Показать тест</button></div>
+    <div class="dur"><div class="ico">⤓</div><div class="txt"><b>Падение (раскрытый)</b><span>1 м на бетон</span></div><button class="btn test-btn" data-test="dropOpen">Показать тест</button></div>
+    <div class="dur"><div class="ico">💧</div><div class="txt"><b>Вода IP68</b><span>1.5 м / 30 мин</span></div><button class="btn test-btn" data-test="water">Показать тест</button></div>
+    <div class="dur"><div class="ico">🌪</div><div class="txt"><b>Пыль IP6X</b><span>Полная пыленепроницаемость</span></div><button class="btn test-btn" data-test="dust">Показать тест</button></div>
+    <div class="dur"><div class="ico">⟲</div><div class="txt"><b>Ресурс петли</b><span>500 000 сгибов</span></div><button class="btn test-btn" data-test="hinge">Показать тест</button></div>
+    <div class="dur"><div class="ico">⚖</div><div class="txt"><b>Давление</b><span>25 кг без деформации</span></div><button class="btn test-btn" data-test="pressure">Показать тест</button></div>
+    <div class="dur"><div class="ico">🌡</div><div class="txt"><b>Температура</b><span>−20…+55 °C</span></div><button class="btn test-btn" data-test="temp">Показать тест</button></div>
+  </div>
+  <div class="note">Концепт. Характеристики целевые.</div>
+</aside>
+
+<div id="card" class="glass hidden"></div>
+<div id="hud" class="glass hidden"><div class="hud-title"></div><div class="hud-value"></div><div class="hud-sub"></div></div>
+<div id="toast" class="glass"></div>
+
+<!-- Мини-ОС на весь сайт -->
+<div id="osOverlay">
+  <canvas id="ovCanvas"></canvas>
+  <div class="ov-hint">Тап — нажатие · свайп вверх — разблокировать / вернуться на рабочий стол</div>
+  <button class="btn ov-close" id="ovClose">✕ Закрыть</button>
+</div>
+
+<!-- Запасной обработчик: если модуль не загрузится -->
+<script>
+  window.__duoFail = function(msg){
+    var t=document.getElementById('ldText'); if(t){ t.textContent=msg; t.style.color='#ff8a8a'; }
+  };
+  window.addEventListener('error', function(e){
+    if(!window.__duoReady) window.__duoFail('Ошибка загрузки: '+(e.message||'неизвестно')+'. Откройте страницу через локальный сервер с доступом к интернету.');
+  });
+  setTimeout(function(){ if(!window.__duoReady) window.__duoFail('Не удалось загрузить Three.js с CDN. Проверьте подключение к интернету.'); }, 20000);
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+/* =====================================================================
+   УТИЛИТЫ
+   ===================================================================== */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = {
+  inOut: k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2,
+  out: k => 1 - Math.pow(1 - k, 3),
+  in: k => k * k * k,
+  linear: k => k,
+};
+const $ = s => document.querySelector(s);
+
+function setProgress(p, text){
+  $('#ldFill').style.width = Math.round(p * 100) + '%';
+  if (text) $('#ldText').textContent = text;
+}
+
+/* Система твинов: всё анимируется внутри одного requestAnimationFrame */
+const tweens = [], frameFns = [];
+function tween(dur, fn, e = ease.inOut){
+  return new Promise(res => tweens.push({ t: 0, dur: Math.max(1e-4, dur), fn, e, res }));
+}
+function everyFrame(fn){ return new Promise(res => frameFns.push({ fn, res })); }
+const wait = s => tween(s, () => {}, ease.linear);
+function updateTweens(dt){
+  for (let i = tweens.length - 1; i >= 0; i--){
+    const tw = tweens[i];
+    tw.t += dt;
+    const k = Math.min(1, tw.t / tw.dur);
+    tw.fn(tw.e(k), k);
+    if (k >= 1){ tweens.splice(i, 1); tw.res(); }
+  }
+  for (let i = frameFns.length - 1; i >= 0; i--){
+    const f = frameFns[i];
+    if (f.fn(dt)){ frameFns.splice(i, 1); f.res(); }
+  }
+}
+
+/* Генератор псевдослучайных чисел (для «фото» и текстур) */
+function mulberry(a){
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+
+/* Канвас-текстура из функции рисования */
+function canvasTex(w, h, draw, srgb = true){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c);
+  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+
+/* Скруглённый прямоугольник для 2D-канваса */
+function rr(ctx, x, y, w, h, r){
+  w = Math.max(0, w); h = Math.max(0, h);
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* =====================================================================
+   МИНИ-ОС (рисуется в canvas, используется как живая текстура экранов)
+   ===================================================================== */
+const FONT = 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const F = (w, px) => `${w} ${Math.max(1, px)}px ${FONT}`;
+
+/* Пружина для «упругих» анимаций */
+class Spring {
+  constructor(v = 0, k = 180, d = 19){ this.v = v; this.t = v; this.vel = 0; this.k = k; this.d = d; }
+  set(t){ this.t = t; }
+  snap(v){ this.v = this.t = v; this.vel = 0; }
+  step(dt){
+    const n = Math.max(1, Math.ceil(dt / 0.008)), h = dt / n;
+    for (let i = 0; i < n; i++){
+      const a = this.k * (this.t - this.v) - this.d * this.vel;
+      this.vel += a * h; this.v += this.vel * h;
+    }
+  }
+}
+
+const APPS = [
+  { id: 'camera',   name: 'Камера',    c1: '#4a5160', c2: '#14161c', anim: 'iris' },
+  { id: 'gallery',  name: 'Галерея',   c1: '#ffbf6b', c2: '#ff5f8f', anim: 'zoom' },
+  { id: 'settings', name: 'Настройки', c1: '#9aa7bf', c2: '#4a5468', anim: 'slide' },
+  { id: 'weather',  name: 'Погода',    c1: '#5ac8fa', c2: '#2f6bff', anim: 'rise' },
+  { id: 'notes',    name: 'Заметки',   c1: '#ffe27a', c2: '#f5a524', anim: 'flip' },
+  { id: 'music',    name: 'Музыка',    c1: '#ff6b9a', c2: '#8f4bff', anim: 'iris' },
+];
+
+function paintPhoto(ctx, seed, x, y, w, h){
+  const rnd = mulberry(seed * 7919 + 13);
+  const hue = Math.floor(rnd() * 360);
+  const g = ctx.createLinearGradient(x, y, x, y + h);
+  g.addColorStop(0, `hsl(${hue},70%,64%)`);
+  g.addColorStop(1, `hsl(${(hue + 40) % 360},60%,28%)`);
+  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = `hsla(${(hue + 180) % 360},90%,85%,.9)`;
+  ctx.beginPath();
+  ctx.arc(x + w * (0.2 + rnd() * 0.6), y + h * (0.18 + rnd() * 0.2), Math.min(w, h) * (0.07 + rnd() * 0.07), 0, Math.PI * 2);
+  ctx.fill();
+  for (let l = 0; l < 3; l++){
+    ctx.fillStyle = `hsla(${(hue + 200 + l * 25) % 360},38%,${18 + l * 9}%,.9)`;
+    ctx.beginPath(); ctx.moveTo(x, y + h);
+    const base = y + h * (0.55 + l * 0.13);
+    for (let i = 0; i <= 8; i++) ctx.lineTo(x + w * i / 8, base - rnd() * h * 0.17);
+    ctx.lineTo(x + w, y + h); ctx.closePath(); ctx.fill();
+  }
+}
+
+class MiniOS {
+  constructor(){
+    this.locked = true;
+    this.unlock = new Spring(0, 140, 19);
+    this.app = null; this.appIdx = 0; this.closing = false;
+    this.appSp = new Spring(0, 200, 17);
+    this.settings = { vram: 4, brightness: 0.85, dark: true, hz: 'ltpo' };
+    this.knob = new Spring(1, 260, 20);
+    this.notes = [
+      { text: 'Купить подарок', time: '09:15', done: false },
+      { text: 'Созвон по проекту Duo', time: '11:40', done: true },
+      { text: 'Тест петли — 500 000 ✓', time: '14:05', done: false },
+    ];
+    this.photos = [11, 27, 3, 48, 90, 64, 5];
+    this.viewPhoto = -1; this.flash = 0; this.lens = 1;
+    this.selfie = false; this.flip = new Spring(0, 160, 20);   // переключение на фронтальные камеры
+    this.homeT = 0;                                            // время с разблокировки (для «всплытия» иконок)
+    this.ripple = { t: 9, x: 0.5, y: 0.85 };                   // волна при разблокировке
+    this.onShutter = () => {};
+    this.music = { playing: false, pos: 34, len: 212, angle: 0 };
+    this.banner = { text: '', until: 0, sp: new Spring(0, 220, 20) };
+    this.time = 0;
+    this.walls = new Map();
+    this.onChange = () => {};
+  }
+  createSurface(w, h, canvas){
+    const c = canvas || document.createElement('canvas');
+    c.width = w; c.height = h;
+    return { canvas: c, ctx: c.getContext('2d'), w, h, hits: [], S: 1, interactive: false };
+  }
+  get pal(){
+    return this.settings.dark
+      ? { fg: '#ffffff', sub: 'rgba(255,255,255,.62)', tint: 'rgba(255,255,255,.10)', tintStrong: 'rgba(14,16,28,.55)', track: 'rgba(255,255,255,.12)', accent: '#ff8fa3' }
+      : { fg: '#10131a', sub: 'rgba(16,19,26,.6)', tint: 'rgba(255,255,255,.38)', tintStrong: 'rgba(255,255,255,.55)', track: 'rgba(0,0,0,.08)', accent: '#c2185b' };
+  }
+  /* --- Обновление состояния (пружины, музыка, баннер) --- */
+  update(dt){
+    this.time += dt;
+    this.unlock.step(dt); this.appSp.step(dt); this.knob.step(dt); this.banner.sp.step(dt); this.flip.step(dt);
+    if (!this.locked) this.homeT += dt;
+    this.ripple.t += dt;
+    if (this.closing && this.appSp.v < 0.03){ this.app = null; this.closing = false; this.appSp.snap(0); }
+    if (this.music.playing){
+      this.music.pos += dt; this.music.angle += dt * 0.8;
+      if (this.music.pos > this.music.len) this.music.pos = 0;
+    }
+    this.flash = Math.max(0, this.flash - dt * 2.5);
+    this.banner.sp.set(performance.now() < this.banner.until ? 1 : 0);
+  }
+  openApp(i){ this.app = APPS[i].id; this.appIdx = i; this.closing = false; this.viewPhoto = -1; this.appSp.set(1); }
+  closeApp(){ if (!this.app) return; this.closing = true; this.appSp.set(0); }
+  doUnlock(nx = 0.5, ny = 0.85){
+    if (!this.locked) return;
+    this.locked = false; this.unlock.set(1); this.homeT = 0;
+    this.ripple = { t: 0, x: nx, y: ny };
+  }
+  swipeUp(){ if (this.locked) this.doUnlock(); else this.closeApp(); }
+  showBanner(text, ms = 3000){ this.banner.text = text; this.banner.until = performance.now() + ms; }
+  changed(){ this.onChange(this.settings); }
+
+  tap(s, x, y){
+    for (let i = s.hits.length - 1; i >= 0; i--){
+      const h = s.hits[i];
+      if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h){ h.fn(x, y); return true; }
+    }
+    return false;
+  }
+
+  /* --- Обои и их размытая копия (имитация backdrop-blur) --- */
+  getWall(w, h){
+    const key = `${w}x${h}${this.settings.dark ? 'd' : 'l'}`;
+    if (this.walls.has(key)) return this.walls.get(key);
+    const dark = this.settings.dark;
+    const sharp = document.createElement('canvas'); sharp.width = w; sharp.height = h;
+    const c = sharp.getContext('2d');
+    const g = c.createLinearGradient(0, 0, w * 0.4, h);
+    if (dark){ g.addColorStop(0, '#2a0614'); g.addColorStop(0.55, '#1a0718'); g.addColorStop(1, '#070308'); }
+    else { g.addColorStop(0, '#ffe1e8'); g.addColorStop(0.55, '#f6dcef'); g.addColorStop(1, '#ffeadb'); }
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    const blobs = dark
+      ? [['#d81b47', .25, .2, .55], ['#ff5a7a', .85, .42, .5], ['#ff8a3d', .3, .82, .42], ['#7b1fa2', .75, .92, .45]]
+      : [['#ff8fa8', .2, .18, .55], ['#ffb3c7', .85, .4, .5], ['#ffd0a6', .3, .85, .45], ['#e3a6ff', .8, .92, .4]];
+    for (const [col, bx, by, br] of blobs){
+      const rg = c.createRadialGradient(bx * w, by * h, 0, bx * w, by * h, br * Math.max(w, h));
+      rg.addColorStop(0, col); rg.addColorStop(1, 'rgba(0,0,0,0)');
+      c.globalAlpha = dark ? 0.75 : 0.65; c.fillStyle = rg; c.fillRect(0, 0, w, h);
+    }
+    c.globalAlpha = 1;
+    // волнистые линии на обоях
+    c.strokeStyle = dark ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.35)';
+    c.lineWidth = Math.max(1, w / 300);
+    for (let i = 0; i < 9; i++){
+      c.beginPath();
+      for (let x = 0; x <= w; x += w / 40){
+        const y = h * (0.15 + i * 0.09) + Math.sin(x / w * 6 + i) * h * 0.03;
+        x ? c.lineTo(x, y) : c.moveTo(x, y);
+      }
+      c.stroke();
+    }
+    // размытие через уменьшение/увеличение (работает во всех браузерах)
+    const s1 = document.createElement('canvas'); s1.width = Math.max(4, w / 10 | 0); s1.height = Math.max(4, h / 10 | 0);
+    const s2 = document.createElement('canvas'); s2.width = Math.max(2, w / 28 | 0); s2.height = Math.max(2, h / 28 | 0);
+    const blur = document.createElement('canvas'); blur.width = w; blur.height = h;
+    const c1 = s1.getContext('2d'), c2 = s2.getContext('2d'), cb = blur.getContext('2d');
+    c1.imageSmoothingQuality = c2.imageSmoothingQuality = cb.imageSmoothingQuality = 'high';
+    c1.drawImage(sharp, 0, 0, s1.width, s1.height);
+    c2.drawImage(s1, 0, 0, s2.width, s2.height);
+    cb.drawImage(s2, 0, 0, w, h);
+    const res = { sharp, blur };
+    this.walls.set(key, res);
+    return res;
+  }
+
+  /* --- Стеклянная панель: размытый фон + тонировка + блики на краях --- */
+  glass(s, wall, x, y, w, h, r, strong = false){
+    const { ctx } = s, P = this.pal;
+    if (w <= 1 || h <= 1) return;
+    ctx.save();
+    rr(ctx, x, y, w, h, r); ctx.clip();
+    ctx.drawImage(wall.blur, 0, 0, s.w, s.h);
+    ctx.fillStyle = strong ? P.tintStrong : P.tint; ctx.fillRect(x, y, w, h);
+    const g = ctx.createLinearGradient(0, y, 0, y + h * 0.55);
+    g.addColorStop(0, this.settings.dark ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.45)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(x, y, w, h * 0.55);
+    ctx.restore();
+    ctx.save();
+    rr(ctx, x + 0.5, y + 0.5, w - 1, h - 1, r);
+    const eg = ctx.createLinearGradient(x, y, x + w, y + h);
+    eg.addColorStop(0, 'rgba(255,255,255,.75)');
+    eg.addColorStop(0.3, 'rgba(255,255,255,.10)');
+    eg.addColorStop(0.7, 'rgba(255,255,255,.04)');
+    eg.addColorStop(1, 'rgba(255,255,255,.45)');
+    ctx.strokeStyle = eg; ctx.lineWidth = Math.max(1, s.S * 1.3); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* --- Иконки приложений (векторные глифы) --- */
+  glyph(ctx, id, cx, cy, sz){
+    ctx.save();
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const u = sz;
+    if (id === 'camera'){
+      rr(ctx, cx - u * .42, cy - u * .26, u * .84, u * .56, u * .1); ctx.fill();
+      rr(ctx, cx - u * .16, cy - u * .36, u * .32, u * .14, u * .05); ctx.fill();
+      ctx.fillStyle = '#1b1e26'; ctx.beginPath(); ctx.arc(cx, cy + u * .02, u * .19, 0, 7); ctx.fill();
+      ctx.fillStyle = '#5a7cff'; ctx.beginPath(); ctx.arc(cx, cy + u * .02, u * .1, 0, 7); ctx.fill();
+    } else if (id === 'gallery'){
+      ctx.lineWidth = u * .07; rr(ctx, cx - u * .38, cy - u * .32, u * .76, u * .64, u * .1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - u * .32, cy + u * .26); ctx.lineTo(cx - u * .08, cy - u * .02); ctx.lineTo(cx + u * .08, cy + u * .12);
+      ctx.lineTo(cx + u * .18, cy + u * .02); ctx.lineTo(cx + u * .32, cy + u * .26); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + u * .17, cy - u * .14, u * .07, 0, 7); ctx.fill();
+    } else if (id === 'settings'){
+      ctx.translate(cx, cy);
+      for (let i = 0; i < 8; i++){ ctx.rotate(Math.PI / 4); ctx.fillRect(-u * .07, -u * .4, u * .14, u * .2); }
+      ctx.beginPath(); ctx.arc(0, 0, u * .27, 0, 7); ctx.fill();
+      ctx.fillStyle = '#5b6578'; ctx.beginPath(); ctx.arc(0, 0, u * .11, 0, 7); ctx.fill();
+    } else if (id === 'weather'){
+      this.sunCloud(ctx, cx, cy, u);
+    } else if (id === 'notes'){
+      rr(ctx, cx - u * .3, cy - u * .36, u * .6, u * .72, u * .08); ctx.fill();
+      ctx.strokeStyle = '#e0a21c'; ctx.lineWidth = u * .05;
+      for (let i = 0; i < 4; i++){ ctx.beginPath(); ctx.moveTo(cx - u * .18, cy - u * .18 + i * u * .13); ctx.lineTo(cx + u * (i === 3 ? .02 : .18), cy - u * .18 + i * u * .13); ctx.stroke(); }
+    } else if (id === 'music'){
+      ctx.lineWidth = u * .07;
+      ctx.beginPath(); ctx.moveTo(cx - u * .1, cy + u * .2); ctx.lineTo(cx - u * .1, cy - u * .28); ctx.lineTo(cx + u * .26, cy - u * .36); ctx.lineTo(cx + u * .26, cy + u * .12); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(cx - u * .19, cy + u * .21, u * .12, u * .09, -0.3, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(cx + u * .17, cy + u * .13, u * .12, u * .09, -0.3, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  }
+  sunCloud(ctx, cx, cy, u){
+    ctx.save();
+    ctx.fillStyle = '#ffd34d';
+    ctx.beginPath(); ctx.arc(cx - u * .12, cy - u * .1, u * .22, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.96)';
+    ctx.beginPath();
+    ctx.arc(cx - u * .1, cy + u * .12, u * .15, 0, 7);
+    ctx.arc(cx + u * .08, cy + u * .04, u * .2, 0, 7);
+    ctx.arc(cx + u * .26, cy + u * .14, u * .13, 0, 7);
+    ctx.fill();
+    rr(ctx, cx - u * .25, cy + u * .1, u * .64, u * .17, u * .08); ctx.fill();
+    ctx.restore();
+  }
+  drawIcon(s, wall, i, x, y, size){
+    const { ctx } = s, a = APPS[i];
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.35)'; ctx.shadowBlur = size * .18; ctx.shadowOffsetY = size * .06;
+    rr(ctx, x, y, size, size, size * .27);
+    const g = ctx.createLinearGradient(x, y, x + size, y + size);
+    g.addColorStop(0, a.c1); g.addColorStop(1, a.c2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.restore();
+    // «жидкое стекло» — блик сверху и светлая кромка
+    ctx.save(); rr(ctx, x, y, size, size, size * .27); ctx.clip();
+    const sh = ctx.createLinearGradient(0, y, 0, y + size * .55);
+    sh.addColorStop(0, 'rgba(255,255,255,.45)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sh; ctx.fillRect(x, y, size, size * .55);
+    ctx.restore();
+    ctx.save(); rr(ctx, x + .5, y + .5, size - 1, size - 1, size * .27);
+    ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = Math.max(1, size / 50); ctx.stroke(); ctx.restore();
+    this.glyph(ctx, a.id, x + size / 2, y + size / 2, size * .78);
+  }
+
+  iconRect(mode, i, w, h, S){
+    const c = i % 3, r = Math.floor(i / 3);
+    if (mode === 'wide'){
+      const LW = 340 * S, size = 72 * S, gx = (LW - 3 * size) / 4;
+      return { x: 24 * S + gx + c * (size + gx), y: 236 * S + r * 112 * S, s: size };
+    }
+    const size = 74 * S, gx = (w - 3 * size) / 4;
+    return { x: gx + c * (size + gx), y: 244 * S + r * 120 * S, s: size };
+  }
+
+  /* --- Главная функция отрисовки поверхности --- */
+  render(s, mode){
+    const { ctx, w, h } = s;
+    s.hits = [];
+    const S = mode === 'wide' ? w / 900 : w / 390;
+    s.S = S;
+    const wall = this.getWall(w, h);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(wall.sharp, 0, 0);
+    const u = clamp(this.unlock.v, 0, 1.2);
+    s.interactive = !this.locked && this.unlock.v > 0.9;
+    if (u > 0.002){
+      ctx.save();
+      ctx.globalAlpha = clamp(u, 0, 1);
+      const sc = 0.92 + 0.08 * u;
+      ctx.translate(w / 2, h / 2); ctx.scale(sc, sc); ctx.translate(-w / 2, -h / 2);
+      if (mode === 'wide') this.drawWide(s, S, wall); else this.drawPhone(s, S, wall);
+      ctx.restore();
+    }
+    if (u < 0.998){
+      ctx.save();
+      ctx.globalAlpha = clamp(1 - u, 0, 1);
+      ctx.translate(0, -u * h * 0.45);
+      this.drawLock(s, S, wall, mode);
+      ctx.restore();
+    }
+    this.drawStatus(s, S);
+    this.drawBanner(s, S, wall);
+    this.drawRipple(s);
+    // полоска «домой»
+    ctx.fillStyle = this.settings.dark ? 'rgba(255,255,255,.7)' : 'rgba(0,0,0,.45)';
+    rr(ctx, w / 2 - 66 * S, h - 14 * S, 132 * S, 5 * S, 3 * S); ctx.fill();
+    if (s.interactive && this.app) s.hits.push({ x: w / 2 - 110 * S, y: h - 34 * S, w: 220 * S, h: 34 * S, fn: () => this.closeApp() });
+    ctx.restore();
+  }
+
+  /* Волна света от точки касания при разблокировке */
+  drawRipple(s){
+    const t = this.ripple.t / 0.9;
+    if (t >= 1) return;
+    const { ctx, w, h } = s, x = this.ripple.x * w, y = this.ripple.y * h;
+    const r = ease.out(t) * Math.hypot(w, h) * 1.05;
+    ctx.save();
+    const g = ctx.createRadialGradient(x, y, r * 0.75, x, y, Math.max(1, r));
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.85, `rgba(255,190,205,${0.45 * (1 - t)})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  }
+
+  /* Иконка со «всплытием» (пружина с перелётом) после разблокировки */
+  popIcon(s, wall, i, r){
+    const k = clamp((this.homeT - 0.12 - i * 0.065) / 0.5, 0, 1);
+    const c1 = 1.9, sc = k <= 0 ? 0 : 1 + (c1 + 1) * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2);
+    if (sc <= 0.001) return;
+    const { ctx } = s, cx = r.x + r.s / 2, cy = r.y + r.s / 2;
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(sc, sc); ctx.rotate((1 - k) * 0.35 * (i % 2 ? 1 : -1)); ctx.translate(-cx, -cy);
+    this.drawIcon(s, wall, i, r.x, r.y, r.s);
+    ctx.restore();
+  }
+
+  drawStatus(s, S){
+    const { ctx, w } = s, P = this.pal;
+    const d = new Date();
+    ctx.fillStyle = P.fg; ctx.textBaseline = 'middle';
+    ctx.font = F(600, 15 * S); ctx.textAlign = 'left';
+    ctx.fillText(d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }), 24 * S, 24 * S);
+    // батарея
+    const bx = w - 24 * S - 26 * S, by = 18 * S;
+    ctx.strokeStyle = P.fg; ctx.lineWidth = 1.4 * S;
+    rr(ctx, bx, by, 23 * S, 12 * S, 3.5 * S); ctx.stroke();
+    ctx.fillRect(bx + 24.5 * S, by + 4 * S, 2 * S, 4 * S);
+    rr(ctx, bx + 2 * S, by + 2 * S, 19 * S * 0.87, 8 * S, 2 * S); ctx.fill();
+    // Wi-Fi
+    const wx = bx - 16 * S, wy = 30 * S;
+    for (let i = 0; i < 3; i++){
+      ctx.beginPath(); ctx.arc(wx, wy, (4 + i * 4) * S, -Math.PI * .75, -Math.PI * .25); ctx.lineWidth = 2 * S; ctx.stroke();
+    }
+    ctx.textAlign = 'right'; ctx.font = F(700, 13 * S);
+    ctx.fillText('5G', wx - 16 * S, 24 * S);
+    if (this.app === 'camera' && !this.closing){   // индикатор: камера активна
+      ctx.fillStyle = this.selfie ? '#4ade80' : '#ffb020';
+      ctx.beginPath(); ctx.arc(wx - 50 * S, 24 * S, 4.5 * S, 0, 7); ctx.fill();
+      ctx.fillStyle = P.fg;
+    }
+    ctx.textAlign = 'left';
+  }
+
+  drawBanner(s, S, wall){
+    const v = this.banner.sp.v;
+    if (v < 0.01 || !this.banner.text) return;
+    const { ctx, w } = s, P = this.pal;
+    ctx.font = F(600, 15 * S);
+    const tw = Math.min(w - 40 * S, ctx.measureText(this.banner.text).width + 60 * S);
+    const y = lerp(-60 * S, 46 * S, v);
+    ctx.save();
+    ctx.globalAlpha = clamp(v, 0, 1);
+    this.glass(s, wall, w / 2 - tw / 2, y, tw, 44 * S, 22 * S, true);
+    ctx.fillStyle = P.fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(this.banner.text, w / 2, y + 22 * S);
+    ctx.restore();
+  }
+
+  drawLock(s, S, wall, mode){
+    const { ctx, w, h } = s, P = this.pal;
+    const d = new Date();
+    const wide = mode === 'wide';
+    ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.fillRect(0, 0, w, h);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = P.fg;
+    // замок
+    const ly = (wide ? 84 : 78) * S;
+    ctx.strokeStyle = P.fg; ctx.lineWidth = 2.4 * S;
+    ctx.beginPath(); ctx.arc(w / 2, ly - 4 * S, 7 * S, Math.PI, 0); ctx.stroke();
+    rr(ctx, w / 2 - 10 * S, ly - 4 * S, 20 * S, 15 * S, 3 * S); ctx.fill();
+    // дата и время
+    const date = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+    ctx.font = F(500, (wide ? 22 : 18) * S);
+    ctx.fillText(date.charAt(0).toUpperCase() + date.slice(1), w / 2, (wide ? 150 : 132) * S);
+    ctx.font = F(200, (wide ? 170 : 96) * S);
+    const ty = (wide ? 310 : 222) * S;
+    ctx.fillText(d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }), w / 2, ty);
+    // уведомление
+    const nw = (wide ? 460 : 330) * S, nh = 78 * S, nx = w / 2 - nw / 2, ny = ty + 50 * S;
+    this.glass(s, wall, nx, ny, nw, nh, 22 * S);
+    this.drawIcon(s, wall, 2, nx + 14 * S, ny + 17 * S, 44 * S);
+    ctx.textAlign = 'left'; ctx.fillStyle = P.fg;
+    ctx.font = F(600, 15 * S); ctx.fillText('Duo', nx + 72 * S, ny + 33 * S);
+    ctx.font = F(400, 13 * S); ctx.fillStyle = P.sub;
+    ctx.fillText('Добро пожаловать! Разверните — будет два окна.', nx + 72 * S, ny + 55 * S, nw - 86 * S);
+    // подсказка
+    const bob = Math.sin(this.time * 3) * 4 * S;
+    ctx.textAlign = 'center'; ctx.fillStyle = P.fg;
+    ctx.font = F(500, 14 * S);
+    ctx.fillText('Коснитесь или проведите вверх', w / 2, h - 58 * S + bob * 0.3);
+    ctx.strokeStyle = P.fg; ctx.lineWidth = 2.5 * S;
+    ctx.beginPath(); ctx.moveTo(w / 2 - 10 * S, h - 82 * S + bob); ctx.lineTo(w / 2, h - 90 * S + bob); ctx.lineTo(w / 2 + 10 * S, h - 82 * S + bob); ctx.stroke();
+    if (this.locked) s.hits.push({ x: 0, y: 0, w, h, fn: (px, py) => this.doUnlock(px / w, py / h) });
+  }
+
+  /* Виджет «часы + погода» */
+  drawWidget(s, S, wall, x, y, w, h){
+    const { ctx } = s, P = this.pal, d = new Date();
+    this.glass(s, wall, x, y, w, h, 28 * S);
+    ctx.fillStyle = P.fg; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.font = F(300, 54 * S);
+    ctx.fillText(d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }), x + 22 * S, y + 74 * S);
+    ctx.font = F(500, 14 * S); ctx.fillStyle = P.sub;
+    const date = d.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'long' });
+    ctx.fillText(date, x + 24 * S, y + 104 * S);
+    this.sunCloud(ctx, x + w - 64 * S, y + 52 * S, 62 * S);
+    ctx.fillStyle = P.fg; ctx.textAlign = 'right'; ctx.font = F(600, 24 * S);
+    ctx.fillText('18°', x + w - 22 * S, y + 112 * S);
+    ctx.textAlign = 'left';
+  }
+
+  hit(s, inter, x, y, w, h, fn){ if (inter) s.hits.push({ x, y, w, h, fn }); }
+
+  drawPhone(s, S, wall){
+    const { ctx, w, h } = s, P = this.pal, inter = s.interactive && !this.app;
+    this.drawWidget(s, S, wall, 20 * S, 64 * S, w - 40 * S, 140 * S);
+    APPS.forEach((a, i) => {
+      const r = this.iconRect('phone', i, w, h, S);
+      this.popIcon(s, wall, i, r);
+      ctx.fillStyle = P.fg; ctx.textAlign = 'center'; ctx.font = F(500, 13 * S); ctx.textBaseline = 'alphabetic';
+      ctx.fillText(a.name, r.x + r.s / 2, r.y + r.s + 20 * S);
+      this.hit(s, inter, r.x - 6 * S, r.y - 6 * S, r.s + 12 * S, r.s + 30 * S, () => this.openApp(i));
+    });
+    // нижняя стеклянная плашка
+    const py = h - 120 * S;
+    this.glass(s, wall, 24 * S, py, w - 48 * S, 54 * S, 27 * S);
+    ctx.fillStyle = P.fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = F(500, 14 * S);
+    const v = this.settings.vram;
+    ctx.fillText(`Duo X1 · ОЗУ 12${v ? ' + ' + v : ''} ГБ · 128 ГБ`, w / 2, py + 27 * S);
+    if (this.app) this.drawPhoneApp(s, S, wall);
+  }
+
+  /* Открытие приложения: у каждого своя анимация (зум из иконки, «диафрагма», слайд, подъём, переворот) */
+  drawPhoneApp(s, S, wall){
+    const { ctx, w, h } = s;
+    const p = Math.max(0, this.appSp.v);
+    const type = APPS[this.appIdx].anim;
+    const ir = this.iconRect('phone', this.appIdx, w, h, S);
+    ctx.save();
+    if (type === 'zoom'){
+      const x = lerp(ir.x, 0, p), y = lerp(ir.y, 0, p), ww = lerp(ir.s, w, p), hh = lerp(ir.s, h, p);
+      ctx.globalAlpha *= clamp(p * 1.8, 0, 1);
+      rr(ctx, x, y, ww, hh, lerp(ir.s * .27, 0, clamp(p, 0, 1))); ctx.clip();
+      ctx.translate(x, y); ctx.scale(Math.max(0.01, ww / w), Math.max(0.01, hh / h));
+    } else {
+      ctx.globalAlpha *= clamp(p * 1.6, 0, 1);
+      const icx = ir.x + ir.s / 2, icy = ir.y + ir.s / 2;
+      if (type === 'iris'){ ctx.beginPath(); ctx.arc(icx, icy, Math.max(1, lerp(ir.s * 0.5, Math.hypot(w, h), p)), 0, Math.PI * 2); ctx.clip(); }
+      else if (type === 'slide'){ ctx.translate((1 - p) * w, 0); }
+      else if (type === 'rise'){ const sc = 0.86 + 0.14 * p; ctx.translate(w / 2, h); ctx.scale(sc, sc); ctx.translate(-w / 2, -h); ctx.translate(0, (1 - p) * h * 0.55); }
+      else if (type === 'flip'){ const sx = clamp(p, 0.02, 1.15); ctx.translate(w / 2, 0); ctx.scale(sx, 1); ctx.translate(-w / 2, 0); }
+    }
+    ctx.drawImage(wall.blur, 0, 0, w, h);
+    ctx.fillStyle = this.pal.tintStrong; ctx.fillRect(0, 0, w, h);
+    const inter = s.interactive && this.appSp.t === 1 && p > 0.9;
+    this.drawApp(s, this.app, 0, 0, w, h, S, 50 * S, inter, wall);
+    ctx.restore();
+  }
+
+  drawWide(s, S, wall){
+    const { ctx, w, h } = s, P = this.pal, inter = s.interactive;
+    const LX = 24 * S, LW = 340 * S;
+    this.drawWidget(s, S, wall, LX, 62 * S, LW, 140 * S);
+    APPS.forEach((a, i) => {
+      const r = this.iconRect('wide', i, w, h, S);
+      if (this.app === a.id){
+        ctx.save(); rr(ctx, r.x - 6 * S, r.y - 6 * S, r.s + 12 * S, r.s + 12 * S, r.s * .32);
+        ctx.fillStyle = 'rgba(255,110,140,.25)'; ctx.fill(); ctx.restore();
+      }
+      this.popIcon(s, wall, i, r);
+      ctx.fillStyle = P.fg; ctx.textAlign = 'center'; ctx.font = F(500, 13 * S); ctx.textBaseline = 'alphabetic';
+      ctx.fillText(a.name, r.x + r.s / 2, r.y + r.s + 20 * S);
+      this.hit(s, inter, r.x - 6 * S, r.y - 6 * S, r.s + 12 * S, r.s + 30 * S, () => this.openApp(i));
+    });
+    // карточка о режиме двух окон
+    const cy = 480 * S;
+    this.glass(s, wall, LX, cy, LW, 150 * S, 24 * S);
+    ctx.textAlign = 'left'; ctx.fillStyle = P.fg; ctx.font = F(700, 17 * S);
+    ctx.fillText('Режим двух окон', LX + 20 * S, cy + 36 * S);
+    ctx.font = F(400, 13.5 * S); ctx.fillStyle = P.sub;
+    ['Приложение открывается справа,', 'а рабочий стол остаётся слева.', 'Сложите телефон — интерфейс', 'перейдёт на внешний экран.']
+      .forEach((t, i) => ctx.fillText(t, LX + 20 * S, cy + 64 * S + i * 20 * S));
+    // плашка памяти
+    const my = cy + 166 * S;
+    this.glass(s, wall, LX, my, LW, 54 * S, 27 * S);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = P.fg; ctx.font = F(500, 14 * S);
+    const v = this.settings.vram;
+    ctx.fillText(`ОЗУ 12${v ? ' + ' + v : ''} ГБ · 128 ГБ UFS 4.0`, LX + LW / 2, my + 27 * S);
+    ctx.textBaseline = 'alphabetic';
+    // правое окно
+    const RX = LX + LW + 20 * S, RY = 62 * S, RW = w - RX - 24 * S, RH = h - RY - 36 * S;
+    this.glass(s, wall, RX, RY, RW, RH, 30 * S, true);
+    if (this.app){
+      const p = Math.max(0, this.appSp.v);
+      ctx.save();
+      ctx.globalAlpha *= clamp(p * 1.5, 0, 1);
+      rr(ctx, RX, RY, RW, RH, 30 * S); ctx.clip();
+      const type = APPS[this.appIdx].anim, pcx = RX + RW / 2, pcy = RY + RH / 2;
+      if (type === 'slide') ctx.translate((1 - p) * RW * 0.6, 0);
+      else if (type === 'rise') ctx.translate(0, (1 - p) * RH * 0.4);
+      else if (type === 'iris'){ ctx.beginPath(); ctx.arc(pcx, pcy, Math.max(1, lerp(20 * S, Math.hypot(RW, RH) / 2 + 10, p)), 0, Math.PI * 2); ctx.clip(); }
+      else if (type === 'flip'){ ctx.translate(pcx, 0); ctx.scale(clamp(p, 0.02, 1.15), 1); ctx.translate(-pcx, 0); }
+      else { const sc = 0.9 + 0.1 * p; ctx.translate(pcx, pcy); ctx.scale(sc, sc); ctx.translate(-pcx, -pcy); }
+      this.drawApp(s, this.app, RX, RY, RW, RH, S, 18 * S, inter && this.appSp.t === 1 && p > 0.9, wall);
+      ctx.restore();
+    } else {
+      ctx.textAlign = 'center'; ctx.fillStyle = P.fg;
+      ctx.font = F(800, 64 * S);
+      ctx.fillText('Duo', RX + RW / 2, RY + RH * 0.42);
+      ctx.font = F(400, 16 * S); ctx.fillStyle = P.sub;
+      ctx.fillText('Выберите приложение слева', RX + RW / 2, RY + RH * 0.42 + 40 * S);
+      // иллюстрация двух окон
+      const iw = 70 * S, ih = 90 * S, ix = RX + RW / 2, iy = RY + RH * 0.58;
+      ctx.strokeStyle = P.sub; ctx.lineWidth = 2 * S;
+      rr(ctx, ix - iw - 6 * S, iy, iw, ih, 12 * S); ctx.stroke();
+      rr(ctx, ix + 6 * S, iy, iw, ih, 12 * S); ctx.stroke();
+    }
+  }
+
+  /* --- Приложения --- */
+  drawApp(s, id, X, Y, W, Hh, S, pt, inter, wall){
+    const { ctx } = s, P = this.pal;
+    const hit = (x, y, w, h, fn) => this.hit(s, inter, x, y, w, h, fn);
+    // шапка
+    const hy = Y + pt;
+    this.glass(s, wall, X + 16 * S, hy, 40 * S, 40 * S, 20 * S);
+    ctx.strokeStyle = P.fg; ctx.lineWidth = 2.6 * S; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(X + 40 * S, hy + 12 * S); ctx.lineTo(X + 32 * S, hy + 20 * S); ctx.lineTo(X + 40 * S, hy + 28 * S); ctx.stroke();
+    hit(X + 8 * S, hy - 8 * S, 60 * S, 56 * S, () => { if (id === 'gallery' && this.viewPhoto >= 0) this.viewPhoto = -1; else this.closeApp(); });
+    const a = APPS.find(q => q.id === id);
+    ctx.fillStyle = P.fg; ctx.font = F(700, 22 * S); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(a.name, X + 68 * S, hy + 20 * S);
+    ctx.textBaseline = 'alphabetic';
+    const by = hy + 58 * S, bh = Y + Hh - by - 24 * S;
+    this['app_' + id](s, X, by, W, bh, S, hit, wall);
+  }
+
+  app_camera(s, X, Y, W, Hh, S, hit, wall){
+    const { ctx } = s, t = this.time, P = this.pal;
+    const vx = X + 12 * S, vy = Y, vw = W - 24 * S, vh = Hh - 150 * S;
+    ctx.save();
+    rr(ctx, vx, vy, vw, vh, 24 * S); ctx.clip();
+    ctx.fillStyle = '#000'; ctx.fillRect(vx, vy, vw, vh);
+    // переворот видоискателя при смене камер
+    const f = clamp(this.flip.v, 0, 1), front = f > 0.5;
+    const fsx = Math.max(0.02, Math.abs(Math.cos(f * Math.PI)));
+    ctx.save();
+    ctx.translate(vx + vw / 2, 0); ctx.scale(fsx, 1); ctx.translate(-(vx + vw / 2), 0);
+    if (front) this.selfieScene(ctx, vx, vy, vw, vh, S, t);
+    else {
+    const z = this.lens === 1 ? 1 : 0.62;
+    const sky = ctx.createLinearGradient(0, vy, 0, vy + vh);
+    sky.addColorStop(0, '#5aa7ff'); sky.addColorStop(0.6, '#ffc7a1'); sky.addColorStop(1, '#ff8f6b');
+    ctx.fillStyle = sky; ctx.fillRect(vx, vy, vw, vh);
+    ctx.fillStyle = '#fff6d0';
+    ctx.beginPath(); ctx.arc(vx + vw * 0.68 + Math.sin(t * .4) * 8 * S, vy + vh * 0.32, 38 * S * z, 0, 7); ctx.fill();
+    const layers = [['#6c4a7a', .62, 0.6], ['#3d2d5a', .72, 0.9], ['#1b1834', .84, 1.3]];
+    layers.forEach(([c, b, sp], li) => {
+      ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(vx, vy + vh);
+      for (let i = 0; i <= 30; i++){
+        const xx = vx + vw * i / 30;
+        const yy = vy + vh * b - (Math.sin(i * .5 * z + t * .25 * sp + li) * .5 + .5) * vh * .1 * z - Math.sin(i * 1.7 + li) * vh * .02;
+        ctx.lineTo(xx, yy);
+      }
+      ctx.lineTo(vx + vw, vy + vh); ctx.closePath(); ctx.fill();
+    });
+    }
+    ctx.restore();
+    // сетка и фокус
+    ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1 * S;
+    for (let i = 1; i < 3; i++){
+      ctx.beginPath(); ctx.moveTo(vx + vw * i / 3, vy); ctx.lineTo(vx + vw * i / 3, vy + vh); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(vx, vy + vh * i / 3); ctx.lineTo(vx + vw, vy + vh * i / 3); ctx.stroke();
+    }
+    const fs = (52 + Math.sin(t * 4) * 4) * S;
+    ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 2 * S;
+    ctx.strokeRect(vx + vw / 2 - fs / 2, vy + vh / 2 - fs / 2, fs, fs);
+    // плашки
+    const tag = front ? '2 × 18 МП' : '48 МП';
+    ctx.font = F(700, 12 * S);
+    const tagW = ctx.measureText(tag).width + 26 * S;
+    ctx.fillStyle = 'rgba(0,0,0,.45)'; rr(ctx, vx + 12 * S, vy + 12 * S, tagW, 26 * S, 13 * S); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(tag, vx + 12 * S + tagW / 2, vy + 25 * S);
+    if (front){
+      ctx.fillStyle = 'rgba(74,222,128,.9)'; rr(ctx, vx + vw / 2 - 70 * S, vy + vh - 44 * S, 140 * S, 28 * S, 14 * S); ctx.fill();
+      ctx.fillStyle = '#04210f'; ctx.fillText('Стерео · 3D-лицо', vx + vw / 2, vy + vh - 30 * S);
+    }
+    if (!front) ['0.5x', '1x'].forEach((l, i) => {
+      const cx = vx + vw / 2 + (i ? 26 : -26) * S, cy = vy + vh - 30 * S;
+      const on = (i === 0 && this.lens === 0) || (i === 1 && this.lens === 1);
+      ctx.fillStyle = on ? 'rgba(255,211,77,.95)' : 'rgba(0,0,0,.45)';
+      ctx.beginPath(); ctx.arc(cx, cy, 20 * S, 0, 7); ctx.fill();
+      ctx.fillStyle = on ? '#000' : '#fff'; ctx.font = F(700, 12 * S);
+      ctx.fillText(l, cx, cy);
+      hit(cx - 22 * S, cy - 22 * S, 44 * S, 44 * S, () => { this.lens = i; });
+    });
+    if (this.flash > 0 && !this.selfie){ ctx.fillStyle = `rgba(255,255,255,${this.flash})`; ctx.fillRect(vx, vy, vw, vh); }
+    ctx.restore();
+    // режимы
+    const my = vy + vh + 30 * S;
+    ctx.font = F(600, 13 * S); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    [['ВИДЕО', -90], ['ФОТО', 0], ['ПОРТРЕТ', 96]].forEach(([l, dx]) => {
+      ctx.fillStyle = l === 'ФОТО' ? '#ffd34d' : P.sub; ctx.fillText(l, X + W / 2 + dx * S, my);
+    });
+    // затвор
+    const cy = vy + vh + 96 * S, cx = X + W / 2;
+    const pr = 1 - this.flash * 0.15;
+    ctx.strokeStyle = P.fg; ctx.lineWidth = 4 * S;
+    ctx.beginPath(); ctx.arc(cx, cy, 36 * S, 0, 7); ctx.stroke();
+    ctx.fillStyle = P.fg; ctx.beginPath(); ctx.arc(cx, cy, 28 * S * pr, 0, 7); ctx.fill();
+    hit(cx - 44 * S, cy - 44 * S, 88 * S, 88 * S, () => {
+      this.flash = 1;
+      this.photos.unshift((Math.random() * 100000) | 0);
+      if (this.selfie) this.showBanner('Селфи 2 × 18 МП сохранено', 1600);
+      else { this.showBanner('Фото 48 МП сохранено', 1600); this.onShutter(); }
+    });
+    // миниатюра последнего фото
+    const tx = X + 40 * S, ts = 50 * S;
+    ctx.save(); rr(ctx, tx, cy - ts / 2, ts, ts, 12 * S); ctx.clip();
+    paintPhoto(ctx, this.photos[0], tx, cy - ts / 2, ts, ts); ctx.restore();
+    hit(tx, cy - ts / 2, ts, ts, () => { this.app = 'gallery'; this.appIdx = 1; this.viewPhoto = 0; });
+    // переключатель камер
+    const sx = X + W - 65 * S;
+    this.glass(s, wall, sx, cy - 25 * S, 50 * S, 50 * S, 25 * S);
+    ctx.strokeStyle = P.fg; ctx.lineWidth = 2.2 * S;
+    ctx.beginPath(); ctx.arc(sx + 25 * S, cy, 12 * S, 0.3, Math.PI * 1.6); ctx.stroke();
+    hit(sx, cy - 25 * S, 50 * S, 50 * S, () => {
+      this.selfie = !this.selfie; this.flip.set(this.selfie ? 1 : 0);
+      this.showBanner(this.selfie ? 'Фронтальные 2 × 18 МП (невидимые)' : 'Основная 48 МП', 1600);
+    });
+    // вспышка экраном для селфи
+    if (this.selfie && this.flash > 0){ ctx.fillStyle = `rgba(255,248,240,${this.flash})`; ctx.fillRect(X, Y - 120 * S, W, Hh + 240 * S); }
+  }
+
+  /* Сцена фронтальных камер: размытый фон, силуэт, 3D-сканирование лица */
+  selfieScene(ctx, vx, vy, vw, vh, S, t){
+    const bg = ctx.createLinearGradient(vx, vy, vx + vw, vy + vh);
+    bg.addColorStop(0, '#4a0f24'); bg.addColorStop(0.5, '#2a0c2e'); bg.addColorStop(1, '#120614');
+    ctx.fillStyle = bg; ctx.fillRect(vx, vy, vw, vh);
+    for (let i = 0; i < 9; i++){   // боке
+      const bx = vx + vw * ((i * 0.37 + Math.sin(t * 0.3 + i) * 0.03 + 1) % 1), by = vy + vh * ((i * 0.23 + 0.1) % 0.6);
+      const rg = ctx.createRadialGradient(bx, by, 0, bx, by, (18 + i * 4) * S);
+      rg.addColorStop(0, `hsla(${330 + i * 12},90%,70%,.45)`); rg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg; ctx.fillRect(bx - 60 * S, by - 60 * S, 120 * S, 120 * S);
+    }
+    const cx = vx + vw / 2, cy = vy + vh * 0.46, hr = Math.min(vw, vh) * 0.2;
+    ctx.fillStyle = '#c98b78';   // плечи и голова
+    ctx.beginPath(); ctx.ellipse(cx, vy + vh * 1.02, hr * 2.1, hr * 1.25, 0, 0, Math.PI * 2); ctx.fill();
+    const sk = ctx.createRadialGradient(cx - hr * 0.3, cy - hr * 0.4, hr * 0.2, cx, cy, hr * 1.3);
+    sk.addColorStop(0, '#f2c2a8'); sk.addColorStop(1, '#a8664f');
+    ctx.fillStyle = sk; ctx.beginPath(); ctx.ellipse(cx, cy, hr * 0.82, hr, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2a1712'; ctx.beginPath(); ctx.ellipse(cx, cy - hr * 0.62, hr * 0.86, hr * 0.48, 0, Math.PI, Math.PI * 2); ctx.fill();
+    // 3D-сетка точек лица и сканирующая линия
+    const scan = (t * 0.6) % 1;
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 7; c++){
+      const u = (c / 6) * 2 - 1, v = (r / 8) * 2 - 1;
+      if (u * u + v * v > 1.05) continue;
+      const px = cx + u * hr * 0.72, py = cy + v * hr * 0.9;
+      const near = Math.abs((py - (cy - hr)) / (2 * hr) - scan) < 0.08;
+      ctx.fillStyle = near ? 'rgba(74,222,128,.95)' : 'rgba(74,222,128,.35)';
+      ctx.beginPath(); ctx.arc(px, py, (near ? 2.6 : 1.6) * S, 0, Math.PI * 2); ctx.fill();
+    }
+    const sy = cy - hr + scan * hr * 2;
+    ctx.strokeStyle = 'rgba(74,222,128,.7)'; ctx.lineWidth = 2 * S;
+    ctx.beginPath(); ctx.moveTo(cx - hr, sy); ctx.lineTo(cx + hr, sy); ctx.stroke();
+  }
+
+  app_gallery(s, X, Y, W, Hh, S, hit){
+    const { ctx } = s, P = this.pal;
+    if (this.viewPhoto >= 0 && this.viewPhoto < this.photos.length){
+      const x = X + 12 * S, y = Y, w = W - 24 * S, h = Hh - 40 * S;
+      ctx.save(); rr(ctx, x, y, w, h, 22 * S); ctx.clip();
+      paintPhoto(ctx, this.photos[this.viewPhoto], x, y, w, h); ctx.restore();
+      ctx.fillStyle = P.sub; ctx.font = F(500, 13 * S); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`Фото ${this.viewPhoto + 1} из ${this.photos.length} · 48 МП · коснитесь, чтобы закрыть`, X + W / 2, y + h + 22 * S);
+      hit(x, y, w, h, () => { this.viewPhoto = -1; });
+      return;
+    }
+    ctx.fillStyle = P.sub; ctx.font = F(500, 14 * S); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(`Недавние · ${this.photos.length} фото`, X + 18 * S, Y + 6 * S);
+    const cols = W > 520 * S ? 4 : 3, gap = 6 * S, x0 = X + 12 * S;
+    const size = (W - 24 * S - gap * (cols - 1)) / cols;
+    this.photos.forEach((seed, i) => {
+      const c = i % cols, r = Math.floor(i / cols);
+      const x = x0 + c * (size + gap), y = Y + 20 * S + r * (size + gap);
+      if (y + size > Y + Hh) return;
+      ctx.save(); rr(ctx, x, y, size, size, 12 * S); ctx.clip();
+      paintPhoto(ctx, seed, x, y, size, size); ctx.restore();
+      hit(x, y, size, size, () => { this.viewPhoto = i; });
+    });
+  }
+
+  seg(s, x, y, w, h, labels, sel, onSel, hit){
+    const { ctx } = s, P = this.pal, S = s.S;
+    rr(ctx, x, y, w, h, h / 2); ctx.fillStyle = P.track; ctx.fill();
+    const sw = w / labels.length;
+    const g = ctx.createLinearGradient(x, y, x + w, y + h);
+    g.addColorStop(0, '#ff4d6d'); g.addColorStop(1, '#b3264a');
+    rr(ctx, x + sw * sel + 3 * S, y + 3 * S, sw - 6 * S, h - 6 * S, (h - 6 * S) / 2); ctx.fillStyle = g; ctx.fill();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = F(600, 13 * S);
+    labels.forEach((l, i) => {
+      ctx.fillStyle = i === sel ? '#fff' : P.fg;
+      ctx.fillText(l, x + sw * i + sw / 2, y + h / 2);
+      hit(x + sw * i, y - 4 * S, sw, h + 8 * S, () => onSel(i));
+    });
+  }
+
+  app_settings(s, X, Y, W, Hh, S, hit, wall){
+    const { ctx } = s, P = this.pal, st = this.settings;
+    const x = X + 16 * S, w = W - 32 * S;
+    let y = Y;
+    const label = (t, sub, yy) => {
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle = P.fg; ctx.font = F(600, 16 * S); ctx.fillText(t, x + 16 * S, yy + 30 * S);
+      if (sub){ ctx.fillStyle = P.sub; ctx.font = F(400, 12 * S); ctx.fillText(sub, x + 16 * S, yy + 49 * S, w - 32 * S); }
+    };
+    // Виртуальная ОЗУ
+    this.glass(s, wall, x, y, w, 108 * S, 20 * S);
+    label('Виртуальная ОЗУ', 'Расширение памяти за счёт накопителя', y);
+    ctx.textAlign = 'right'; ctx.fillStyle = P.accent; ctx.font = F(700, 14 * S);
+    ctx.fillText(`${12 + st.vram} ГБ`, x + w - 16 * S, y + 30 * S);
+    this.seg(s, x + 16 * S, y + 62 * S, w - 32 * S, 34 * S, ['Выкл', '2 ГБ', '4 ГБ'], [0, 2, 4].indexOf(st.vram),
+      i => { st.vram = [0, 2, 4][i]; this.showBanner(st.vram ? `Виртуальная ОЗУ: ${st.vram} ГБ` : 'Виртуальная ОЗУ выключена', 1600); this.changed(); }, hit);
+    y += 120 * S;
+    // Яркость
+    this.glass(s, wall, x, y, w, 84 * S, 20 * S);
+    label('Яркость', null, y);
+    ctx.textAlign = 'right'; ctx.fillStyle = P.sub; ctx.font = F(600, 14 * S);
+    ctx.fillText(Math.round(st.brightness * 100) + '%', x + w - 16 * S, y + 30 * S);
+    const tx = x + 16 * S, tw = w - 32 * S, ty = y + 54 * S;
+    rr(ctx, tx, ty, tw, 10 * S, 5 * S); ctx.fillStyle = P.track; ctx.fill();
+    const gg = ctx.createLinearGradient(tx, 0, tx + tw, 0); gg.addColorStop(0, '#ffcf5a'); gg.addColorStop(1, '#fff3c4');
+    rr(ctx, tx, ty, tw * st.brightness, 10 * S, 5 * S); ctx.fillStyle = gg; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 6 * S;
+    ctx.beginPath(); ctx.arc(tx + tw * st.brightness, ty + 5 * S, 12 * S, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+    hit(tx - 10 * S, y + 36 * S, tw + 20 * S, 44 * S, px => { st.brightness = clamp((px - tx) / tw, 0.05, 1); this.changed(); });
+    y += 96 * S;
+    // Тёмная тема
+    this.glass(s, wall, x, y, w, 64 * S, 20 * S);
+    label('Тёмная тема', null, y + 4 * S);
+    const swx = x + w - 70 * S, swy = y + 18 * S, k = clamp(this.knob.v, -0.2, 1.2);
+    rr(ctx, swx, swy, 54 * S, 30 * S, 15 * S);
+    ctx.fillStyle = st.dark ? '#e0355a' : P.track; ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(swx + 15 * S + k * 24 * S, swy + 15 * S, 12 * S, 0, 7); ctx.fill();
+    hit(x, y, w, 64 * S, () => { st.dark = !st.dark; this.knob.set(st.dark ? 1 : 0); this.changed(); });
+    y += 76 * S;
+    // Частота экрана
+    this.glass(s, wall, x, y, w, 108 * S, 20 * S);
+    label('Частота экрана', 'LTPO — адаптивно от 1 до 120 Гц', y);
+    this.seg(s, x + 16 * S, y + 62 * S, w - 32 * S, 34 * S, ['60 Гц', '120 Гц', 'LTPO'], ['60', '120', 'ltpo'].indexOf(st.hz),
+      i => { st.hz = ['60', '120', 'ltpo'][i]; this.changed(); }, hit);
+    y += 120 * S;
+    // Об устройстве
+    const ah = Math.min(112 * S, Y + Hh - y);
+    if (ah > 60 * S){
+      this.glass(s, wall, x, y, w, ah, 20 * S);
+      label('Об устройстве', null, y);
+      ctx.fillStyle = P.sub; ctx.font = F(400, 13 * S);
+      [`Duo · Android 16 · Duo X1 (16 ядер, 3 нм)`, `ОЗУ 12 ГБ LPDDR5X${st.vram ? ` + ${st.vram} ГБ виртуальной` : ''}`, '128 ГБ UFS 4.0 · занято 23 ГБ']
+        .forEach((t, i) => { if (y + 54 * S + i * 20 * S < y + ah - 6 * S) ctx.fillText(t, x + 16 * S, y + 56 * S + i * 20 * S, w - 32 * S); });
+    }
+  }
+
+  app_weather(s, X, Y, W, Hh, S, hit, wall){
+    const { ctx } = s, P = this.pal;
+    const cx = X + W / 2;
+    this.sunCloud(ctx, cx, Y + 56 * S + Math.sin(this.time * 1.5) * 3 * S, 120 * S);
+    ctx.textAlign = 'center'; ctx.fillStyle = P.fg; ctx.textBaseline = 'alphabetic';
+    ctx.font = F(200, 80 * S); ctx.fillText('18°', cx + 10 * S, Y + 196 * S);
+    ctx.font = F(500, 16 * S); ctx.fillText('Облачно с прояснениями', cx, Y + 226 * S);
+    ctx.font = F(400, 13 * S); ctx.fillStyle = P.sub; ctx.fillText('Ощущается как 16° · ветер 3 м/с · влажность 54%', cx, Y + 248 * S, W - 30 * S);
+    // почасовой прогноз
+    const hx = X + 16 * S, hw = W - 32 * S, hy = Y + 268 * S;
+    this.glass(s, wall, hx, hy, hw, 112 * S, 22 * S);
+    const now = new Date().getHours();
+    const temps = [18, 19, 20, 19, 17, 15];
+    for (let i = 0; i < 6; i++){
+      const cxx = hx + hw * (i + .5) / 6;
+      ctx.fillStyle = P.sub; ctx.font = F(500, 12 * S); ctx.textAlign = 'center';
+      ctx.fillText(i ? `${(now + i) % 24}:00` : 'Сейчас', cxx, hy + 26 * S);
+      this.sunCloud(ctx, cxx, hy + 56 * S, 34 * S);
+      ctx.fillStyle = P.fg; ctx.font = F(600, 15 * S); ctx.fillText(temps[i] + '°', cxx, hy + 98 * S);
+    }
+    // на неделю
+    const dy = hy + 124 * S, dh = Math.min(4 * 42 * S + 16 * S, Y + Hh - dy);
+    if (dh < 60 * S) return;
+    this.glass(s, wall, hx, dy, hw, dh, 22 * S);
+    const days = [['Завтра', 12, 21], ['', 11, 19], ['', 9, 17], ['', 10, 20]];
+    for (let i = 0; i < 4; i++){
+      const yy = dy + 30 * S + i * 42 * S;
+      if (yy > dy + dh - 10 * S) break;
+      const d = new Date(Date.now() + (i + 1) * 864e5);
+      let name = days[i][0] || d.toLocaleDateString('ru-RU', { weekday: 'long' });
+      name = name.charAt(0).toUpperCase() + name.slice(1);
+      ctx.textAlign = 'left'; ctx.fillStyle = P.fg; ctx.font = F(500, 14 * S);
+      ctx.fillText(name, hx + 16 * S, yy + 4 * S);
+      ctx.fillStyle = P.sub; ctx.fillText(days[i][1] + '°', hx + hw * .45, yy + 4 * S);
+      rr(ctx, hx + hw * .55, yy - 3 * S, hw * .28, 6 * S, 3 * S); ctx.fillStyle = P.track; ctx.fill();
+      const bg = ctx.createLinearGradient(hx + hw * .55, 0, hx + hw * .83, 0); bg.addColorStop(0, '#5ac8fa'); bg.addColorStop(1, '#ffb347');
+      rr(ctx, hx + hw * (.55 + (days[i][1] - 8) / 14 * .28), yy - 3 * S, hw * .28 * (days[i][2] - days[i][1]) / 14, 6 * S, 3 * S); ctx.fillStyle = bg; ctx.fill();
+      ctx.textAlign = 'right'; ctx.fillStyle = P.fg; ctx.fillText(days[i][2] + '°', hx + hw - 16 * S, yy + 4 * S);
+    }
+  }
+
+  app_notes(s, X, Y, W, Hh, S, hit, wall){
+    const { ctx } = s, P = this.pal;
+    const x = X + 16 * S, w = W - 32 * S;
+    const g = ctx.createLinearGradient(x, Y, x + w, Y + 48 * S); g.addColorStop(0, 'rgba(255,214,90,.9)'); g.addColorStop(1, 'rgba(245,165,36,.9)');
+    rr(ctx, x, Y, w, 48 * S, 24 * S); ctx.fillStyle = g; ctx.fill();
+    ctx.fillStyle = '#2a1d00'; ctx.font = F(700, 15 * S); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('+ Новая заметка', x + w / 2, Y + 24 * S);
+    hit(x, Y, w, 48 * S, () => {
+      const t = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const ideas = ['Идея: обои для Duo', 'Проверить режим двух окон', 'Снять фото на 48 МП', 'Позвонить маме', 'Тренировка в 19:00'];
+      this.notes.unshift({ text: ideas[this.notes.length % ideas.length], time: t, done: false });
+    });
+    let y = Y + 62 * S;
+    this.notes.forEach((n, i) => {
+      if (y + 60 * S > Y + Hh) return;
+      this.glass(s, wall, x, y, w, 60 * S, 18 * S);
+      ctx.strokeStyle = n.done ? '#4ade80' : P.sub; ctx.lineWidth = 2 * S;
+      ctx.beginPath(); ctx.arc(x + 28 * S, y + 30 * S, 11 * S, 0, 7);
+      if (n.done){ ctx.fillStyle = '#4ade80'; ctx.fill(); ctx.strokeStyle = '#fff';
+        ctx.beginPath(); ctx.moveTo(x + 22 * S, y + 30 * S); ctx.lineTo(x + 27 * S, y + 35 * S); ctx.lineTo(x + 34 * S, y + 25 * S); }
+      ctx.stroke();
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.font = F(500, 15 * S);
+      ctx.fillStyle = n.done ? P.sub : P.fg;
+      const maxW = w - 120 * S;
+      ctx.fillText(n.text, x + 52 * S, y + 30 * S, maxW);
+      if (n.done){
+        const tw = Math.min(maxW, ctx.measureText(n.text).width);
+        ctx.strokeStyle = P.sub; ctx.lineWidth = 1.5 * S;
+        ctx.beginPath(); ctx.moveTo(x + 52 * S, y + 31 * S); ctx.lineTo(x + 52 * S + tw, y + 31 * S); ctx.stroke();
+      }
+      ctx.textAlign = 'right'; ctx.font = F(400, 12 * S); ctx.fillStyle = P.sub;
+      ctx.fillText(n.time, x + w - 14 * S, y + 30 * S);
+      hit(x, y, w, 60 * S, () => { n.done = !n.done; });
+      y += 70 * S;
+    });
+  }
+
+  app_music(s, X, Y, W, Hh, S, hit){
+    const { ctx } = s, P = this.pal, m = this.music;
+    const size = Math.min(W - 80 * S, 260 * S, Hh * 0.45);
+    const ax = X + W / 2 - size / 2, ay = Y + 6 * S;
+    ctx.save(); rr(ctx, ax, ay, size, size, 28 * S); ctx.clip();
+    const g = ctx.createLinearGradient(ax, ay, ax + size, ay + size);
+    g.addColorStop(0, '#ff6b9a'); g.addColorStop(0.5, '#8f4bff'); g.addColorStop(1, '#2f7bff');
+    ctx.fillStyle = g; ctx.fillRect(ax, ay, size, size);
+    ctx.translate(ax + size / 2, ay + size / 2); ctx.rotate(m.angle);
+    for (let i = 0; i < 6; i++){
+      ctx.strokeStyle = `rgba(255,255,255,${0.08 + i * 0.05})`; ctx.lineWidth = 3 * S;
+      ctx.beginPath(); ctx.ellipse(0, 0, size * (0.12 + i * 0.07), size * (0.08 + i * 0.06), i * 0.4, 0, 7); ctx.stroke();
+    }
+    ctx.restore();
+    let y = ay + size + 40 * S;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = P.fg; ctx.font = F(700, 21 * S); ctx.fillText('Складные волны', X + W / 2, y);
+    ctx.fillStyle = P.sub; ctx.font = F(400, 14 * S); ctx.fillText('Duo Sound · концепт-альбом', X + W / 2, y + 22 * S);
+    y += 50 * S;
+    const px = X + 30 * S, pw = W - 60 * S;
+    rr(ctx, px, y, pw, 6 * S, 3 * S); ctx.fillStyle = P.track; ctx.fill();
+    rr(ctx, px, y, pw * m.pos / m.len, 6 * S, 3 * S); ctx.fillStyle = P.fg; ctx.fill();
+    hit(px, y - 14 * S, pw, 34 * S, xx => { m.pos = clamp((xx - px) / pw, 0, 1) * m.len; });
+    const fmt = v => `${Math.floor(v / 60)}:${String(Math.floor(v % 60)).padStart(2, '0')}`;
+    ctx.font = F(500, 12 * S); ctx.fillStyle = P.sub;
+    ctx.textAlign = 'left'; ctx.fillText(fmt(m.pos), px, y + 24 * S);
+    ctx.textAlign = 'right'; ctx.fillText(fmt(m.len), px + pw, y + 24 * S);
+    y += 70 * S;
+    const cx = X + W / 2;
+    ctx.fillStyle = P.fg;
+    const tri = (x0, y0, sz, dir) => { ctx.beginPath(); ctx.moveTo(x0, y0 - sz); ctx.lineTo(x0 + dir * sz * 1.2, y0); ctx.lineTo(x0, y0 + sz); ctx.closePath(); ctx.fill(); };
+    tri(cx - 80 * S, y, 11 * S, -1); tri(cx - 96 * S, y, 11 * S, -1);
+    tri(cx + 80 * S, y, 11 * S, 1); tri(cx + 96 * S, y, 11 * S, 1);
+    hit(cx - 120 * S, y - 26 * S, 60 * S, 52 * S, () => { m.pos = 0; });
+    hit(cx + 60 * S, y - 26 * S, 60 * S, 52 * S, () => { m.pos = 0; this.showBanner('Следующий трек', 1200); });
+    ctx.beginPath(); ctx.arc(cx, y, 34 * S, 0, 7); ctx.fill();
+    ctx.fillStyle = this.settings.dark ? '#1a1530' : '#fff';
+    if (m.playing){ ctx.fillRect(cx - 11 * S, y - 12 * S, 7 * S, 24 * S); ctx.fillRect(cx + 4 * S, y - 12 * S, 7 * S, 24 * S); }
+    else tri(cx - 7 * S, y, 13 * S, 1);
+    hit(cx - 40 * S, y - 40 * S, 80 * S, 80 * S, () => { m.playing = !m.playing; });
+    // визуализатор
+    const vy = y + 60 * S, vh = Math.min(50 * S, Y + Hh - vy);
+    if (vh > 10 * S){
+      const n = 28, bw = (W - 60 * S) / n;
+      for (let i = 0; i < n; i++){
+        const amp = m.playing ? (Math.sin(this.time * 6 + i * .7) * .5 + .5) * (Math.sin(this.time * 2.3 + i * 1.3) * .4 + .6) : 0.08;
+        const bh = Math.max(3 * S, amp * vh);
+        const gx = ctx.createLinearGradient(0, vy + vh - bh, 0, vy + vh); gx.addColorStop(0, '#ff6b9a'); gx.addColorStop(1, '#8f4bff');
+        ctx.fillStyle = gx; rr(ctx, X + 30 * S + i * bw + 1.5 * S, vy + vh - bh, bw - 3 * S, bh, 2 * S); ctx.fill();
+      }
+    }
+  }
+}
+
+/* =====================================================================
+   СЦЕНА, РЕНДЕРЕР, СВЕТ
+   ===================================================================== */
+setProgress(0.15, 'Создание сцены…');
+const container = $('#scene');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // ограничение pixelRatio до 2
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.5, 400);
+camera.position.set(20, 9, 46);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.07;
+controls.minDistance = 7;
+controls.maxDistance = 90;
+controls.autoRotateSpeed = 1.6;
+controls.target.set(0, 0, 0);
+
+// HDRI-подобное окружение: RoomEnvironment + PMREMGenerator
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(renderer), 0.04).texture;
+
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.7);
+keyLight.position.set(9, 16, 12);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+Object.assign(keyLight.shadow.camera, { left: -18, right: 18, top: 18, bottom: -18, near: 1, far: 70 });
+keyLight.shadow.bias = -0.0004;
+keyLight.shadow.normalBias = 0.02;
+scene.add(keyLight);
+const rimLight = new THREE.DirectionalLight(0x9db4ff, 0.7);
+rimLight.position.set(-12, 6, -12);
+scene.add(rimLight);
+const tempLight = new THREE.PointLight(0xffffff, 0, 60, 1.5);
+tempLight.position.set(6, 4, 12);
+scene.add(tempLight);
+
+// Плоскость для мягкой тени
+const shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), new THREE.ShadowMaterial({ opacity: 0.3 }));
+shadowPlane.rotation.x = -Math.PI / 2;
+shadowPlane.position.y = -8.7;
+shadowPlane.receiveShadow = true;
+scene.add(shadowPlane);
+
+/* =====================================================================
+   МАТЕРИАЛЫ И ГЕОМЕТРИЧЕСКИЕ ПОМОЩНИКИ
+   Масштаб: 1 единица сцены = 10 мм
+   ===================================================================== */
+const HALF_W = 7.3;          // ширина половины (73 мм)
+const PH = 15.8;             // высота (158 мм)
+const T = 0.45;              // толщина половины (4.5 мм)
+const GAP = 0.05;            // зазор в сложенном виде (итого 9.5 мм)
+const PIV_Z = T / 2 + GAP / 2; // ось петли
+const ZS = T / 2 + 0.006;    // поверхность внутреннего экрана
+const CORNER = 0.95;         // радиус скругления углов
+const BEND = 0.55;           // полуширина зоны изгиба экрана
+
+const MAT = {
+  // Бордовый анодированный титан (рама, кожух петли, остров камер)
+  titanium: new THREE.MeshPhysicalMaterial({ color: 0x8a1830, metalness: 0.9, roughness: 0.3, clearcoat: 0.45, clearcoatRoughness: 0.22 }),
+  titaniumPolished: new THREE.MeshPhysicalMaterial({ color: 0xb03a50, metalness: 1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.05 }),
+  // Матовое стекло бордового цвета
+  backGlass: new THREE.MeshPhysicalMaterial({ color: 0x5e0f20, metalness: 0, roughness: 0.5, transmission: 0.12, thickness: 0.2, ior: 1.5,
+    clearcoat: 1, clearcoatRoughness: 0.35, sheen: 0.5, sheenColor: new THREE.Color(0xff7088), sheenRoughness: 0.6 }),
+  blackGlass: new THREE.MeshPhysicalMaterial({ color: 0x040507, metalness: 0.1, roughness: 0.08, clearcoat: 1, clearcoatRoughness: 0.05 }),
+  camPanel: new THREE.MeshPhysicalMaterial({ color: 0x1c070d, metalness: 0.3, roughness: 0.15, clearcoat: 1, clearcoatRoughness: 0.05 }),
+  lensGlass: new THREE.MeshPhysicalMaterial({ color: 0x020306, metalness: 0.3, roughness: 0.03, clearcoat: 1, clearcoatRoughness: 0.02 }),
+  lensCoat: new THREE.MeshPhysicalMaterial({ color: 0x0a0f22, metalness: 0.5, roughness: 0.05, iridescence: 1, iridescenceIOR: 1.7, clearcoat: 1 }),
+  ring: new THREE.MeshPhysicalMaterial({ color: 0x7a7d82, metalness: 1, roughness: 0.2 }),
+  flash: new THREE.MeshStandardMaterial({ color: 0xfff3d6, emissive: 0xffe9b0, emissiveIntensity: 0.25, roughness: 0.3 }),
+  port: new THREE.MeshStandardMaterial({ color: 0x050506, roughness: 0.8 }),
+  fingerprint: new THREE.MeshPhysicalMaterial({ color: 0x2a0b12, metalness: 0.8, roughness: 0.18, clearcoat: 1 }),
+  antenna: new THREE.MeshStandardMaterial({ color: 0x2a0c14, roughness: 0.65, metalness: 0.1 }),
+};
+
+/* Скруглённый прямоугольник как контур THREE.Shape/Path (углы задаются отдельно) */
+function roundedRectPath(p, x0, y0, x1, y1, c){
+  p.moveTo(x0 + c.bl, y0);
+  p.lineTo(x1 - c.br, y0);
+  if (c.br > 0) p.absarc(x1 - c.br, y0 + c.br, c.br, -Math.PI / 2, 0, false);
+  p.lineTo(x1, y1 - c.tr);
+  if (c.tr > 0) p.absarc(x1 - c.tr, y1 - c.tr, c.tr, 0, Math.PI / 2, false);
+  p.lineTo(x0 + c.tl, y1);
+  if (c.tl > 0) p.absarc(x0 + c.tl, y1 - c.tl, c.tl, Math.PI / 2, Math.PI, false);
+  p.lineTo(x0, y0 + c.bl);
+  if (c.bl > 0) p.absarc(x0 + c.bl, y0 + c.bl, c.bl, Math.PI, Math.PI * 1.5, false);
+  return p;
+}
+const allC = r => ({ tl: r, tr: r, br: r, bl: r });
+const sideC = (side, r) => side > 0 ? { tl: 0, bl: 0, tr: r, br: r } : { tl: r, bl: r, tr: 0, br: 0 };
+/* Прямоугольник половины корпуса с отступом */
+function halfRect(side, inset, insetHinge = inset){
+  return side > 0
+    ? [insetHinge, -PH / 2 + inset, HALF_W - inset, PH / 2 - inset]
+    : [-HALF_W + inset, -PH / 2 + inset, -insetHinge, PH / 2 - inset];
+}
+/* RoundedBox через ExtrudeGeometry */
+function extrude(shape, depth, bevel = 0, curveSegments = 20){
+  return new THREE.ExtrudeGeometry(shape, {
+    depth, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 3, curveSegments,
+  });
+}
+/* Маска скруглённых углов для экранов (alphaMap) */
+function roundMask(wU, hU, rU){
+  const res = 512, h = Math.round(res * hU / wU);
+  return canvasTex(res, h, (c, w, hh) => {
+    c.fillStyle = '#000'; c.fillRect(0, 0, w, hh);
+    c.fillStyle = '#fff'; rr(c, 0, 0, w, hh, rU / wU * w); c.fill();
+  }, false);
+}
+function shadowAll(obj){ obj.traverse(o => { if (o.isMesh){ o.castShadow = true; o.receiveShadow = true; } }); }
+
+/* =====================================================================
+   МИНИ-ОС: поверхности и текстуры экранов
+   ===================================================================== */
+const os = new MiniOS();
+const IS_W = 2 * HALF_W - 0.2, IS_H = PH - 0.2;     // внутренний экран 7.8″ (тонкие рамки)
+const OS_W = 6.8, OS_H = 15.35;                      // внешний экран 6.3″
+// Разрешение текстур экранов: выше на компьютере, экономнее на телефоне
+const IS_MOBILE = matchMedia('(max-width: 820px)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+const INNER_PX = IS_MOBILE ? 1152 : 1600, OUTER_PX = IS_MOBILE ? 600 : 840;
+const innerSurf = os.createSurface(INNER_PX, Math.round(INNER_PX * IS_H / IS_W));
+const outerSurf = os.createSurface(OUTER_PX, Math.round(OUTER_PX * OS_H / OS_W));
+const innerTex = new THREE.CanvasTexture(innerSurf.canvas);
+const outerTex = new THREE.CanvasTexture(outerSurf.canvas);
+[innerTex, outerTex].forEach(t => {
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+});
+os.render(innerSurf, 'wide'); os.render(outerSurf, 'phone');
+
+/* Экран: чёрное стекло с зеркальным покрытием (clearcoat) + светящаяся мини-ОС */
+function screenMaterial(tex, w, h, r){
+  return new THREE.MeshPhysicalMaterial({
+    color: 0x000000, roughness: 0.05, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02,
+    emissive: 0xffffff, emissiveMap: tex,
+    alphaMap: roundMask(w, h, r), alphaTest: 0.5, toneMapped: false,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8,
+  });
+}
+const innerMat = screenMaterial(innerTex, IS_W, IS_H, 0.85);
+const outerMat = screenMaterial(outerTex, OS_W, OS_H, 0.8);
+
+/* =====================================================================
+   3D-МОДЕЛЬ ТЕЛЕФОНА
+   Иерархия: phoneRoot (для тестов) → foldRoot (центрирование) →
+   leftHalf, rightPivot → rightHalf, hingePivot → hingeCover, innerScreen
+   ===================================================================== */
+const phoneRoot = new THREE.Group();
+const foldRoot = new THREE.Group();
+const floatGroup = new THREE.Group();   // лёгкое «парение» в покое
+phoneRoot.add(floatGroup);
+floatGroup.add(foldRoot);
+scene.add(phoneRoot);
+
+let leftHalf, rightPivot, rightHalf, hingePivot, innerScreen, outerScreen, frontCamDot, innerBaseX;
+let flashLight, flashPulse = 0;   // свет вспышки при съёмке
+const backGlassMeshes = [];
+
+/* Одна половина корпуса. side = -1 (левая, с блоком камер) или +1 (правая, с внешним экраном) */
+function buildHalf(side){
+  const g = new THREE.Group();
+  const bev = 0.045;
+  // Рама из бордового титана
+  const [x0, y0, x1, y1] = halfRect(side, bev);
+  const frame = new THREE.Mesh(extrude(roundedRectPath(new THREE.Shape(), x0, y0, x1, y1, sideC(side, CORNER - bev)), T - 2 * bev, bev, 32), MAT.titanium);
+  frame.position.z = -T / 2 + bev;
+  g.add(frame);
+  // Чёрная подложка внутреннего экрана
+  const [fx0, fy0, fx1, fy1] = halfRect(side, 0.06, 0);
+  const bezel = new THREE.Mesh(extrude(roundedRectPath(new THREE.Shape(), fx0, fy0, fx1, fy1, sideC(side, CORNER - 0.06)), 0.002), MAT.blackGlass);
+  bezel.position.z = T / 2;
+  g.add(bezel);
+  // Задняя панель
+  const [bx0, by0, bx1, by1] = halfRect(side, 0.07);
+  const backShape = roundedRectPath(new THREE.Shape(), bx0, by0, bx1, by1, sideC(side, CORNER - 0.07));
+  if (side < 0){
+    const back = new THREE.Mesh(extrude(backShape, 0.003), MAT.backGlass);
+    back.position.z = -T / 2 - 0.003;
+    g.add(back); backGlassMeshes.push(back);
+    buildCameraIsland(g);
+    // Логотип «Duo» на задней панели
+    const logoTex = canvasTex(512, 160, (c, w, h) => {
+      c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#fff'; c.font = `800 118px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText('Duo', w / 2, h / 2 + 6);
+    }, false);
+    const logo = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.6),
+      new THREE.MeshPhysicalMaterial({ color: 0xf0b8c4, metalness: 1, roughness: 0.22, alphaMap: logoTex, transparent: true, depthWrite: false }));
+    logo.rotation.y = Math.PI;
+    logo.position.set(-HALF_W / 2, -5.7, -T / 2 - 0.0045);
+    logo.userData.noRay = true;
+    g.add(logo);
+  } else {
+    const back = new THREE.Mesh(extrude(backShape, 0.003), MAT.blackGlass);
+    back.position.z = -T / 2 - 0.003;
+    g.add(back);
+    outerScreen = new THREE.Mesh(new THREE.PlaneGeometry(OS_W, OS_H), outerMat);
+    outerScreen.rotation.y = Math.PI;
+    outerScreen.position.set(HALF_W / 2 + 0.02, 0, -T / 2 - 0.0045);
+    outerScreen.name = 'outerScreen';
+    g.add(outerScreen);
+    // Кнопки на внешнем торце: питание со сканером отпечатка и громкость
+    const capsule = (len, mat) => { const m = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, len, 8, 20), mat); m.scale.set(0.55, 1, 1); return m; };
+    const power = capsule(1.15, MAT.fingerprint); power.position.set(HALF_W + 0.02, 2.4, 0); g.add(power);
+    const fpRing = new THREE.Mesh(new THREE.CapsuleGeometry(0.105, 1.18, 4, 20), MAT.titaniumPolished); fpRing.scale.set(0.4, 1, 1.02); fpRing.position.set(HALF_W + 0.012, 2.4, 0); g.add(fpRing);
+    const vol = capsule(1.7, MAT.titaniumPolished); vol.position.set(HALF_W + 0.02, 4.75, 0); g.add(vol);
+    // Разговорный динамик сверху
+    for (let i = 0; i < 8; i++){
+      const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 10), MAT.port);
+      hole.position.set(2.6 + i * 0.16, PH / 2, 0); g.add(hole);
+    }
+    // Лоток nano-SIM снизу
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.012, 0.24), MAT.titaniumPolished);
+    tray.position.set(4.7, -PH / 2 - 0.002, 0); g.add(tray);
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.02, 10), MAT.port);
+    pin.position.set(5.6, -PH / 2, 0); g.add(pin);
+  }
+  // Антенные разрезы на торцах рамы
+  const ant = (x, y, sx, sy) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, T * 0.86), MAT.antenna); m.position.set(x, y, 0); g.add(m); };
+  ant(side * HALF_W, PH / 2 - 1.9, 0.03, 0.05);
+  ant(side * HALF_W, -PH / 2 + 1.9, 0.03, 0.05);
+  ant(side * (HALF_W - 1.9), PH / 2, 0.05, 0.03);
+  ant(side * (HALF_W - 1.9), -PH / 2, 0.05, 0.03);
+  // Нижний торец: динамики, USB-C (на левой половине)
+  const holesX = side < 0 ? [-2.7, -1.2] : [1.4, 2.9];
+  for (let i = 0; i < 10; i++){
+    const hole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.02, 10), MAT.port);
+    hole.position.set(holesX[0] + (holesX[1] - holesX[0]) * i / 9, -PH / 2, 0); g.add(hole);
+  }
+  if (side < 0){
+    const usb = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.62, 6, 16), MAT.port);
+    usb.rotation.z = Math.PI / 2; usb.position.set(-HALF_W / 2, -PH / 2, 0); g.add(usb);
+    const usbRim = new THREE.Mesh(new THREE.CapsuleGeometry(0.115, 0.64, 6, 16), MAT.titaniumPolished);
+    usbRim.rotation.z = Math.PI / 2; usbRim.scale.set(1, 0.3, 1); usbRim.position.set(-HALF_W / 2, -PH / 2 + 0.001, 0); g.add(usbRim);
+    const tongue = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.03, 0.05), MAT.ring);
+    tongue.position.set(-HALF_W / 2, -PH / 2 + 0.012, 0); g.add(tongue);
+    const mic = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 10), MAT.port);
+    mic.position.set(-5.6, -PH / 2, 0); g.add(mic);
+    // Две фронтальные камеры 18 МП полностью скрыты под экраном — на поверхности их не видно
+  }
+  shadowAll(g);
+  return g;
+}
+
+/* Выступающий остров камер: две линзы 48 МП, вспышка, ToF-датчик */
+const ISL = { x: -5.25, y: 5.45, w: 3.3, h: 3.9, r: 1.15 };
+const ISL_DEPTH = 0.13;   // выступ 1.3 мм
+const LENSES = [{ x: ISL.x + 0.72, y: ISL.y + 0.95, r: 0.7 }, { x: ISL.x - 0.72, y: ISL.y - 0.95, r: 0.7 }];
+const FLASH = { x: ISL.x - 0.85, y: ISL.y + 1.12 }, TOF = { x: ISL.x + 0.85, y: ISL.y - 1.12 };
+
+/* Объектив: выступающее кольцо (LatheGeometry), бленда, стекло с покрытием, внутренние кольца */
+function buildLens(r){
+  const g = new THREE.Group();
+  const prof = [[r + 0.09, 0], [r + 0.09, 0.045], [r + 0.075, 0.065], [r + 0.02, 0.07], [r - 0.005, 0.05], [r - 0.01, 0.0]]
+    .map(([a, b]) => new THREE.Vector2(a, b));
+  const bezel = new THREE.Mesh(new THREE.LatheGeometry(prof, 72), MAT.titaniumPolished);
+  bezel.rotation.x = -Math.PI / 2;
+  g.add(bezel);
+  const disc = (rad, z, mat, h = 0.004) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, h, 64), mat);
+    m.rotation.x = Math.PI / 2; m.position.z = z; g.add(m); return m;
+  };
+  disc(r - 0.01, 0.01, MAT.port, 0.02);          // чёрная бленда
+  disc(r * 0.86, -0.004, MAT.lensGlass);         // защитное стекло
+  disc(r * 0.6, -0.007, MAT.lensCoat);           // просветляющее покрытие
+  disc(r * 0.22, -0.009, MAT.lensGlass);         // центральная линза
+  [[0.78, 0.012], [0.5, 0.008], [0.3, 0.006]].forEach(([k, tube]) => {
+    const t = new THREE.Mesh(new THREE.TorusGeometry(r * k, tube, 8, 64), MAT.ring);
+    t.position.z = -0.006; g.add(t);
+  });
+  return g;
+}
+
+function buildCameraIsland(g){
+  const zb = -T / 2 - 0.001;
+  const bev = 0.03;
+  const shape = roundedRectPath(new THREE.Shape(), ISL.x - ISL.w / 2 + bev, ISL.y - ISL.h / 2 + bev, ISL.x + ISL.w / 2 - bev, ISL.y + ISL.h / 2 - bev, allC(ISL.r - bev));
+  const base = new THREE.Mesh(extrude(shape, ISL_DEPTH - 2 * bev, bev, 48), MAT.titanium);
+  base.position.z = zb - ISL_DEPTH + bev;
+  g.add(base);
+  const zTop = zb - ISL_DEPTH;
+  // Тёмное стекло на острове
+  const topShape = roundedRectPath(new THREE.Shape(), ISL.x - ISL.w / 2 + 0.12, ISL.y - ISL.h / 2 + 0.12, ISL.x + ISL.w / 2 - 0.12, ISL.y + ISL.h / 2 - 0.12, allC(ISL.r - 0.12));
+  const top = new THREE.Mesh(extrude(topShape, 0.004, 0, 48), MAT.camPanel);
+  top.position.z = zTop - 0.004;
+  g.add(top);
+  const zs = zTop - 0.004;
+  LENSES.forEach(L => { const lens = buildLens(L.r); lens.position.set(L.x, L.y, zs); g.add(lens); });
+  // Вспышка
+  const flash = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.006, 40), MAT.flash);
+  flash.rotation.x = Math.PI / 2; flash.position.set(FLASH.x, FLASH.y, zs - 0.003); g.add(flash);
+  const fr = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.022, 8, 40), MAT.titaniumPolished);
+  fr.position.set(FLASH.x, FLASH.y, zs - 0.004); g.add(fr);
+  // ToF-датчик глубины
+  const tof = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.006, 40), MAT.lensCoat);
+  tof.rotation.x = Math.PI / 2; tof.position.set(TOF.x, TOF.y, zs - 0.003); g.add(tof);
+  const tr = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.018, 8, 40), MAT.ring);
+  tr.position.set(TOF.x, TOF.y, zs - 0.004); g.add(tr);
+  // Микрофон
+  const mic = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.006, 12), MAT.port);
+  mic.rotation.x = Math.PI / 2; mic.position.set(FLASH.x, ISL.y + 0.4, zs - 0.002); g.add(mic);
+  // Гравировка «48 MP · OIS»
+  const txt = canvasTex(512, 128, (c, w, h) => {
+    c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#fff'; c.font = `600 64px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('48MP · OIS', w / 2, h / 2 + 2);
+  }, false);
+  const label = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.3),
+    new THREE.MeshBasicMaterial({ color: 0xc89aa4, alphaMap: txt, transparent: true, depthWrite: false }));
+  label.rotation.y = Math.PI; label.position.set(TOF.x, ISL.y - 0.5, zs - 0.001);
+  label.userData.noRay = true;
+  g.add(label);
+}
+
+function buildPhone(){
+  leftHalf = buildHalf(-1);
+  foldRoot.add(leftHalf);
+  flashLight = new THREE.PointLight(0xfff1d0, 0, 16, 2);
+  flashLight.position.set(FLASH.x, FLASH.y, -T / 2 - 0.6);
+  leftHalf.add(flashLight);
+  // Правая половина вращается вокруг оси петли
+  rightPivot = new THREE.Group();
+  rightPivot.position.set(0, 0, PIV_Z);
+  rightHalf = buildHalf(1);
+  rightHalf.position.set(0, 0, -PIV_Z);
+  rightPivot.add(rightHalf);
+  foldRoot.add(rightPivot);
+  // Кожух петли (каплевидная петля) — полуцилиндр, поворачивается на половину угла
+  hingePivot = new THREE.Group();
+  hingePivot.position.set(0, 0, PIV_Z);
+  const R = PIV_Z + T / 2 - 0.006;
+  const cover = new THREE.Mesh(new THREE.CylinderGeometry(R, R, PH - 0.5, 64, 1, false, Math.PI / 2 + 0.09, Math.PI - 0.18), MAT.titanium);
+  cover.castShadow = true;
+  hingePivot.add(cover);
+  foldRoot.add(hingePivot);
+  // Внутренний гибкий экран — плоскость со множеством сегментов, деформируется в зоне петли
+  const geo = new THREE.PlaneGeometry(IS_W, IS_H, 180, 1);
+  const pos = geo.attributes.position;
+  innerBaseX = new Float32Array(pos.count);
+  for (let i = 0; i < pos.count; i++) innerBaseX[i] = pos.getX(i);
+  innerScreen = new THREE.Mesh(geo, innerMat);
+  innerScreen.name = 'innerScreen';
+  innerScreen.receiveShadow = false;
+  foldRoot.add(innerScreen);
+}
+
+/* Деформация вершин внутреннего экрана: плоские части + кривая Эрмита в зоне изгиба */
+function deformInnerScreen(t){
+  const geo = innerScreen.geometry, pos = geo.attributes.position;
+  const phi = -Math.PI * t, c = Math.cos(phi), sn = Math.sin(phi);
+  const R = s => { const rz = ZS - PIV_Z; return [s * c + rz * sn, PIV_Z + (-s * sn + rz * c)]; };
+  const b = BEND, k = 2 * b * (1 + 0.6 * t);
+  const A = [-b, ZS], B = R(b), m0 = [k, 0], m1 = [c * k, -sn * k];
+  for (let i = 0; i < pos.count; i++){
+    const s = innerBaseX[i];
+    let x, z;
+    if (s <= -b){ x = s; z = ZS; }
+    else if (s >= b){ [x, z] = R(s); }
+    else {
+      const u = (s + b) / (2 * b), u2 = u * u, u3 = u2 * u;
+      const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
+      x = h00 * A[0] + h10 * m0[0] + h01 * B[0] + h11 * m1[0];
+      z = h00 * A[1] + h10 * m0[1] + h01 * B[1] + h11 * m1[1];
+    }
+    pos.setX(i, x); pos.setZ(i, z);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  geo.computeBoundingSphere();
+  geo.computeBoundingBox();
+}
+
+/* Складывание: t = 0 (раскрыт) … 1 (сложен) */
+let foldT = 0, foldTarget = 0, foldOverride = false, foldApplied = -1;
+const foldSp = new Spring(0, 55, 10.5);   // пружина складывания: мягкий «щелчок» в конце
+function setFold(t){
+  t = clamp(t, -0.035, 1);
+  rightPivot.rotation.y = -Math.PI * t;
+  hingePivot.rotation.y = -Math.PI * t / 2;
+  foldRoot.position.x = 3.42 * t;   // центрируем сложенный телефон
+  foldRoot.position.z = -PIV_Z * t;
+  deformInnerScreen(t);
+  foldApplied = t;
+  $('#foldVal').textContent = Math.round(clamp(t, 0, 1) * 100) + '%';
+}
+function forceFold(v){ foldT = v; setFold(v); }
+function updateFold(dt){
+  if (foldOverride){ foldSp.snap(foldT); return; }
+  foldSp.set(foldTarget); foldSp.step(dt);
+  if (Math.abs(foldSp.v - foldTarget) < 0.0015 && Math.abs(foldSp.vel) < 0.01) foldSp.snap(foldTarget);
+  foldT = clamp(foldSp.v, -0.035, 1);
+  if (foldT !== foldApplied) setFold(foldT);
+}
+function animateFold(target){
+  foldTarget = target;
+  $('#fold').value = Math.round(target * 100);
+  return everyFrame(() => Math.abs(foldT - target) < 0.003);
+}
+
+/* =====================================================================
+   ВНУТРЕННОСТИ (EXPLODED VIEW)
+   ===================================================================== */
+const internals = new THREE.Group();
+internals.visible = false;
+scene.add(internals);
+const parts = {};
+const gears = [];
+
+const PART_INFO = {
+  coating:    { n: 1,  name: 'Защитное покрытие внешнего экрана', specs: ['Многослойный ударопоглощающий стек', 'Закалённое стекло + амортизирующая плёнка', 'Олеофобный слой против отпечатков'] },
+  outerOled:  { n: 2,  name: 'Внешний экран LTPO OLED', specs: ['Диагональ 6.3″', 'LTPO 1–120 Гц', '2520 × 1080, до 2600 нит', 'Драйвер дисплея на гибком шлейфе'] },
+  innerScreen:{ n: 3,  name: 'Внутренний гибкий экран', specs: ['7.8″ LTPO OLED, 1–120 Гц', 'UTG — ультратонкое стекло 30 мкм', 'CPI — прозрачный полиимидный слой', 'Опорная пластина с решёткой в зоне сгиба', 'Под экраном — две невидимые камеры 18 МП'] },
+  hinge:      { n: 4,  name: 'Каплевидная петля (waterdrop)', specs: ['Шестерёнчатая синхронизация половин', 'Пружины и кулачки фиксируют любой угол', 'Экран складывается «каплей» — складка почти незаметна', 'Ресурс 500 000 сгибов'] },
+  frame:      { n: 5,  name: 'Рама из титана', specs: ['Титан Grade 5, бордовое анодирование', 'Средние пластины жёсткости', 'Антенные разрезы на торцах', 'Сложенный: 73 × 158 × 9.5 мм · раскрытый: 146 × 158 × 4.5 мм'] },
+  board:      { n: 6,  name: 'Главная плата', specs: ['L-образная многослойная HDI-плата', 'Экраны (shield) над чипами', 'Межплатные разъёмы BTB', 'Гибкий шлейф через петлю'] },
+  soc:        { n: 6,  name: 'Процессор «Duo X1» (концепт)', specs: ['16 ядер: 2 Prime + 6 Performance + 8 Efficiency', 'Техпроцесс 3 нм', 'Встроенные GPU и NPU'] },
+  ram:        { n: 6,  name: 'ОЗУ 12 ГБ LPDDR5X', specs: ['До 9600 МТ/с', '+ виртуальная ОЗУ до 4 ГБ'] },
+  ufs:        { n: 6,  name: 'Накопитель 128 ГБ UFS 4.0', specs: ['Чтение до 4200 МБ/с', 'Запись до 2800 МБ/с'] },
+  modem:      { n: 6,  name: 'Модем 5G', specs: ['5G SA/NSA', 'Wi-Fi 7 · Bluetooth 5.4', 'NFC · UWB'] },
+  vapor:      { n: 7,  name: 'Испарительная камера охлаждения', specs: ['Медная пластина + тепловая трубка', 'Площадь ≈ 4000 мм²', 'Графитовая плёнка в правой половине'] },
+  battery:    { n: 8,  name: 'Две батареи Si-C', specs: ['По одной ячейке в каждой половине', 'Суммарно 5600 мАч', 'Кремний-углеродный анод, свой контроллер BMS', '66 Вт проводная / 50 Вт беспроводная'] },
+  cameras:    { n: 9,  name: 'Модули камер', specs: ['Основная 48 МП, f/1.7, оптическая стабилизация', 'Сверхширокая 48 МП, 120°', 'ToF-датчик глубины и вспышка', 'Фронтальные 2 × 18 МП рядом — подэкранные, невидимые'] },
+  modules:    { n: 10, name: 'Динамики, вибромотор, зарядка, USB-C', specs: ['Стереодинамики', 'Линейный вибромотор', 'Катушка беспроводной зарядки 50 Вт + NFC-антенна', 'Порт USB-C, 66 Вт · лоток nano-SIM'] },
+  seals:      { n: 11, name: 'Уплотнители IP68', specs: ['Резиновые прокладки по периметру', 'Отдельные уплотнители камер, кнопок, порта и SIM', 'Вода: 1.5 м / 30 мин · пыль: IP6X'] },
+};
+
+function addPart(id, base, exp){
+  const g = new THREE.Group();
+  internals.add(g);
+  parts[id] = { id, group: g, meshes: [], base, exp };
+  return g;
+}
+function subPart(id){ parts[id] = { id, group: null, meshes: [] }; }
+function cloneMat(m){ return Array.isArray(m) ? m.map(x => x.clone()) : m.clone(); }
+function pmesh(id, group, geo, mat, x = 0, y = 0, z = 0){
+  const m = new THREE.Mesh(geo, cloneMat(mat));
+  m.position.set(x, y, z);
+  m.userData.partId = id;
+  m.castShadow = true; m.receiveShadow = true;
+  group.add(m);
+  parts[id].meshes.push(m);
+  return m;
+}
+/* Текстура «чипа» с надписью */
+function chipMat(title, sub, col = '#1b1d22'){
+  const tex = canvasTex(256, 256, (c, w, h) => {
+    c.fillStyle = col; c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 6; c.strokeRect(10, 10, w - 20, h - 20);
+    c.fillStyle = '#e8ecf5'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = `800 ${title.length > 6 ? 40 : 54}px ${FONT}`; c.fillText(title, w / 2, h * 0.44);
+    c.font = `500 26px ${FONT}`; c.fillStyle = '#9fa8bb'; c.fillText(sub, w / 2, h * 0.68);
+    c.beginPath(); c.arc(30, 30, 8, 0, 7); c.fillStyle = '#9fa8bb'; c.fill();
+  });
+  const side = new THREE.MeshStandardMaterial({ color: col, roughness: 0.5, metalness: 0.3 });
+  const top = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.45, metalness: 0.2 });
+  return [side, side, side, side, top, side];
+}
+/* Шестерня как THREE.Shape */
+function gearShape(r, teeth, depth = 0.06){
+  const s = new THREE.Shape(), n = teeth * 4;
+  for (let i = 0; i <= n; i++){
+    const a = i / n * Math.PI * 2, ph = i % 4;
+    const rad = (ph === 1 || ph === 2) ? r : r - depth;
+    const x = Math.cos(a) * rad, y = Math.sin(a) * rad;
+    i ? s.lineTo(x, y) : s.moveTo(x, y);
+  }
+  const hole = new THREE.Path(); hole.absarc(0, 0, r * 0.3, 0, Math.PI * 2, true); s.holes.push(hole);
+  return s;
+}
+/* Кольцо-контур половины (рама, уплотнитель) */
+function halfRing(side, outerInset, innerInset, depth){
+  const [x0, y0, x1, y1] = halfRect(side, outerInset);
+  const shape = roundedRectPath(new THREE.Shape(), x0, y0, x1, y1, sideC(side, Math.max(0.05, CORNER - outerInset)));
+  const [a0, b0, a1, b1] = halfRect(side, innerInset);
+  shape.holes.push(roundedRectPath(new THREE.Path(), a0, b0, a1, b1, sideC(side, Math.max(0.05, CORNER - innerInset))));
+  return extrude(shape, depth, 0, 24);
+}
+
+/* Кривые для пружин петли и катушки зарядки */
+class HelixCurve extends THREE.Curve {
+  constructor(r, len, turns){ super(); this.r = r; this.len = len; this.turns = turns; }
+  getPoint(t, target = new THREE.Vector3()){
+    const a = t * this.turns * Math.PI * 2;
+    return target.set(Math.cos(a) * this.r, (t - 0.5) * this.len, Math.sin(a) * this.r);
+  }
+}
+class SpiralCurve extends THREE.Curve {
+  constructor(r0, r1, turns){ super(); this.r0 = r0; this.r1 = r1; this.turns = turns; }
+  getPoint(t, target = new THREE.Vector3()){
+    const a = t * this.turns * Math.PI * 2, r = lerp(this.r0, this.r1, t);
+    return target.set(Math.cos(a) * r, Math.sin(a) * r, 0);
+  }
+}
+/* Прямоугольная рамка (экран-shield, уплотнитель, NFC-петля) */
+function rectRingGeo(w, h, t, depth, r = 0.08){
+  const s = roundedRectPath(new THREE.Shape(), -w / 2, -h / 2, w / 2, h / 2, allC(r));
+  s.holes.push(roundedRectPath(new THREE.Path(), -w / 2 + t, -h / 2 + t, w / 2 - t, h / 2 - t, allC(Math.max(0.01, r - t))));
+  return extrude(s, depth, 0, 12);
+}
+/* Скруглённая «подушка» (корпус батареи, модуля) */
+function padGeo(w, h, d, r = 0.2, bev = 0.03){
+  const s = roundedRectPath(new THREE.Shape(), -w / 2 + bev, -h / 2 + bev, w / 2 - bev, h / 2 - bev, allC(Math.max(0.02, r - bev)));
+  const geo = extrude(s, d - 2 * bev, bev, 16);
+  geo.translate(0, 0, -d / 2 + bev);
+  return geo;
+}
+
+function buildInternals(){
+  const steel = new THREE.MeshPhysicalMaterial({ color: 0xc3c7cf, metalness: 1, roughness: 0.22 });
+  const darkSteel = new THREE.MeshPhysicalMaterial({ color: 0x5d6168, metalness: 1, roughness: 0.35 });
+  const alu = new THREE.MeshStandardMaterial({ color: 0x9da3ad, metalness: 0.85, roughness: 0.4 });
+  const copper = new THREE.MeshPhysicalMaterial({ color: 0xc8804a, metalness: 1, roughness: 0.3, clearcoat: 0.3 });
+  const blackPl = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.7 });
+  const flexMat = new THREE.MeshStandardMaterial({ color: 0xd9822b, roughness: 0.45, metalness: 0.1 });
+  const gold = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 1, roughness: 0.3 });
+  const greenPcb = new THREE.MeshStandardMaterial({ color: 0x1d4a30, roughness: 0.6, metalness: 0.2 });
+
+  // 3. Внутренний гибкий экран: OLED + CPI + UTG + опорная пластина с решёткой + драйвер
+  {
+    const g = addPart('innerScreen', 0.2, 5.8);
+    const oled = pmesh('innerScreen', g, new THREE.BoxGeometry(IS_W, IS_H, 0.02),
+      new THREE.MeshStandardMaterial({ color: 0x050507, emissive: 0xffffff, emissiveMap: innerTex, emissiveIntensity: 0.9, roughness: 0.3 }));
+    oled.userData.spread = [0, 0];
+    const cpi = pmesh('innerScreen', g, new THREE.BoxGeometry(IS_W, IS_H, 0.01),
+      new THREE.MeshPhysicalMaterial({ color: 0xffb347, transparent: true, opacity: 0.3, roughness: 0.2, depthWrite: false }));
+    cpi.userData.spread = [0.02, 0.45];
+    const utg = pmesh('innerScreen', g, new THREE.BoxGeometry(IS_W, IS_H, 0.012),
+      new THREE.MeshPhysicalMaterial({ color: 0xbfe3ff, transparent: true, opacity: 0.2, roughness: 0.03, clearcoat: 1, depthWrite: false }));
+    utg.userData.spread = [0.035, 0.9];
+    // опорные пластины (SUS) — по одной на половину
+    [-1, 1].forEach(sx => {
+      const p = pmesh('innerScreen', g, new THREE.BoxGeometry(HALF_W - 0.8, IS_H - 0.1, 0.012), steel, sx * (HALF_W / 2 + 0.3), 0, -0.02);
+      p.userData.spread = [-0.02, -0.38];
+    });
+    // решётка в зоне сгиба
+    const lattice = canvasTex(128, 1024, (c, w, h) => {
+      c.fillStyle = '#fff'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#000';
+      for (let y = 0; y < h; y += 16) for (let x = (y / 16) % 2 ? 8 : 0; x < w; x += 32) c.fillRect(x + 4, y + 3, 18, 6);
+    }, false);
+    const lat = pmesh('innerScreen', g, new THREE.PlaneGeometry(1.6, IS_H - 0.1),
+      new THREE.MeshStandardMaterial({ color: 0xc3c7cf, metalness: 1, roughness: 0.3, alphaMap: lattice, alphaTest: 0.5, side: THREE.DoubleSide }), 0, 0, -0.02);
+    lat.userData.spread = [-0.02, -0.38];
+    // драйвер дисплея на шлейфе
+    const fl = pmesh('innerScreen', g, new THREE.BoxGeometry(2.4, 1.0, 0.01), flexMat, -3.6, -IS_H / 2 - 0.35, -0.01);
+    fl.userData.spread = [-0.01, -0.5];
+    const ic = pmesh('innerScreen', g, new THREE.BoxGeometry(1.1, 0.35, 0.05), blackPl, -3.6, -IS_H / 2 - 0.4, -0.03);
+    ic.userData.spread = [-0.03, -0.55];
+  }
+
+  // 4. Каплевидная петля: оси, шестерни, кулачки, пружины, рычаги, профили «капли»
+  {
+    const g = addPart('hinge', 0, 3.9);
+    const housing = pmesh('hinge', g, new THREE.CylinderGeometry(0.42, 0.42, 14.8, 48, 1, true, Math.PI / 2, Math.PI), MAT.titanium);
+    housing.material.side = THREE.DoubleSide;
+    [-7.4, 7.4].forEach(y => pmesh('hinge', g, new THREE.CylinderGeometry(0.42, 0.42, 0.06, 32, 1, false, Math.PI / 2, Math.PI), MAT.titaniumPolished, 0, y, 0));
+    pmesh('hinge', g, new THREE.BoxGeometry(0.75, 14.4, 0.06), steel, 0, 0, -0.06);
+    // оси вдоль петли
+    [-1, 1].forEach(sx => pmesh('hinge', g, new THREE.CylinderGeometry(0.05, 0.05, 14.2, 16), steel, sx * 0.235, 0, 0.05));
+    // кулачок фиксации
+    const cam = new THREE.Shape();
+    for (let i = 0; i <= 64; i++){
+      const a = i / 64 * Math.PI * 2, r = 0.2 + 0.035 * Math.max(0, Math.cos(a * 3));
+      i ? cam.lineTo(Math.cos(a) * r, Math.sin(a) * r) : cam.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    const camHole = new THREE.Path(); camHole.absarc(0, 0, 0.06, 0, Math.PI * 2, true); cam.holes.push(camHole);
+    const springGeo = new THREE.TubeGeometry(new HelixCurve(0.11, 0.55, 7), 120, 0.016, 6, false);
+    [-6.2, -2.3, 2.3, 6.2].forEach(y => {
+      [-1, 1].forEach(sx => {
+        const gm = pmesh('hinge', g, extrude(gearShape(0.24, 14), 0.14, 0, 6), steel, sx * 0.235, y + 0.07, 0.05);
+        gm.rotation.x = Math.PI / 2; gm.userData.spin = sx; gears.push(gm);
+        const cm = pmesh('hinge', g, extrude(cam, 0.08, 0, 4), darkSteel, sx * 0.235, y + 0.42, 0.05);
+        cm.rotation.x = Math.PI / 2;
+        pmesh('hinge', g, springGeo, steel, sx * 0.235, y + 0.85, 0.05);
+        // рычаг, связывающий ось с половиной корпуса
+        const arm = pmesh('hinge', g, new THREE.BoxGeometry(1.7, 0.42, 0.07), darkSteel, sx * 1.05, y - 0.45, 0.08);
+        arm.rotation.z = sx * 0.06;
+        pmesh('hinge', g, new THREE.CylinderGeometry(0.07, 0.07, 0.1, 16), steel, sx * 1.75, y - 0.45, 0.13).rotation.x = Math.PI / 2;
+      });
+      pmesh('hinge', g, new THREE.BoxGeometry(2.6, 0.32, 0.09), steel, 0, y + 1.35, 0.0);
+    });
+    // профили «капли»
+    const drop = new THREE.Shape();
+    drop.moveTo(0, 0.5); drop.bezierCurveTo(0.42, 0.1, 0.42, -0.42, 0, -0.42); drop.bezierCurveTo(-0.42, -0.42, -0.42, 0.1, 0, 0.5);
+    const hole = new THREE.Path();
+    hole.moveTo(0, 0.36); hole.bezierCurveTo(-0.3, 0.06, -0.3, -0.3, 0, -0.3); hole.bezierCurveTo(0.3, -0.3, 0.3, 0.06, 0, 0.36);
+    drop.holes.push(hole);
+    [-4.3, 0, 4.3].forEach(y => {
+      const d = pmesh('hinge', g, extrude(drop, 0.06, 0, 24), steel, 0, y, 0);
+      d.rotation.x = Math.PI / 2;
+    });
+  }
+
+  // 5. Рама из титана + средние пластины + антенные разрезы
+  {
+    const g = addPart('frame', -0.2, 2.6);
+    [-1, 1].forEach(side => {
+      pmesh('frame', g, halfRing(side, 0, 0.24, 0.4), MAT.titanium);
+      // средняя пластина жёсткости (с вырезом под камеры на левой половине)
+      const [a0, b0, a1, b1] = halfRect(side, 0.22);
+      const s = roundedRectPath(new THREE.Shape(), a0, b0, a1, b1, sideC(side, CORNER - 0.22));
+      if (side < 0) s.holes.push(roundedRectPath(new THREE.Path(), ISL.x - ISL.w / 2 + 0.1, ISL.y - ISL.h / 2 + 0.1, ISL.x + ISL.w / 2 - 0.1, ISL.y + ISL.h / 2 - 0.1, allC(ISL.r - 0.1)));
+      else s.holes.push(roundedRectPath(new THREE.Path(), 1.4, 5.0, 6.0, 7.2, allC(0.3)));
+      pmesh('frame', g, extrude(s, 0.04, 0, 24), alu, 0, 0, 0.12);
+      // антенные разрезы
+      [[side * HALF_W, PH / 2 - 1.9, 0.06, 0.06], [side * HALF_W, -PH / 2 + 1.9, 0.06, 0.06], [side * (HALF_W - 1.9), PH / 2, 0.06, 0.06], [side * (HALF_W - 1.9), -PH / 2, 0.06, 0.06]]
+        .forEach(([x, y, sx, sy]) => pmesh('frame', g, new THREE.BoxGeometry(sx, sy, 0.38), MAT.antenna, x, y, 0.2));
+    });
+    const btn = pmesh('frame', g, new THREE.CapsuleGeometry(0.1, 1.15, 6, 12), MAT.fingerprint, HALF_W + 0.02, 2.4, 0.2); btn.scale.x = 0.55;
+    const vol = pmesh('frame', g, new THREE.CapsuleGeometry(0.1, 1.7, 6, 12), MAT.titaniumPolished, HALF_W + 0.02, 4.75, 0.2); vol.scale.x = 0.55;
+  }
+
+  // 7. Испарительная камера (медь) + тепловая трубка + графитовая плёнка
+  {
+    const g = addPart('vapor', 0.12, 1.35);
+    pmesh('vapor', g, extrude(roundedRectPath(new THREE.Shape(), -3.55, 0.8, -0.95, 7.3, allC(0.45)), 0.04, 0.01), copper);
+    pmesh('vapor', g, new THREE.CylinderGeometry(0.09, 0.09, 4.4, 16), copper, -1.4, -1.4, 0.03);
+    pmesh('vapor', g, new THREE.SphereGeometry(0.09, 12, 8), copper, -1.4, -3.6, 0.03);
+    pmesh('vapor', g, new THREE.BoxGeometry(5.2, 10.8, 0.01), new THREE.MeshStandardMaterial({ color: 0x22252b, roughness: 0.35, metalness: 0.6 }), 3.75, -0.6, 0);
+  }
+
+  // 6. Главная плата (L-образная) с чипами, экранами, разъёмами
+  {
+    const g = addPart('board', 0, 0.3);
+    subPart('soc'); subPart('ram'); subPart('ufs'); subPart('modem');
+    const pcbTex = canvasTex(512, 512, (c, w, h) => {
+      c.fillStyle = '#123824'; c.fillRect(0, 0, w, h);
+      const rnd = mulberry(42);
+      c.strokeStyle = '#c9a646'; c.globalAlpha = 0.5;
+      for (let i = 0; i < 120; i++){
+        c.lineWidth = 1 + rnd() * 2.2;
+        let x = rnd() * w, y = rnd() * h;
+        c.beginPath(); c.moveTo(x, y);
+        for (let j = 0; j < 4; j++){ if (rnd() > .5) x += (rnd() - .5) * 150; else y += (rnd() - .5) * 150; c.lineTo(x, y); }
+        c.stroke();
+      }
+      c.globalAlpha = 1; c.fillStyle = '#d8b54d';
+      for (let i = 0; i < 220; i++){ c.beginPath(); c.arc(rnd() * w, rnd() * h, 1.5 + rnd() * 3, 0, 7); c.fill(); }
+    });
+    pcbTex.wrapS = pcbTex.wrapT = THREE.RepeatWrapping;
+    pcbTex.repeat.set(1 / 6.0, 1 / 6.9); pcbTex.offset.set(6.7 / 6.0, -0.6 / 6.9);
+    const pcb = new THREE.MeshStandardMaterial({ map: pcbTex, roughness: 0.6, metalness: 0.2 });
+    const L = new THREE.Shape();
+    L.moveTo(-6.7, 0.6); L.lineTo(-0.8, 0.6); L.lineTo(-0.8, 7.4); L.lineTo(-3.45, 7.4); L.lineTo(-3.45, 3.3); L.lineTo(-6.7, 3.3); L.lineTo(-6.7, 0.6);
+    pmesh('board', g, extrude(L, 0.06, 0, 4), pcb, 0, 0, -0.03);
+    // чипы
+    const chips = [
+      ['soc', 1.5, 1.5, 0.14, chipMat('Duo X1', '16C · 3 нм', '#202329'), -2.15, 4.7],
+      ['modem', 1.05, 1.05, 0.1, chipMat('5G', 'модем', '#1f2430'), -2.15, 6.55],
+      ['ram', 1.35, 1.0, 0.1, chipMat('12 ГБ', 'LPDDR5X'), -5.7, 1.95],
+      ['ufs', 1.2, 1.35, 0.1, chipMat('128 ГБ', 'UFS 4.0'), -4.2, 1.95],
+      ['board', 0.8, 0.8, 0.08, chipMat('PMIC', 'питание'), -1.5, 1.6],
+      ['board', 0.8, 0.8, 0.08, chipMat('Wi-Fi 7', 'BT 5.4'), -2.8, 1.6],
+      ['board', 0.6, 0.6, 0.07, chipMat('UWB', 'NFC'), -1.5, 2.75],
+    ];
+    const occupied = [];
+    chips.forEach(([id, w, h, d, mat, x, y]) => {
+      pmesh(id, g, new THREE.BoxGeometry(w, h, d), mat, x, y, 0.03 + d / 2);
+      occupied.push([x, y, w / 2 + 0.15, h / 2 + 0.15]);
+    });
+    // металлические экраны (shield) вокруг чипов
+    [[-2.15, 4.7, 1.9, 1.9], [-2.15, 6.55, 1.4, 1.4], [-4.95, 1.95, 3.0, 1.75]].forEach(([x, y, w, h]) => {
+      pmesh('board', g, rectRingGeo(w, h, 0.06, 0.12, 0.06), steel, x, y, 0.03);
+    });
+    // разъёмы BTB
+    const btb = (x, y, w = 0.9) => {
+      pmesh('board', g, new THREE.BoxGeometry(w, 0.26, 0.08), blackPl, x, y, 0.07);
+      pmesh('board', g, new THREE.BoxGeometry(w - 0.1, 0.12, 0.02), gold, x, y, 0.12);
+    };
+    btb(-1.25, 3.6); btb(-3.0, 0.85); btb(-6.0, 0.85); btb(-2.9, 7.1, 0.7);
+    // стойки под винты
+    [[-6.5, 0.8], [-1.0, 0.8], [-1.0, 7.2], [-3.25, 7.2], [-6.5, 3.1], [-3.25, 3.5]].forEach(([x, y]) => {
+      const s = pmesh('board', g, new THREE.CylinderGeometry(0.1, 0.1, 0.12, 16), steel, x, y, 0.05); s.rotation.x = Math.PI / 2;
+    });
+    // мелкие SMD-компоненты
+    const rnd = mulberry(7);
+    const smd = new THREE.MeshStandardMaterial({ color: 0x2a2b2e, roughness: 0.5, metalness: 0.4 });
+    const cap = new THREE.MeshStandardMaterial({ color: 0xa88a5a, roughness: 0.5, metalness: 0.3 });
+    const inBoard = (x, y) => (y > 0.75 && y < 3.15 && x > -6.55 && x < -0.95) || (x > -3.3 && x < -0.95 && y > 0.75 && y < 7.25);
+    for (let i = 0, n = 0; i < 600 && n < 90; i++){
+      const x = -6.6 + rnd() * 5.8, y = 0.7 + rnd() * 6.6;
+      if (!inBoard(x, y) || occupied.some(([ox, oy, hw, hh]) => Math.abs(x - ox) < hw && Math.abs(y - oy) < hh)) continue;
+      const w = 0.08 + rnd() * 0.22, h = 0.06 + rnd() * 0.16;
+      pmesh('board', g, new THREE.BoxGeometry(w, h, 0.05), rnd() > 0.6 ? cap : smd, x, y, 0.055);
+      n++;
+    }
+    // дополнительная плата в правой половине
+    pmesh('board', g, new THREE.BoxGeometry(2.9, 2.0, 0.06), greenPcb, 4.6, 6.2, 0);
+    pmesh('board', g, new THREE.BoxGeometry(0.7, 0.7, 0.07), chipMat('NFC', 'ctrl'), 4.0, 6.3, 0.065);
+    pmesh('board', g, new THREE.BoxGeometry(0.6, 0.45, 0.06), chipMat('Аудио', 'кодек'), 5.1, 6.6, 0.06);
+    btb(5.1, 5.5, 0.7);
+    // шлейфы: через петлю и к нижней плате USB
+    pmesh('board', g, new THREE.BoxGeometry(4.6, 0.45, 0.012), flexMat, 1.1, 5.7, 0.02);
+    pmesh('board', g, new THREE.BoxGeometry(3.4, 0.35, 0.012), flexMat, 1.1, 1.2, 0.02);
+    pmesh('board', g, new THREE.BoxGeometry(0.4, 7.2, 0.012), flexMat, -0.55, -3.0, 0.02);
+  }
+
+  // 8. Две батареи Si-C в мягком корпусе + контроллеры BMS
+  {
+    const g = addPart('battery', -0.06, -1.05);
+    const pouch = new THREE.MeshPhysicalMaterial({ color: 0x2a2d35, roughness: 0.4, metalness: 0.5, clearcoat: 0.5 });
+    const label = (text) => canvasTex(256, 384, (c, w, h) => {
+      const gr = c.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#2d3039'); gr.addColorStop(1, '#17191e');
+      c.fillStyle = gr; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#c2185b'; c.fillRect(0, h * .12, w, 7);
+      c.fillStyle = '#e8ecf5'; c.textAlign = 'center';
+      c.font = `800 46px ${FONT}`; c.fillText('Si-C', w / 2, h * .42);
+      c.font = `600 28px ${FONT}`; c.fillText(text, w / 2, h * .54);
+      c.font = `400 18px ${FONT}`; c.fillStyle = '#9aa3b5'; c.fillText('Duo · 3.89 В · Li-ion', w / 2, h * .64);
+      c.strokeStyle = 'rgba(255,255,255,.15)'; c.lineWidth = 2; c.strokeRect(14, h * .76, w - 28, h * .14);
+    });
+    [[-3.75, -3.4, 5.8, 7.4, '2500 мАч'], [3.75, -1.3, 5.8, 11.6, '3100 мАч']].forEach(([x, y, w, h, t]) => {
+      pmesh('battery', g, padGeo(w, h, 0.3, 0.3, 0.05), pouch, x, y, 0);
+      pmesh('battery', g, new THREE.PlaneGeometry(w - 0.6, h - 0.8), new THREE.MeshStandardMaterial({ map: label(t), roughness: 0.5 }), x, y, 0.151);
+      pmesh('battery', g, new THREE.BoxGeometry(2.2, 0.5, 0.08), greenPcb, x, y + h / 2 + 0.2, 0.05);
+      pmesh('battery', g, new THREE.BoxGeometry(0.5, 0.3, 0.05), chipMat('BMS', ''), x - 0.5, y + h / 2 + 0.2, 0.11);
+      pmesh('battery', g, new THREE.BoxGeometry(0.4, 0.7, 0.012), flexMat, x + 0.7, y + h / 2 + 0.55, 0.06);
+    });
+  }
+
+  // 9. Модули камер: два модуля 48 МП с оптической стабилизацией, ToF, вспышка, фронталка
+  {
+    const g = addPart('cameras', -0.1, -2.25);
+    const body = new THREE.MeshStandardMaterial({ color: 0x1d1f24, roughness: 0.45, metalness: 0.5 });
+    LENSES.forEach(Ln => {
+      pmesh('cameras', g, padGeo(1.55, 1.55, 0.36, 0.18, 0.03), body, Ln.x, Ln.y, 0);
+      const barrel = pmesh('cameras', g, new THREE.CylinderGeometry(0.58, 0.62, 0.3, 48), MAT.titaniumPolished, Ln.x, Ln.y, -0.3);
+      barrel.rotation.x = Math.PI / 2;
+      const lens = pmesh('cameras', g, new THREE.CylinderGeometry(0.44, 0.44, 0.02, 48), MAT.lensCoat, Ln.x, Ln.y, -0.46);
+      lens.rotation.x = Math.PI / 2;
+      // магниты/катушки OIS по бокам
+      [[0.85, 0], [-0.85, 0], [0, 0.85], [0, -0.85]].forEach(([dx, dy]) =>
+        pmesh('cameras', g, new THREE.BoxGeometry(dx ? 0.12 : 0.6, dy ? 0.12 : 0.6, 0.25), copper, Ln.x + dx, Ln.y + dy, 0));
+      pmesh('cameras', g, new THREE.BoxGeometry(0.4, 1.4, 0.012), flexMat, Ln.x + (Ln.x > ISL.x ? 0.4 : -0.4), Ln.y - 1.3, 0.1);
+    });
+    pmesh('cameras', g, padGeo(0.6, 0.6, 0.2, 0.1, 0.02), body, TOF.x, TOF.y, 0);
+    const tofL = pmesh('cameras', g, new THREE.CylinderGeometry(0.17, 0.17, 0.04, 24), MAT.lensCoat, TOF.x, TOF.y, -0.12);
+    tofL.rotation.x = Math.PI / 2;
+    pmesh('cameras', g, new THREE.BoxGeometry(0.5, 0.5, 0.12), MAT.flash, FLASH.x, FLASH.y, 0);
+    // две фронтальные подэкранные камеры 18 МП рядом (стерео)
+    [-0.42, 0.42].forEach(dx => {
+      pmesh('cameras', g, padGeo(0.6, 0.6, 0.22, 0.1, 0.02), body, -HALF_W / 2 + dx, PH / 2 - 0.8, 0.1);
+      const fl = pmesh('cameras', g, new THREE.CylinderGeometry(0.16, 0.16, 0.06, 24), MAT.lensCoat, -HALF_W / 2 + dx, PH / 2 - 0.8, 0.23);
+      fl.rotation.x = Math.PI / 2;
+    });
+    pmesh('cameras', g, new THREE.BoxGeometry(1.5, 0.3, 0.012), flexMat, -HALF_W / 2, PH / 2 - 1.25, 0.1);
+  }
+
+  // 10. Динамики, вибромотор, катушка зарядки + NFC, USB-C, SIM, микрофоны
+  {
+    const g = addPart('modules', -0.12, -3.05);
+    const grille = canvasTex(256, 128, (c, w, h) => {
+      c.fillStyle = '#2b2f37'; c.fillRect(0, 0, w, h);
+      c.fillStyle = '#0d0e11';
+      for (let y = 10; y < h; y += 14) for (let x = (y / 14) % 2 ? 14 : 7; x < w; x += 14){ c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill(); }
+    });
+    const spkSide = new THREE.MeshStandardMaterial({ color: 0x30343c, roughness: 0.6, metalness: 0.3 });
+    const spkMat = [spkSide, spkSide, spkSide, spkSide, new THREE.MeshStandardMaterial({ map: grille, roughness: 0.7 }), spkSide];
+    pmesh('modules', g, new THREE.BoxGeometry(1.9, 0.85, 0.28), spkMat, -1.95, -7.15, 0);
+    pmesh('modules', g, new THREE.BoxGeometry(1.9, 0.85, 0.28), spkMat, 2.15, -7.15, 0);
+    pmesh('modules', g, new THREE.BoxGeometry(1.5, 0.45, 0.2), spkMat, 3.3, 7.3, 0);
+    // линейный вибромотор
+    pmesh('modules', g, padGeo(1.3, 0.55, 0.26, 0.1, 0.02), new THREE.MeshStandardMaterial({ color: 0x8b93a3, metalness: 0.8, roughness: 0.3 }), 5.6, -5.9, 0);
+    pmesh('modules', g, new THREE.BoxGeometry(0.3, 0.3, 0.012), flexMat, 6.35, -5.9, 0.06);
+    // катушка беспроводной зарядки (спираль) + ферритовая подложка + NFC-петля
+    const coil = pmesh('modules', g, new THREE.TubeGeometry(new SpiralCurve(0.55, 1.85, 9), 700, 0.035, 5, false), copper, -3.75, -3.3, 0.02);
+    coil.scale.z = 0.4;
+    const ferrite = pmesh('modules', g, new THREE.CylinderGeometry(2.0, 2.0, 0.03, 64), new THREE.MeshStandardMaterial({ color: 0x111215, roughness: 0.8 }), -3.75, -3.3, -0.04);
+    ferrite.rotation.x = Math.PI / 2;
+    pmesh('modules', g, rectRingGeo(4.9, 4.9, 0.08, 0.02, 0.5), copper, -3.75, -3.3, -0.02);
+    // USB-C: корпус порта, язычок, плата
+    pmesh('modules', g, new THREE.BoxGeometry(2.4, 0.9, 0.05), greenPcb, -HALF_W / 2, -7.1, -0.08);
+    const shell = pmesh('modules', g, new THREE.CapsuleGeometry(0.13, 0.7, 6, 16), MAT.ring, -HALF_W / 2, -7.55, 0);
+    shell.rotation.z = Math.PI / 2;
+    pmesh('modules', g, new THREE.BoxGeometry(0.55, 0.35, 0.04), gold, -HALF_W / 2, -7.6, 0);
+    // лоток nano-SIM
+    pmesh('modules', g, new THREE.BoxGeometry(1.5, 1.1, 0.06), MAT.titaniumPolished, 4.7, -7.3, 0);
+    pmesh('modules', g, new THREE.BoxGeometry(0.9, 0.7, 0.02), gold, 4.6, -7.25, 0.04);
+    // микрофоны
+    [[-5.6, -7.5], [3.1, 7.55]].forEach(([x, y]) => pmesh('modules', g, new THREE.BoxGeometry(0.35, 0.25, 0.12), blackPl, x, y, 0));
+  }
+
+  // 11. Уплотнители IP68
+  {
+    const g = addPart('seals', -0.15, -3.95);
+    const rubber = new THREE.MeshStandardMaterial({ color: 0xff6a2b, roughness: 0.9, metalness: 0 });
+    [-1, 1].forEach(side => pmesh('seals', g, halfRing(side, 0.12, 0.2, 0.05), rubber));
+    const isl = roundedRectPath(new THREE.Shape(), ISL.x - ISL.w / 2, ISL.y - ISL.h / 2, ISL.x + ISL.w / 2, ISL.y + ISL.h / 2, allC(ISL.r));
+    isl.holes.push(roundedRectPath(new THREE.Path(), ISL.x - ISL.w / 2 + 0.07, ISL.y - ISL.h / 2 + 0.07, ISL.x + ISL.w / 2 - 0.07, ISL.y + ISL.h / 2 - 0.07, allC(ISL.r - 0.07)));
+    pmesh('seals', g, extrude(isl, 0.05, 0, 32), rubber);
+    LENSES.forEach(Ln => pmesh('seals', g, new THREE.TorusGeometry(Ln.r + 0.05, 0.035, 8, 48), rubber, Ln.x, Ln.y, 0));
+    const usbSeal = pmesh('seals', g, new THREE.TorusGeometry(0.5, 0.05, 8, 32), rubber, -HALF_W / 2, -7.45, 0); usbSeal.scale.y = 0.45;
+    const simSeal = pmesh('seals', g, rectRingGeo(1.6, 0.4, 0.06, 0.05, 0.15), rubber, 4.7, -7.75, 0);
+    [[2.4, 1.3], [4.75, 1.85]].forEach(([y, len]) => {
+      const s = pmesh('seals', g, new THREE.TorusGeometry(0.14, 0.03, 8, 24), rubber, HALF_W - 0.05, y, 0);
+      s.scale.y = len / 0.28; s.rotation.y = Math.PI / 2;
+    });
+  }
+
+  // 2. Внешний LTPO OLED + драйвер на шлейфе
+  {
+    const g = addPart('outerOled', -0.2, -5.05);
+    pmesh('outerOled', g, new THREE.BoxGeometry(OS_W, OS_H, 0.03),
+      new THREE.MeshStandardMaterial({ color: 0x050507, emissive: 0xffffff, emissiveMap: outerTex, emissiveIntensity: 0.9, roughness: 0.3 }), HALF_W / 2 + 0.02, 0, 0);
+    pmesh('outerOled', g, new THREE.BoxGeometry(2.0, 0.9, 0.01), flexMat, HALF_W / 2, -OS_H / 2 - 0.3, 0.02);
+    pmesh('outerOled', g, new THREE.BoxGeometry(0.9, 0.3, 0.05), blackPl, HALF_W / 2, -OS_H / 2 - 0.35, 0.05);
+  }
+
+  // 1. Защитное покрытие внешнего экрана (многослойный стек)
+  {
+    const g = addPart('coating', -0.23, -6.1);
+    [0xdaf0ff, 0xffc46b, 0x8fd3ff].forEach((col, i) => {
+      const m = pmesh('coating', g, new THREE.BoxGeometry(OS_W, OS_H, 0.02),
+        new THREE.MeshPhysicalMaterial({ color: col, transparent: true, opacity: 0.3 + i * 0.05, roughness: 0.05, clearcoat: 1, depthWrite: false }), HALF_W / 2 + 0.02, 0, 0);
+      m.userData.spread = [-i * 0.025, -i * 0.42];
+    });
+  }
+}
+
+/* Поэтапное раскрытие: дальние слои вылетают первыми, каждый с перелётом и лёгким покачиванием;
+   компонент под курсором выдвигается из стопки */
+let explodeE = 0, explodeOrder = null;
+const backOut = k => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
+function applyExplode(e){
+  explodeE = e;
+  if (!explodeOrder) explodeOrder = Object.keys(parts).filter(id => parts[id].group).sort((a, b) => Math.abs(parts[b].exp) - Math.abs(parts[a].exp));
+  const n = explodeOrder.length, st = 0.075, span = 1 + st * (n - 1);
+  explodeOrder.forEach((id, rank) => {
+    const p = parts[id];
+    const local = clamp(e * span - rank * st, 0, 1);
+    const k = local <= 0 ? 0 : local >= 1 ? 1 : backOut(local);
+    p.group.position.z = lerp(p.base, p.exp, k) + (p.hover || 0) * 0.45 * Math.sign(p.exp || 1);
+    p.group.rotation.x = Math.sin(local * Math.PI) * 0.1 * (rank % 2 ? 1 : -1);
+    p.group.rotation.y = Math.sin(local * Math.PI) * 0.06 * (rank % 2 ? -1 : 1);
+    p.meshes.forEach(m => { if (m.userData.spread) m.position.z = lerp(m.userData.spread[0], m.userData.spread[1], k); });
+  });
+}
+function updateExplodeHover(dt){
+  if (!internals.visible) return;
+  let moved = false;
+  for (const id in parts){
+    const p = parts[id]; if (!p.group) continue;
+    const tgt = (hoverPart === id || (hoverPart && !parts[hoverPart].group && id === 'board')) ? 1 : 0;
+    const nv = (p.hover || 0) + (tgt - (p.hover || 0)) * Math.min(1, dt * 9);
+    if (Math.abs(nv - (p.hover || 0)) > 1e-4){ p.hover = nv; moved = true; }
+  }
+  if (moved) applyExplode(explodeE);
+}
+
+let exploded = false, explodeBusy = false;
+async function setExplode(on){
+  if (explodeBusy || on === exploded) return;
+  explodeBusy = true;
+  if (on){
+    hideCard();
+    await animateFold(0);
+    phoneRoot.visible = false;
+    internals.visible = true;
+    applyExplode(0);
+    tweenCamera(new THREE.Vector3(33, 14, 17), new THREE.Vector3(0, -1.2, 0), 1.3);
+    await tween(1.8, k => applyExplode(k), ease.linear);
+    exploded = true;
+  } else {
+    hideCard(); setHighlight(null);
+    VIEW_HOME();
+    await tween(1.6, k => applyExplode(1 - k), ease.linear);
+    internals.visible = false;
+    phoneRoot.visible = true;
+    exploded = false;
+  }
+  document.body.classList.toggle('exploded', exploded);
+  $('#explodeBtn').textContent = exploded ? 'Собрать обратно' : 'Показать внутренности';
+  $('#explodeBtn').classList.toggle('active', exploded);
+  explodeBusy = false;
+}
+function toggleExplode(){ if (!testBusy) setExplode(!exploded); }
+
+/* Подсветка компонента и карточка */
+let hoverPart = null;
+function paintPart(id, on){
+  const p = parts[id]; if (!p) return;
+  p.meshes.forEach(m => {
+    (Array.isArray(m.material) ? m.material : [m.material]).forEach(mt => {
+      if (!mt.emissive) return;
+      if (mt.userData.e0 === undefined){ mt.userData.e0 = mt.emissive.getHex(); mt.userData.ei0 = mt.emissiveIntensity; }
+      if (on){ mt.emissive.setHex(0x4d7cff); mt.emissiveIntensity = mt.emissiveMap ? 1.2 : 0.6; }
+      else { mt.emissive.setHex(mt.userData.e0); mt.emissiveIntensity = mt.userData.ei0; }
+    });
+  });
+}
+function setHighlight(id){
+  if (hoverPart === id) return;
+  if (hoverPart) paintPart(hoverPart, false);
+  hoverPart = id;
+  if (id) paintPart(id, true);
+  renderer.domElement.style.cursor = id ? 'pointer' : '';
+}
+const card = $('#card');
+function showCard(id, x, y){
+  const info = PART_INFO[id]; if (!info) return;
+  card.innerHTML = `<span class="tag">Компонент ${info.n} из 11</span><h3>${info.name}</h3><ul>${info.specs.map(s => `<li>${s}</li>`).join('')}</ul>`;
+  card.classList.remove('hidden');
+  const r = card.getBoundingClientRect();
+  card.style.left = clamp(x + 18, 8, innerWidth - r.width - 8) + 'px';
+  card.style.top = clamp(y + 18, 8, innerHeight - r.height - 8) + 'px';
+}
+function hideCard(){ card.classList.add('hidden'); }
+
+/* =====================================================================
+   КАМЕРА И ВИДЫ
+   ===================================================================== */
+function distFactor(){
+  const a = camera.aspect;
+  return a < 0.75 ? 1.95 : a < 1.15 ? 1.45 : 1.18;
+}
+/* Плавный перелёт камеры по сфере вокруг цели */
+function tweenCamera(pos, target, dur = 1.1){
+  const t0 = controls.target.clone();
+  const s0 = new THREE.Spherical().setFromVector3(camera.position.clone().sub(t0));
+  const s1 = new THREE.Spherical().setFromVector3(pos.clone().sub(target).multiplyScalar(distFactor()));
+  let dTheta = s1.theta - s0.theta;
+  if (dTheta > Math.PI) dTheta -= Math.PI * 2;
+  if (dTheta < -Math.PI) dTheta += Math.PI * 2;
+  const sp = new THREE.Spherical();
+  return tween(dur, k => {
+    controls.target.lerpVectors(t0, target, k);
+    sp.set(lerp(s0.radius, s1.radius, k), lerp(s0.phi, s1.phi, k), s0.theta + dTheta * k);
+    camera.position.setFromSpherical(sp).add(controls.target);
+  });
+}
+const HOME_T = new THREE.Vector3(0, -1.6, 0);
+const VIEW_HOME = () => tweenCamera(new THREE.Vector3(14, 3.4, 30), HOME_T, 1.2);
+
+/* =====================================================================
+   ОБЪЕКТЫ ДЛЯ ТЕСТОВ
+   ===================================================================== */
+// Бетонный пол
+const concreteTex = canvasTex(512, 512, (c, w, h) => {
+  c.fillStyle = '#6e7075'; c.fillRect(0, 0, w, h);
+  const rnd = mulberry(99);
+  for (let i = 0; i < 9000; i++){
+    const v = 90 + rnd() * 60 | 0;
+    c.fillStyle = `rgba(${v},${v},${v + 4},${0.25 + rnd() * 0.3})`;
+    c.fillRect(rnd() * w, rnd() * h, 1 + rnd() * 3, 1 + rnd() * 3);
+  }
+  c.strokeStyle = 'rgba(40,40,45,.5)'; c.lineWidth = 3; c.strokeRect(0, 0, w, h);
+});
+concreteTex.wrapS = concreteTex.wrapT = THREE.RepeatWrapping;
+concreteTex.repeat.set(4, 4);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(70, 70), new THREE.MeshStandardMaterial({ map: concreteTex, roughness: 0.95, metalness: 0 }));
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -7.95;
+floor.receiveShadow = true;
+floor.visible = false;
+scene.add(floor);
+
+/* Спрайт-подпись */
+function labelSprite(text, color = '#ffffff'){
+  const tex = canvasTex(512, 192, (c, w, h) => {
+    c.fillStyle = 'rgba(15,18,28,.72)'; rr(c, 8, 8, w - 16, h - 16, 60); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 4; c.stroke();
+    c.fillStyle = color; c.font = `800 96px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(text, w / 2, h / 2 + 4);
+  });
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  s.scale.set(4.2, 1.575, 1);
+  s.renderOrder = 10;
+  return s;
+}
+
+// Маркер высоты падения
+const heightMarker = new THREE.Group();
+heightMarker.visible = false;
+scene.add(heightMarker);
+function setHeightMarker(h, text, x){
+  heightMarker.clear();
+  const pts = [new THREE.Vector3(x, -7.95, 0), new THREE.Vector3(x, -7.95 + h, 0)];
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineDashedMaterial({ color: 0xffffff, dashSize: 0.5, gapSize: 0.3 }));
+  line.computeLineDistances();
+  heightMarker.add(line);
+  [-7.95, -7.95 + h].forEach(y => {
+    const tick = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x - 0.6, y, 0), new THREE.Vector3(x + 0.6, y, 0)]), new THREE.LineBasicMaterial({ color: 0xffffff }));
+    heightMarker.add(tick);
+  });
+  const lab = labelSprite(text);
+  lab.position.set(x - 2.6, -7.95 + h / 2, 0);
+  heightMarker.add(lab);
+}
+
+// Вода
+const water = new THREE.Mesh(
+  new THREE.BoxGeometry(24, 1, 12).translate(0, 0.5, 0),
+  new THREE.MeshPhysicalMaterial({ color: 0x3a9cff, transmission: 0.9, roughness: 0.08, thickness: 3, ior: 1.33, metalness: 0, attenuationColor: new THREE.Color(0x1f6fd6), attenuationDistance: 14, transparent: true, opacity: 0.95 })
+);
+water.position.y = -8.4;
+water.visible = false;
+scene.add(water);
+let waterLevel = -8.4;
+function setWaterLevel(y){ waterLevel = y; water.scale.y = Math.max(0.001, y + 8.4); }
+
+// Частицы (пузырьки / пыль / иней)
+const PCOUNT = 180;
+const particles = new THREE.InstancedMesh(new THREE.SphereGeometry(0.08, 8, 6),
+  new THREE.MeshPhysicalMaterial({ color: 0xffffff, transparent: true, opacity: 0.6, roughness: 0, clearcoat: 1 }), PCOUNT);
+particles.visible = false;
+particles.frustumCulled = false;
+scene.add(particles);
+let particleMode = 'bubbles';
+const pData = Array.from({ length: PCOUNT }, () => ({ x: 0, y: 0, z: 0, s: 1, v: 1, a: 0, r: 0 }));
+function resetParticles(mode, color, opacity){
+  particleMode = mode;
+  particles.material.color.set(color);
+  particles.material.opacity = opacity;
+  pData.forEach(p => {
+    p.x = (Math.random() - 0.5) * 20; p.z = (Math.random() - 0.5) * 9;
+    p.y = -8.3 + Math.random() * 16; p.s = 0.4 + Math.random() * 1.2; p.v = 1.5 + Math.random() * 3;
+    p.a = Math.random() * Math.PI * 2; p.r = 6 + Math.random() * 6;
+  });
+  particles.visible = true;
+}
+const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _p = new THREE.Vector3(), _s = new THREE.Vector3();
+function updateParticles(dt){
+  if (!particles.visible) return;
+  const t = performance.now() / 1000;
+  pData.forEach((p, i) => {
+    let sc = p.s;
+    if (particleMode === 'bubbles'){
+      p.y += p.v * dt; p.x += Math.sin(t * 3 + i) * dt * 0.3;
+      if (p.y > waterLevel - 0.1){ p.y = -8.3; p.x = (Math.random() - 0.5) * 20; }
+      if (p.y > waterLevel) sc = 0;
+      _p.set(p.x, p.y, p.z);
+    } else if (particleMode === 'dust'){
+      p.a += dt * (0.6 + p.v * 0.25);
+      p.y += Math.sin(t * 2 + i) * dt * 1.5;
+      if (p.y > 9) p.y = -8; if (p.y < -8.3) p.y = 8;
+      _p.set(Math.cos(p.a) * p.r, p.y, Math.sin(p.a) * p.r * 0.7);
+      sc *= 0.8;
+    } else { // temp: иней падает / жар поднимается
+      p.y += (particleMode === 'cold' ? -p.v : p.v) * dt;
+      if (p.y > 9) p.y = -8.3; if (p.y < -8.3) p.y = 9;
+      p.x += Math.sin(t * 2 + i) * dt * 0.4;
+      _p.set(p.x, p.y, p.z); sc *= 0.7;
+    }
+    _s.setScalar(sc);
+    _m4.compose(_p, _q, _s);
+    particles.setMatrixAt(i, _m4);
+  });
+  particles.instanceMatrix.needsUpdate = true;
+}
+
+// Груз 25 кг
+const weight = (() => {
+  const tex = canvasTex(512, 256, (c, w, h) => {
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#3a3e46'); g.addColorStop(1, '#1d2026');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#ffd34d'; c.font = `800 120px ${FONT}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('25 кг', w / 2, h / 2 + 6);
+  });
+  const side = new THREE.MeshStandardMaterial({ color: 0x2a2d33, metalness: 0.8, roughness: 0.35 });
+  const lab = new THREE.MeshStandardMaterial({ map: tex, metalness: 0.5, roughness: 0.4 });
+  const m = new THREE.Mesh(new THREE.BoxGeometry(5.6, 2.4, 9), [lab, side, side, side, lab, side]);
+  m.castShadow = true; m.visible = false;
+  scene.add(m);
+  return m;
+})();
+
+/* =====================================================================
+   HUD И УВЕДОМЛЕНИЯ
+   ===================================================================== */
+const hud = $('#hud');
+function showHUD(title, value, sub){
+  hud.querySelector('.hud-title').textContent = title;
+  hudValue(value); hud.querySelector('.hud-sub').textContent = sub || '';
+  hud.classList.remove('hidden');
+}
+function hudValue(v, ok = false){ const el = hud.querySelector('.hud-value'); el.textContent = v; el.classList.toggle('ok', ok); }
+function hudSub(v){ hud.querySelector('.hud-sub').textContent = v; }
+function hideHUD(){ hud.classList.add('hidden'); }
+let toastTimer;
+function toast(text){
+  const el = $('#toast'); el.textContent = text; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* =====================================================================
+   АНИМАЦИИ ТЕСТОВ
+   ===================================================================== */
+let testBusy = false;
+async function beginTest(){
+  if (testBusy || explodeBusy) return false;
+  testBusy = true;
+  document.body.classList.add('busy');
+  $('#panel').classList.remove('open');
+  hideCard();
+  if (exploded) await setExplode(false);
+  controls.autoRotate = false; $('#autoBtn').classList.remove('active');
+  return true;
+}
+function endTest(){ testBusy = false; document.body.classList.remove('busy'); }
+function showFloor(on){ floor.visible = on; shadowPlane.visible = !on; }
+
+/* Тест падения: гравитация + затухающий отскок */
+async function runDropTest(folded = true){
+  if (!await beginTest()) return;
+  const label = folded ? '1.5 м' : '1 м';
+  await animateFold(folded ? 1 : 0);
+  const startY = folded ? 14 : 10;
+  showFloor(true);
+  setHeightMarker(startY, label, folded ? -6.5 : -9.6);
+  heightMarker.visible = true;
+  showHUD('Тест падения', label, folded ? 'Сложенный · на бетон' : 'Раскрытый · на бетон');
+  await tweenCamera(new THREE.Vector3(10, 4, 48), new THREE.Vector3(0, startY / 2 - 1, 0), 1.1);
+  await tween(0.8, k => { phoneRoot.position.y = startY * k; phoneRoot.rotation.z = 0.1 * k; });
+  await wait(0.35);
+  let y = startY, vy = 0, rz = 0.1, wz = 0, bounces = 0;
+  const g = -75;
+  await everyFrame(dt => {
+    vy += g * dt; y += vy * dt;
+    if (y <= 0){
+      y = 0;
+      if (Math.abs(vy) > 3){ vy = -vy * 0.42; bounces++; wz += (Math.random() - 0.5) * 2.5 - rz * 6; }
+      else vy = 0;
+    }
+    wz += -rz * 30 * dt; wz *= Math.pow(0.08, dt); rz += wz * dt;
+    phoneRoot.position.y = y; phoneRoot.rotation.z = rz;
+    return y === 0 && vy === 0 && bounces > 0;
+  });
+  const rz0 = phoneRoot.rotation.z;
+  await tween(0.4, k => { phoneRoot.rotation.z = rz0 * (1 - k); });
+  hudValue('Без повреждений ✓', true);
+  os.showBanner('Без повреждений ✓', 3500);
+  toast('Тест падения пройден ✓');
+  await wait(2.4);
+  heightMarker.visible = false;
+  showFloor(false);
+  hideHUD();
+  await VIEW_HOME();
+  endTest();
+}
+
+/* Тест воды IP68 */
+async function runWaterTest(){
+  if (!await beginTest()) return;
+  showHUD('Тест воды IP68', '30:00', 'Глубина 1.5 м');
+  backGlassMeshes.forEach(m => { m.material = MAT.backGlass.clone(); m.material.transmission = 0; });
+  setWaterLevel(-8.4); water.visible = true;
+  resetParticles('bubbles', 0xffffff, 0.55);
+  await tweenCamera(new THREE.Vector3(15, 4, 32), HOME_T, 1.0);
+  await tween(1.8, k => setWaterLevel(lerp(-8.4, 9.6, k)));
+  await tween(6, (k, raw) => {
+    const sec = Math.round((1 - raw) * 1800);
+    hudValue(`${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`);
+  }, ease.linear);
+  hudValue('IP68 ✓', true); hudSub('Влага внутрь не попала');
+  os.showBanner('IP68 ✓', 3000);
+  toast('Тест воды пройден ✓');
+  await wait(1.4);
+  await tween(1.5, k => setWaterLevel(lerp(9.6, -8.4, k)));
+  water.visible = false; particles.visible = false;
+  backGlassMeshes.forEach(m => { m.material = MAT.backGlass; });
+  await wait(0.6);
+  hideHUD();
+  endTest();
+}
+
+/* Тест пыли IP6X */
+async function runDustTest(){
+  if (!await beginTest()) return;
+  showHUD('Тест пыли IP6X', '8:00:00', 'Камера с тальком');
+  resetParticles('dust', 0xb08a5a, 0.85);
+  await tweenCamera(new THREE.Vector3(14, 6, 32), HOME_T, 1.0);
+  await tween(5, (k, raw) => {
+    const sec = Math.round((1 - raw) * 8 * 3600);
+    hudValue(`${Math.floor(sec / 3600)}:${String(Math.floor(sec / 60) % 60).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`);
+  }, ease.linear);
+  particles.visible = false;
+  hudValue('IP6X ✓', true); hudSub('Пыль внутрь не проникла');
+  os.showBanner('IP6X ✓', 2500);
+  toast('Тест пыли пройден ✓');
+  await wait(2);
+  hideHUD();
+  endTest();
+}
+
+/* Тест петли: многократное складывание со счётчиком */
+async function runHingeTest(){
+  if (!await beginTest()) return;
+  await animateFold(0);
+  showHUD('Тест петли', '0', 'сгибов из 500 000');
+  tweenCamera(new THREE.Vector3(16, 7, 28), HOME_T, 1.0);
+  foldOverride = true;
+  let el = 0, ph = 0;
+  const dur = 7;
+  await everyFrame(dt => {
+    el += dt;
+    const k = Math.min(1, el / dur);
+    const freq = 0.5 + 2.6 * Math.sin(Math.PI * k);
+    ph += dt * freq * Math.PI * 2;
+    forceFold(0.5 - 0.5 * Math.cos(ph));
+    hudValue(Math.floor(ease.inOut(k) * 500000).toLocaleString('ru-RU'));
+    return k >= 1;
+  });
+  foldOverride = false;
+  await animateFold(0);
+  hudValue('500 000 ✓', true); hudSub('Петля без люфта, складка не выросла');
+  os.showBanner('500 000 сгибов ✓', 3000);
+  toast('Тест петли пройден ✓');
+  await wait(2.2);
+  hideHUD();
+  endTest();
+}
+
+/* Тест давления: сверху опускается груз 25 кг */
+async function runPressureTest(){
+  if (!await beginTest()) return;
+  await animateFold(1);
+  showFloor(true);
+  showHUD('Тест давления', '0 кг', 'Телефон лежит на бетоне');
+  const restY = -7.95 + PIV_Z + T / 2;
+  tweenCamera(new THREE.Vector3(13, 5, 15), new THREE.Vector3(0, -6.2, 0), 1.3);
+  await tween(1.3, k => { phoneRoot.rotation.x = -Math.PI / 2 * k; phoneRoot.position.y = lerp(0, restY, k); });
+  const topY = restY + PIV_Z + T / 2;
+  const wRest = topY + 1.2;
+  weight.position.set(0, 14, 0); weight.visible = true;
+  await tween(1.3, k => { weight.position.y = lerp(14, wRest, k); }, ease.in);
+  await tween(0.25, k => { weight.position.y = wRest + Math.sin(k * Math.PI) * 0.15; }, ease.linear);
+  await tween(1.4, k => hudValue(Math.round(k * 25) + ' кг'));
+  hudValue('25 кг ✓', true); hudSub('Корпус не деформировался');
+  os.showBanner('Без деформаций ✓', 3000);
+  toast('Тест давления пройден ✓');
+  await wait(1.6);
+  await tween(1.1, k => { weight.position.y = lerp(wRest, 16, k); }, ease.inOut);
+  weight.visible = false;
+  await tween(1.2, k => { phoneRoot.rotation.x = -Math.PI / 2 * (1 - k); phoneRoot.position.y = lerp(restY, 0, k); });
+  showFloor(false);
+  hideHUD();
+  await VIEW_HOME();
+  endTest();
+}
+
+/* Температурный тест: −20 … +55 °C */
+async function runTempTest(){
+  if (!await beginTest()) return;
+  showHUD('Температурный тест', '−20 °C', 'Холод');
+  resetParticles('cold', 0xe8f4ff, 0.8);
+  const cold = new THREE.Color(0x6ab8ff), hot = new THREE.Color(0xff7a2f);
+  await tweenCamera(new THREE.Vector3(14, 5, 30), HOME_T, 0.8);
+  await tween(6, (k, raw) => {
+    const temp = Math.round(lerp(-20, 55, raw));
+    hudValue((temp < 0 ? '−' + Math.abs(temp) : (temp > 0 ? '+' : '') + temp) + ' °C');
+    hudSub(temp < 0 ? 'Холод' : temp < 35 ? 'Комнатная' : 'Жара');
+    tempLight.color.copy(cold).lerp(hot, raw);
+    tempLight.intensity = 260 * Math.sin(Math.min(1, raw * 1.1) * Math.PI * 0.5 + 0.3);
+    if (temp >= 15 && particleMode === 'cold'){ resetParticles('hot', 0xffa65c, 0.5); }
+  }, ease.linear);
+  hudValue('−20…+55 °C ✓', true); hudSub('Экран и батарея работают стабильно');
+  os.showBanner('Температура в норме ✓', 3000);
+  toast('Температурный тест пройден ✓');
+  await tween(1, k => { tempLight.intensity *= (1 - k); });
+  tempLight.intensity = 0;
+  particles.visible = false;
+  await wait(1.2);
+  hideHUD();
+  endTest();
+}
+
+const TESTS = { drop: () => runDropTest(true), dropOpen: () => runDropTest(false), water: runWaterTest, dust: runDustTest, hinge: runHingeTest, pressure: runPressureTest, temp: runTempTest };
+
+/* =====================================================================
+   ВЗАИМОДЕЙСТВИЕ: тапы по экрану (Raycaster → UV → мини-ОС), наведение
+   ===================================================================== */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+function isVisible(o){ while (o){ if (!o.visible) return false; o = o.parent; } return true; }
+function pick(x, y, root){
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((x - r.left) / r.width) * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  return raycaster.intersectObject(root, true).filter(h => isVisible(h.object) && !h.object.userData.noRay);
+}
+function partOf(o){ while (o){ if (o.userData && o.userData.partId) return o.userData.partId; o = o.parent; } return null; }
+
+function handleTap(x, y, pointerType){
+  if (exploded){
+    const h = pick(x, y, internals)[0];
+    const id = h ? partOf(h.object) : null;
+    setHighlight(id);
+    if (id) showCard(id, x, y); else hideCard();
+    return;
+  }
+  if (!phoneRoot.visible) return;
+  const h = pick(x, y, phoneRoot)[0];
+  if (!h || !h.uv) return;
+  if (h.object === innerScreen){
+    os.tap(innerSurf, h.uv.x * innerSurf.w, (1 - h.uv.y) * innerSurf.h);
+  } else if (h.object === outerScreen){
+    os.tap(outerSurf, h.uv.x * outerSurf.w, (1 - h.uv.y) * outerSurf.h);
+  }
+}
+
+let down = null;
+const cv = renderer.domElement;
+cv.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+cv.addEventListener('pointerup', e => {
+  if (!down) return;
+  const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+  if (moved < 8 && performance.now() - down.t < 500) handleTap(e.clientX, e.clientY, e.pointerType);
+  down = null;
+});
+let hoverPending = null;
+cv.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse') return;
+  hoverPending = { x: e.clientX, y: e.clientY };
+});
+function processHover(){
+  if (!hoverPending) return;
+  const { x, y } = hoverPending; hoverPending = null;
+  if (exploded){
+    const h = pick(x, y, internals)[0];
+    const id = h ? partOf(h.object) : null;
+    setHighlight(id);
+    if (id) showCard(id, x, y); else hideCard();
+  } else if (phoneRoot.visible){
+    const h = pick(x, y, phoneRoot)[0];
+    cv.style.cursor = h && (h.object === innerScreen || h.object === outerScreen) ? 'pointer' : '';
+  }
+}
+
+/* =====================================================================
+   ОВЕРЛЕЙ «ЭКРАН НА ВЕСЬ САЙТ»
+   ===================================================================== */
+const ovEl = $('#osOverlay'), ovCanvas = $('#ovCanvas');
+let ovSurf = null, ovMode = 'phone', ovOpen = false;
+function sizeOverlay(){
+  const wide = foldT < 0.5 && innerWidth >= 600;
+  ovMode = wide ? 'wide' : 'phone';
+  const aspect = wide ? IS_W / IS_H : OS_W / OS_H;
+  const maxW = innerWidth * 0.94, maxH = innerHeight * 0.8;
+  let ch = maxH, cw = ch * aspect;
+  if (cw > maxW){ cw = maxW; ch = cw / aspect; }
+  ovCanvas.style.width = cw + 'px'; ovCanvas.style.height = ch + 'px';
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  ovSurf = os.createSurface(Math.round(cw * dpr), Math.round(ch * dpr), ovCanvas);
+}
+function openOverlay(){ ovOpen = true; ovEl.classList.add('show'); sizeOverlay(); applySettings(); }
+function closeOverlay(){ ovOpen = false; ovEl.classList.remove('show'); }
+let ovDown = null;
+ovCanvas.addEventListener('pointerdown', e => { ovDown = { x: e.clientX, y: e.clientY }; });
+ovCanvas.addEventListener('pointerup', e => {
+  if (!ovDown || !ovSurf) return;
+  const dx = e.clientX - ovDown.x, dy = e.clientY - ovDown.y;
+  if (dy < -40 && Math.abs(dy) > Math.abs(dx)) os.swipeUp();
+  else if (Math.hypot(dx, dy) < 10){
+    const r = ovCanvas.getBoundingClientRect();
+    os.tap(ovSurf, (e.clientX - r.left) * ovSurf.w / r.width, (e.clientY - r.top) * ovSurf.h / r.height);
+  }
+  ovDown = null;
+});
+$('#ovClose').addEventListener('click', closeOverlay);
+ovEl.addEventListener('click', e => { if (e.target === ovEl) closeOverlay(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && ovOpen) closeOverlay(); });
+
+/* Применение настроек мини-ОС к 3D-экранам и сайту */
+function applySettings(){
+  const st = os.settings;
+  const ei = 0.25 + 0.9 * st.brightness;
+  innerMat.emissiveIntensity = ei; outerMat.emissiveIntensity = ei;
+  ovCanvas.style.filter = `brightness(${0.45 + 0.6 * st.brightness})`;
+  $('#vramLive').textContent = st.vram ? `${st.vram} ГБ (всего ${12 + st.vram} ГБ)` : 'выключена';
+  $('#hzLive').textContent = st.hz === 'ltpo' ? 'LTPO 1–120 Гц' : `${st.hz} Гц`;
+}
+os.onChange = applySettings;
+os.onShutter = () => { flashPulse = 1; };   // снимок основной камерой → вспышка на острове
+
+/* =====================================================================
+   ПАНЕЛЬ И КНОПКИ
+   ===================================================================== */
+$('#fold').addEventListener('input', e => { if (!testBusy && !exploded) foldTarget = e.target.value / 100; });
+document.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
+  const a = b.dataset.act;
+  if (a === 'fold' && !testBusy && !exploded) animateFold(1);
+  if (a === 'unfold' && !testBusy && !exploded) animateFold(0);
+  const ty = testBusy ? controls.target.y : -1.6;
+  if (a === 'front') tweenCamera(new THREE.Vector3(0, ty, 32), new THREE.Vector3(0, ty, 0), 1.1);
+  if (a === 'back') tweenCamera(new THREE.Vector3(0, ty, -32), new THREE.Vector3(0, ty, 0), 1.1);
+  if (a === 'auto'){ controls.autoRotate = !controls.autoRotate; b.classList.toggle('active', controls.autoRotate); }
+  if (a === 'explode') toggleExplode();
+  if (a === 'screen') openOverlay();
+}));
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+  $('#tab-specs').classList.toggle('hidden', t.dataset.tab !== 'specs');
+  $('#tab-dur').classList.toggle('hidden', t.dataset.tab !== 'dur');
+}));
+document.querySelectorAll('[data-test]').forEach(b => b.addEventListener('click', () => TESTS[b.dataset.test]()));
+$('#sheetHandle').addEventListener('click', () => $('#panel').classList.toggle('open'));
+
+/* =====================================================================
+   ГЛАВНЫЙ ЦИКЛ
+   ===================================================================== */
+const _wp = new THREE.Vector3();
+function updateScreens(frame){
+  const every = os.settings.hz === '60' ? 2 : 1;
+  if (frame % every) return;
+  if (exploded || (phoneRoot.visible && foldT < 0.985)){
+    os.render(innerSurf, 'wide'); innerTex.needsUpdate = true;
+  }
+  const backView = camera.position.clone().sub(controls.target).z < 0;
+  if (exploded || foldT > 0.015 || backView){
+    os.render(outerSurf, 'phone'); outerTex.needsUpdate = true;
+  }
+  if (ovOpen && ovSurf) os.render(ovSurf, ovMode);
+}
+function updateFrontCam(){
+  if (!frontCamDot) return;
+  frontCamDot.getWorldPosition(_wp);
+  const d = _wp.distanceTo(camera.position);
+  frontCamDot.material.opacity = clamp(1 - (d - 5) / 12, 0, 1) * 0.35 * (1 - foldT);
+}
+/* «Парение» телефона в покое (выключается во время тестов, раскрытия и вращения) */
+let floatAmp = 0, dragging = false;
+controls.addEventListener('start', () => { dragging = true; });
+controls.addEventListener('end', () => { dragging = false; });
+function updateFloat(dt){
+  const target = (testBusy || exploded || explodeBusy || dragging) ? 0 : 1;
+  floatAmp += (target - floatAmp) * Math.min(1, dt * 2);
+  const t = performance.now() / 1000;
+  floatGroup.position.y = Math.sin(t * 1.1) * 0.22 * floatAmp;
+  floatGroup.rotation.z = Math.sin(t * 0.7) * 0.014 * floatAmp;
+  floatGroup.rotation.y = Math.sin(t * 0.45) * 0.035 * floatAmp;
+}
+/* Вспышка: яркий импульс на острове камер и затухание */
+function updateFlash(dt){
+  if (flashPulse <= 0) return;
+  flashPulse = Math.max(0, flashPulse - dt * 2.2);
+  const k = flashPulse * flashPulse;
+  MAT.flash.emissiveIntensity = 0.25 + k * 14;
+  if (flashLight) flashLight.intensity = k * 60;
+}
+function updateGears(dt){
+  if (!internals.visible) return;
+  gears.forEach(g => { g.rotation.z += g.userData.spin * dt * 1.4; });
+}
+
+let last = performance.now(), running = false, frame = 0;
+function loop(now){
+  if (document.hidden){ running = false; return; } // пауза при скрытой вкладке
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now; frame++;
+  updateTweens(dt);
+  updateFold(dt);
+  os.update(dt);
+  updateParticles(dt);
+  updateGears(dt);
+  updateFloat(dt);
+  updateFlash(dt);
+  updateExplodeHover(dt);
+  updateScreens(frame);
+  processHover();
+  controls.update();
+  updateFrontCam();
+  renderer.render(scene, camera);
+}
+function start(){ if (running) return; running = true; last = performance.now(); requestAnimationFrame(loop); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) start(); });
+
+function onResize(){
+  camera.aspect = innerWidth / innerHeight;
+  camera.fov = camera.aspect < 0.75 ? 42 : 35;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  if (ovOpen) sizeOverlay();
+}
+addEventListener('resize', onResize);
+
+/* Вступление: телефон влетает сложенным, поворачивается спиной (видно камеры), затем лицом и раскрывается */
+async function playIntro(){
+  testBusy = true; document.body.classList.add('busy');
+  $('#fold').value = 100;
+  VIEW_HOME();
+  await tween(1.8, k => {
+    phoneRoot.rotation.set(0.3 * (1 - k), Math.PI * 1.2 * (1 - k), -0.12 * (1 - k));
+    phoneRoot.position.y = 7 * (1 - k) * (1 - k);
+    phoneRoot.scale.setScalar(lerp(0.5, 1, backOut(k)));
+  }, ease.out);
+  await wait(0.25);
+  await animateFold(0);
+  testBusy = false; document.body.classList.remove('busy');
+}
+
+/* =====================================================================
+   ЗАПУСК
+   ===================================================================== */
+setProgress(0.35, 'Моделирование корпуса…');
+buildPhone();
+setFold(0);
+// стартовое положение для вступительной анимации
+forceFold(1); foldSp.snap(1); foldTarget = 1;
+phoneRoot.rotation.set(0.3, Math.PI * 1.2, -0.12);
+phoneRoot.position.y = 7;
+phoneRoot.scale.setScalar(0.5);
+setProgress(0.6, 'Сборка внутренних компонентов…');
+buildInternals();
+applyExplode(0);
+setProgress(0.85, 'Запуск мини-ОС…');
+applySettings();
+onResize();
+// прогрев шейдеров
+renderer.compile(scene, camera);
+start();
+requestAnimationFrame(() => {
+  setProgress(1, 'Готово');
+  window.__duoReady = true;
+  setTimeout(() => {
+    $('#loader').classList.add('hide');
+    playIntro();
+  }, 350);
+  setTimeout(() => $('#hint').classList.add('off'), 9000);
+});
+</script>
+</body>
+</html>
