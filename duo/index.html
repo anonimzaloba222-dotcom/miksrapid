@@ -233,7 +233,7 @@ body.exploded [data-act=fold], body.exploded [data-act=unfold], body.exploded #f
       <div class="spec"><dt>Внутренний экран</dt><dd>7.8″ гибкий LTPO OLED, 1–120 Гц, UTG + CPI</dd></div>
       <div class="spec"><dt>Внешний экран</dt><dd>6.3″ LTPO OLED, 1–120 Гц<br><span class="live">Режим: <b id="hzLive">LTPO 1–120 Гц</b></span></dd></div>
       <div class="spec"><dt>Основные камеры</dt><dd>48 МП (ОИС) + 48 МП сверхширокая, выступающий блок камер, ToF-датчик, вспышка</dd></div>
-      <div class="spec"><dt>Фронтальная камера</dt><dd>18 МП, подэкранная</dd></div>
+      <div class="spec"><dt>Фронтальные камеры</dt><dd>2 × 18 МП рядом, подэкранные — полностью невидимые (стерео, 3D-распознавание лица)</dd></div>
       <div class="spec"><dt>Батарея</dt><dd>5600 мАч Si-C (две ячейки — по одной в каждой половине)</dd></div>
       <div class="spec"><dt>Зарядка</dt><dd>66 Вт проводная · 50 Вт беспроводная</dd></div>
       <div class="spec"><dt>Связь</dt><dd>5G · Wi-Fi 7 · Bluetooth 5.4 · NFC · UWB</dd></div>
@@ -370,12 +370,12 @@ class Spring {
 }
 
 const APPS = [
-  { id: 'camera',   name: 'Камера',    c1: '#4a5160', c2: '#14161c' },
-  { id: 'gallery',  name: 'Галерея',   c1: '#ffbf6b', c2: '#ff5f8f' },
-  { id: 'settings', name: 'Настройки', c1: '#9aa7bf', c2: '#4a5468' },
-  { id: 'weather',  name: 'Погода',    c1: '#5ac8fa', c2: '#2f6bff' },
-  { id: 'notes',    name: 'Заметки',   c1: '#ffe27a', c2: '#f5a524' },
-  { id: 'music',    name: 'Музыка',    c1: '#ff6b9a', c2: '#8f4bff' },
+  { id: 'camera',   name: 'Камера',    c1: '#4a5160', c2: '#14161c', anim: 'iris' },
+  { id: 'gallery',  name: 'Галерея',   c1: '#ffbf6b', c2: '#ff5f8f', anim: 'zoom' },
+  { id: 'settings', name: 'Настройки', c1: '#9aa7bf', c2: '#4a5468', anim: 'slide' },
+  { id: 'weather',  name: 'Погода',    c1: '#5ac8fa', c2: '#2f6bff', anim: 'rise' },
+  { id: 'notes',    name: 'Заметки',   c1: '#ffe27a', c2: '#f5a524', anim: 'flip' },
+  { id: 'music',    name: 'Музыка',    c1: '#ff6b9a', c2: '#8f4bff', anim: 'iris' },
 ];
 
 function paintPhoto(ctx, seed, x, y, w, h){
@@ -413,6 +413,10 @@ class MiniOS {
     ];
     this.photos = [11, 27, 3, 48, 90, 64, 5];
     this.viewPhoto = -1; this.flash = 0; this.lens = 1;
+    this.selfie = false; this.flip = new Spring(0, 160, 20);   // переключение на фронтальные камеры
+    this.homeT = 0;                                            // время с разблокировки (для «всплытия» иконок)
+    this.ripple = { t: 9, x: 0.5, y: 0.85 };                   // волна при разблокировке
+    this.onShutter = () => {};
     this.music = { playing: false, pos: 34, len: 212, angle: 0 };
     this.banner = { text: '', until: 0, sp: new Spring(0, 220, 20) };
     this.time = 0;
@@ -432,7 +436,9 @@ class MiniOS {
   /* --- Обновление состояния (пружины, музыка, баннер) --- */
   update(dt){
     this.time += dt;
-    this.unlock.step(dt); this.appSp.step(dt); this.knob.step(dt); this.banner.sp.step(dt);
+    this.unlock.step(dt); this.appSp.step(dt); this.knob.step(dt); this.banner.sp.step(dt); this.flip.step(dt);
+    if (!this.locked) this.homeT += dt;
+    this.ripple.t += dt;
     if (this.closing && this.appSp.v < 0.03){ this.app = null; this.closing = false; this.appSp.snap(0); }
     if (this.music.playing){
       this.music.pos += dt; this.music.angle += dt * 0.8;
@@ -443,7 +449,11 @@ class MiniOS {
   }
   openApp(i){ this.app = APPS[i].id; this.appIdx = i; this.closing = false; this.viewPhoto = -1; this.appSp.set(1); }
   closeApp(){ if (!this.app) return; this.closing = true; this.appSp.set(0); }
-  doUnlock(){ this.locked = false; this.unlock.set(1); }
+  doUnlock(nx = 0.5, ny = 0.85){
+    if (!this.locked) return;
+    this.locked = false; this.unlock.set(1); this.homeT = 0;
+    this.ripple = { t: 0, x: nx, y: ny };
+  }
   swipeUp(){ if (this.locked) this.doUnlock(); else this.closeApp(); }
   showBanner(text, ms = 3000){ this.banner.text = text; this.banner.until = performance.now() + ms; }
   changed(){ this.onChange(this.settings); }
@@ -632,10 +642,35 @@ class MiniOS {
     }
     this.drawStatus(s, S);
     this.drawBanner(s, S, wall);
+    this.drawRipple(s);
     // полоска «домой»
     ctx.fillStyle = this.settings.dark ? 'rgba(255,255,255,.7)' : 'rgba(0,0,0,.45)';
     rr(ctx, w / 2 - 66 * S, h - 14 * S, 132 * S, 5 * S, 3 * S); ctx.fill();
     if (s.interactive && this.app) s.hits.push({ x: w / 2 - 110 * S, y: h - 34 * S, w: 220 * S, h: 34 * S, fn: () => this.closeApp() });
+    ctx.restore();
+  }
+
+  /* Волна света от точки касания при разблокировке */
+  drawRipple(s){
+    const t = this.ripple.t / 0.9;
+    if (t >= 1) return;
+    const { ctx, w, h } = s, x = this.ripple.x * w, y = this.ripple.y * h;
+    const r = ease.out(t) * Math.hypot(w, h) * 1.05;
+    ctx.save();
+    const g = ctx.createRadialGradient(x, y, r * 0.75, x, y, Math.max(1, r));
+    g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.85, `rgba(255,190,205,${0.45 * (1 - t)})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  }
+
+  /* Иконка со «всплытием» (пружина с перелётом) после разблокировки */
+  popIcon(s, wall, i, r){
+    const k = clamp((this.homeT - 0.12 - i * 0.065) / 0.5, 0, 1);
+    const c1 = 1.9, sc = k <= 0 ? 0 : 1 + (c1 + 1) * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2);
+    if (sc <= 0.001) return;
+    const { ctx } = s, cx = r.x + r.s / 2, cy = r.y + r.s / 2;
+    ctx.save(); ctx.translate(cx, cy); ctx.scale(sc, sc); ctx.rotate((1 - k) * 0.35 * (i % 2 ? 1 : -1)); ctx.translate(-cx, -cy);
+    this.drawIcon(s, wall, i, r.x, r.y, r.s);
     ctx.restore();
   }
 
@@ -658,6 +693,11 @@ class MiniOS {
     }
     ctx.textAlign = 'right'; ctx.font = F(700, 13 * S);
     ctx.fillText('5G', wx - 16 * S, 24 * S);
+    if (this.app === 'camera' && !this.closing){   // индикатор: камера активна
+      ctx.fillStyle = this.selfie ? '#4ade80' : '#ffb020';
+      ctx.beginPath(); ctx.arc(wx - 50 * S, 24 * S, 4.5 * S, 0, 7); ctx.fill();
+      ctx.fillStyle = P.fg;
+    }
     ctx.textAlign = 'left';
   }
 
@@ -709,7 +749,7 @@ class MiniOS {
     ctx.fillText('Коснитесь или проведите вверх', w / 2, h - 58 * S + bob * 0.3);
     ctx.strokeStyle = P.fg; ctx.lineWidth = 2.5 * S;
     ctx.beginPath(); ctx.moveTo(w / 2 - 10 * S, h - 82 * S + bob); ctx.lineTo(w / 2, h - 90 * S + bob); ctx.lineTo(w / 2 + 10 * S, h - 82 * S + bob); ctx.stroke();
-    if (this.locked) s.hits.push({ x: 0, y: 0, w, h, fn: () => this.doUnlock() });
+    if (this.locked) s.hits.push({ x: 0, y: 0, w, h, fn: (px, py) => this.doUnlock(px / w, py / h) });
   }
 
   /* Виджет «часы + погода» */
@@ -735,7 +775,7 @@ class MiniOS {
     this.drawWidget(s, S, wall, 20 * S, 64 * S, w - 40 * S, 140 * S);
     APPS.forEach((a, i) => {
       const r = this.iconRect('phone', i, w, h, S);
-      this.drawIcon(s, wall, i, r.x, r.y, r.s);
+      this.popIcon(s, wall, i, r);
       ctx.fillStyle = P.fg; ctx.textAlign = 'center'; ctx.font = F(500, 13 * S); ctx.textBaseline = 'alphabetic';
       ctx.fillText(a.name, r.x + r.s / 2, r.y + r.s + 20 * S);
       this.hit(s, inter, r.x - 6 * S, r.y - 6 * S, r.s + 12 * S, r.s + 30 * S, () => this.openApp(i));
@@ -749,16 +789,26 @@ class MiniOS {
     if (this.app) this.drawPhoneApp(s, S, wall);
   }
 
+  /* Открытие приложения: у каждого своя анимация (зум из иконки, «диафрагма», слайд, подъём, переворот) */
   drawPhoneApp(s, S, wall){
     const { ctx, w, h } = s;
     const p = Math.max(0, this.appSp.v);
+    const type = APPS[this.appIdx].anim;
     const ir = this.iconRect('phone', this.appIdx, w, h, S);
-    const x = lerp(ir.x, 0, p), y = lerp(ir.y, 0, p), ww = lerp(ir.s, w, p), hh = lerp(ir.s, h, p);
-    const r = lerp(ir.s * .27, 0, clamp(p, 0, 1));
     ctx.save();
-    ctx.globalAlpha *= clamp(p * 1.8, 0, 1);
-    rr(ctx, x, y, ww, hh, r); ctx.clip();
-    ctx.translate(x, y); ctx.scale(Math.max(0.01, ww / w), Math.max(0.01, hh / h));
+    if (type === 'zoom'){
+      const x = lerp(ir.x, 0, p), y = lerp(ir.y, 0, p), ww = lerp(ir.s, w, p), hh = lerp(ir.s, h, p);
+      ctx.globalAlpha *= clamp(p * 1.8, 0, 1);
+      rr(ctx, x, y, ww, hh, lerp(ir.s * .27, 0, clamp(p, 0, 1))); ctx.clip();
+      ctx.translate(x, y); ctx.scale(Math.max(0.01, ww / w), Math.max(0.01, hh / h));
+    } else {
+      ctx.globalAlpha *= clamp(p * 1.6, 0, 1);
+      const icx = ir.x + ir.s / 2, icy = ir.y + ir.s / 2;
+      if (type === 'iris'){ ctx.beginPath(); ctx.arc(icx, icy, Math.max(1, lerp(ir.s * 0.5, Math.hypot(w, h), p)), 0, Math.PI * 2); ctx.clip(); }
+      else if (type === 'slide'){ ctx.translate((1 - p) * w, 0); }
+      else if (type === 'rise'){ const sc = 0.86 + 0.14 * p; ctx.translate(w / 2, h); ctx.scale(sc, sc); ctx.translate(-w / 2, -h); ctx.translate(0, (1 - p) * h * 0.55); }
+      else if (type === 'flip'){ const sx = clamp(p, 0.02, 1.15); ctx.translate(w / 2, 0); ctx.scale(sx, 1); ctx.translate(-w / 2, 0); }
+    }
     ctx.drawImage(wall.blur, 0, 0, w, h);
     ctx.fillStyle = this.pal.tintStrong; ctx.fillRect(0, 0, w, h);
     const inter = s.interactive && this.appSp.t === 1 && p > 0.9;
@@ -776,7 +826,7 @@ class MiniOS {
         ctx.save(); rr(ctx, r.x - 6 * S, r.y - 6 * S, r.s + 12 * S, r.s + 12 * S, r.s * .32);
         ctx.fillStyle = 'rgba(255,110,140,.25)'; ctx.fill(); ctx.restore();
       }
-      this.drawIcon(s, wall, i, r.x, r.y, r.s);
+      this.popIcon(s, wall, i, r);
       ctx.fillStyle = P.fg; ctx.textAlign = 'center'; ctx.font = F(500, 13 * S); ctx.textBaseline = 'alphabetic';
       ctx.fillText(a.name, r.x + r.s / 2, r.y + r.s + 20 * S);
       this.hit(s, inter, r.x - 6 * S, r.y - 6 * S, r.s + 12 * S, r.s + 30 * S, () => this.openApp(i));
@@ -804,8 +854,12 @@ class MiniOS {
       ctx.save();
       ctx.globalAlpha *= clamp(p * 1.5, 0, 1);
       rr(ctx, RX, RY, RW, RH, 30 * S); ctx.clip();
-      const sc = 0.9 + 0.1 * p;
-      ctx.translate(RX + RW / 2, RY + RH / 2); ctx.scale(sc, sc); ctx.translate(-(RX + RW / 2), -(RY + RH / 2));
+      const type = APPS[this.appIdx].anim, pcx = RX + RW / 2, pcy = RY + RH / 2;
+      if (type === 'slide') ctx.translate((1 - p) * RW * 0.6, 0);
+      else if (type === 'rise') ctx.translate(0, (1 - p) * RH * 0.4);
+      else if (type === 'iris'){ ctx.beginPath(); ctx.arc(pcx, pcy, Math.max(1, lerp(20 * S, Math.hypot(RW, RH) / 2 + 10, p)), 0, Math.PI * 2); ctx.clip(); }
+      else if (type === 'flip'){ ctx.translate(pcx, 0); ctx.scale(clamp(p, 0.02, 1.15), 1); ctx.translate(-pcx, 0); }
+      else { const sc = 0.9 + 0.1 * p; ctx.translate(pcx, pcy); ctx.scale(sc, sc); ctx.translate(-pcx, -pcy); }
       this.drawApp(s, this.app, RX, RY, RW, RH, S, 18 * S, inter && this.appSp.t === 1 && p > 0.9, wall);
       ctx.restore();
     } else {
@@ -845,6 +899,14 @@ class MiniOS {
     const vx = X + 12 * S, vy = Y, vw = W - 24 * S, vh = Hh - 150 * S;
     ctx.save();
     rr(ctx, vx, vy, vw, vh, 24 * S); ctx.clip();
+    ctx.fillStyle = '#000'; ctx.fillRect(vx, vy, vw, vh);
+    // переворот видоискателя при смене камер
+    const f = clamp(this.flip.v, 0, 1), front = f > 0.5;
+    const fsx = Math.max(0.02, Math.abs(Math.cos(f * Math.PI)));
+    ctx.save();
+    ctx.translate(vx + vw / 2, 0); ctx.scale(fsx, 1); ctx.translate(-(vx + vw / 2), 0);
+    if (front) this.selfieScene(ctx, vx, vy, vw, vh, S, t);
+    else {
     const z = this.lens === 1 ? 1 : 0.62;
     const sky = ctx.createLinearGradient(0, vy, 0, vy + vh);
     sky.addColorStop(0, '#5aa7ff'); sky.addColorStop(0.6, '#ffc7a1'); sky.addColorStop(1, '#ff8f6b');
@@ -861,6 +923,8 @@ class MiniOS {
       }
       ctx.lineTo(vx + vw, vy + vh); ctx.closePath(); ctx.fill();
     });
+    }
+    ctx.restore();
     // сетка и фокус
     ctx.strokeStyle = 'rgba(255,255,255,.3)'; ctx.lineWidth = 1 * S;
     for (let i = 1; i < 3; i++){
@@ -871,10 +935,17 @@ class MiniOS {
     ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 2 * S;
     ctx.strokeRect(vx + vw / 2 - fs / 2, vy + vh / 2 - fs / 2, fs, fs);
     // плашки
-    ctx.fillStyle = 'rgba(0,0,0,.45)'; rr(ctx, vx + 12 * S, vy + 12 * S, 74 * S, 26 * S, 13 * S); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = F(700, 12 * S); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('48 МП', vx + 49 * S, vy + 25 * S);
-    ['0.5x', '1x'].forEach((l, i) => {
+    const tag = front ? '2 × 18 МП' : '48 МП';
+    ctx.font = F(700, 12 * S);
+    const tagW = ctx.measureText(tag).width + 26 * S;
+    ctx.fillStyle = 'rgba(0,0,0,.45)'; rr(ctx, vx + 12 * S, vy + 12 * S, tagW, 26 * S, 13 * S); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(tag, vx + 12 * S + tagW / 2, vy + 25 * S);
+    if (front){
+      ctx.fillStyle = 'rgba(74,222,128,.9)'; rr(ctx, vx + vw / 2 - 70 * S, vy + vh - 44 * S, 140 * S, 28 * S, 14 * S); ctx.fill();
+      ctx.fillStyle = '#04210f'; ctx.fillText('Стерео · 3D-лицо', vx + vw / 2, vy + vh - 30 * S);
+    }
+    if (!front) ['0.5x', '1x'].forEach((l, i) => {
       const cx = vx + vw / 2 + (i ? 26 : -26) * S, cy = vy + vh - 30 * S;
       const on = (i === 0 && this.lens === 0) || (i === 1 && this.lens === 1);
       ctx.fillStyle = on ? 'rgba(255,211,77,.95)' : 'rgba(0,0,0,.45)';
@@ -883,7 +954,7 @@ class MiniOS {
       ctx.fillText(l, cx, cy);
       hit(cx - 22 * S, cy - 22 * S, 44 * S, 44 * S, () => { this.lens = i; });
     });
-    if (this.flash > 0){ ctx.fillStyle = `rgba(255,255,255,${this.flash})`; ctx.fillRect(vx, vy, vw, vh); }
+    if (this.flash > 0 && !this.selfie){ ctx.fillStyle = `rgba(255,255,255,${this.flash})`; ctx.fillRect(vx, vy, vw, vh); }
     ctx.restore();
     // режимы
     const my = vy + vh + 30 * S;
@@ -900,7 +971,8 @@ class MiniOS {
     hit(cx - 44 * S, cy - 44 * S, 88 * S, 88 * S, () => {
       this.flash = 1;
       this.photos.unshift((Math.random() * 100000) | 0);
-      this.showBanner('Фото 48 МП сохранено', 1600);
+      if (this.selfie) this.showBanner('Селфи 2 × 18 МП сохранено', 1600);
+      else { this.showBanner('Фото 48 МП сохранено', 1600); this.onShutter(); }
     });
     // миниатюра последнего фото
     const tx = X + 40 * S, ts = 50 * S;
@@ -912,7 +984,45 @@ class MiniOS {
     this.glass(s, wall, sx, cy - 25 * S, 50 * S, 50 * S, 25 * S);
     ctx.strokeStyle = P.fg; ctx.lineWidth = 2.2 * S;
     ctx.beginPath(); ctx.arc(sx + 25 * S, cy, 12 * S, 0.3, Math.PI * 1.6); ctx.stroke();
-    hit(sx, cy - 25 * S, 50 * S, 50 * S, () => this.showBanner('Фронтальная 18 МП (подэкранная)', 1800));
+    hit(sx, cy - 25 * S, 50 * S, 50 * S, () => {
+      this.selfie = !this.selfie; this.flip.set(this.selfie ? 1 : 0);
+      this.showBanner(this.selfie ? 'Фронтальные 2 × 18 МП (невидимые)' : 'Основная 48 МП', 1600);
+    });
+    // вспышка экраном для селфи
+    if (this.selfie && this.flash > 0){ ctx.fillStyle = `rgba(255,248,240,${this.flash})`; ctx.fillRect(X, Y - 120 * S, W, Hh + 240 * S); }
+  }
+
+  /* Сцена фронтальных камер: размытый фон, силуэт, 3D-сканирование лица */
+  selfieScene(ctx, vx, vy, vw, vh, S, t){
+    const bg = ctx.createLinearGradient(vx, vy, vx + vw, vy + vh);
+    bg.addColorStop(0, '#4a0f24'); bg.addColorStop(0.5, '#2a0c2e'); bg.addColorStop(1, '#120614');
+    ctx.fillStyle = bg; ctx.fillRect(vx, vy, vw, vh);
+    for (let i = 0; i < 9; i++){   // боке
+      const bx = vx + vw * ((i * 0.37 + Math.sin(t * 0.3 + i) * 0.03 + 1) % 1), by = vy + vh * ((i * 0.23 + 0.1) % 0.6);
+      const rg = ctx.createRadialGradient(bx, by, 0, bx, by, (18 + i * 4) * S);
+      rg.addColorStop(0, `hsla(${330 + i * 12},90%,70%,.45)`); rg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = rg; ctx.fillRect(bx - 60 * S, by - 60 * S, 120 * S, 120 * S);
+    }
+    const cx = vx + vw / 2, cy = vy + vh * 0.46, hr = Math.min(vw, vh) * 0.2;
+    ctx.fillStyle = '#c98b78';   // плечи и голова
+    ctx.beginPath(); ctx.ellipse(cx, vy + vh * 1.02, hr * 2.1, hr * 1.25, 0, 0, Math.PI * 2); ctx.fill();
+    const sk = ctx.createRadialGradient(cx - hr * 0.3, cy - hr * 0.4, hr * 0.2, cx, cy, hr * 1.3);
+    sk.addColorStop(0, '#f2c2a8'); sk.addColorStop(1, '#a8664f');
+    ctx.fillStyle = sk; ctx.beginPath(); ctx.ellipse(cx, cy, hr * 0.82, hr, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2a1712'; ctx.beginPath(); ctx.ellipse(cx, cy - hr * 0.62, hr * 0.86, hr * 0.48, 0, Math.PI, Math.PI * 2); ctx.fill();
+    // 3D-сетка точек лица и сканирующая линия
+    const scan = (t * 0.6) % 1;
+    for (let r = 0; r < 9; r++) for (let c = 0; c < 7; c++){
+      const u = (c / 6) * 2 - 1, v = (r / 8) * 2 - 1;
+      if (u * u + v * v > 1.05) continue;
+      const px = cx + u * hr * 0.72, py = cy + v * hr * 0.9;
+      const near = Math.abs((py - (cy - hr)) / (2 * hr) - scan) < 0.08;
+      ctx.fillStyle = near ? 'rgba(74,222,128,.95)' : 'rgba(74,222,128,.35)';
+      ctx.beginPath(); ctx.arc(px, py, (near ? 2.6 : 1.6) * S, 0, Math.PI * 2); ctx.fill();
+    }
+    const sy = cy - hr + scan * hr * 2;
+    ctx.strokeStyle = 'rgba(74,222,128,.7)'; ctx.lineWidth = 2 * S;
+    ctx.beginPath(); ctx.moveTo(cx - hr, sy); ctx.lineTo(cx + hr, sy); ctx.stroke();
   }
 
   app_gallery(s, X, Y, W, Hh, S, hit){
@@ -1302,10 +1412,13 @@ const outerMat = screenMaterial(outerTex, OS_W, OS_H, 0.8);
    ===================================================================== */
 const phoneRoot = new THREE.Group();
 const foldRoot = new THREE.Group();
-phoneRoot.add(foldRoot);
+const floatGroup = new THREE.Group();   // лёгкое «парение» в покое
+phoneRoot.add(floatGroup);
+floatGroup.add(foldRoot);
 scene.add(phoneRoot);
 
 let leftHalf, rightPivot, rightHalf, hingePivot, innerScreen, outerScreen, frontCamDot, innerBaseX;
+let flashLight, flashPulse = 0;   // свет вспышки при съёмке
 const backGlassMeshes = [];
 
 /* Одна половина корпуса. side = -1 (левая, с блоком камер) или +1 (правая, с внешним экраном) */
@@ -1388,12 +1501,7 @@ function buildHalf(side){
     tongue.position.set(-HALF_W / 2, -PH / 2 + 0.012, 0); g.add(tongue);
     const mic = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.02, 10), MAT.port);
     mic.position.set(-5.6, -PH / 2, 0); g.add(mic);
-    // Подэкранная фронталка 18 МП — едва заметный круг
-    frontCamDot = new THREE.Mesh(new THREE.CircleGeometry(0.13, 32),
-      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.0, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6 }));
-    frontCamDot.position.set(-HALF_W / 2, PH / 2 - 0.8, ZS + 0.001);
-    frontCamDot.userData.noRay = true;
-    g.add(frontCamDot);
+    // Две фронтальные камеры 18 МП полностью скрыты под экраном — на поверхности их не видно
   }
   shadowAll(g);
   return g;
@@ -1472,6 +1580,9 @@ function buildCameraIsland(g){
 function buildPhone(){
   leftHalf = buildHalf(-1);
   foldRoot.add(leftHalf);
+  flashLight = new THREE.PointLight(0xfff1d0, 0, 16, 2);
+  flashLight.position.set(FLASH.x, FLASH.y, -T / 2 - 0.6);
+  leftHalf.add(flashLight);
   // Правая половина вращается вокруг оси петли
   rightPivot = new THREE.Group();
   rightPivot.position.set(0, 0, PIV_Z);
@@ -1526,22 +1637,23 @@ function deformInnerScreen(t){
 
 /* Складывание: t = 0 (раскрыт) … 1 (сложен) */
 let foldT = 0, foldTarget = 0, foldOverride = false, foldApplied = -1;
+const foldSp = new Spring(0, 55, 10.5);   // пружина складывания: мягкий «щелчок» в конце
 function setFold(t){
-  t = clamp(t, 0, 1);
+  t = clamp(t, -0.035, 1);
   rightPivot.rotation.y = -Math.PI * t;
   hingePivot.rotation.y = -Math.PI * t / 2;
   foldRoot.position.x = 3.42 * t;   // центрируем сложенный телефон
   foldRoot.position.z = -PIV_Z * t;
   deformInnerScreen(t);
   foldApplied = t;
-  $('#foldVal').textContent = Math.round(t * 100) + '%';
+  $('#foldVal').textContent = Math.round(clamp(t, 0, 1) * 100) + '%';
 }
 function forceFold(v){ foldT = v; setFold(v); }
 function updateFold(dt){
-  if (foldOverride) return;
-  const d = foldTarget - foldT;
-  if (Math.abs(d) < 0.002) foldT = foldTarget;
-  else foldT += d * (1 - Math.exp(-dt * 4.2));
+  if (foldOverride){ foldSp.snap(foldT); return; }
+  foldSp.set(foldTarget); foldSp.step(dt);
+  if (Math.abs(foldSp.v - foldTarget) < 0.0015 && Math.abs(foldSp.vel) < 0.01) foldSp.snap(foldTarget);
+  foldT = clamp(foldSp.v, -0.035, 1);
   if (foldT !== foldApplied) setFold(foldT);
 }
 function animateFold(target){
@@ -1562,7 +1674,7 @@ const gears = [];
 const PART_INFO = {
   coating:    { n: 1,  name: 'Защитное покрытие внешнего экрана', specs: ['Многослойный ударопоглощающий стек', 'Закалённое стекло + амортизирующая плёнка', 'Олеофобный слой против отпечатков'] },
   outerOled:  { n: 2,  name: 'Внешний экран LTPO OLED', specs: ['Диагональ 6.3″', 'LTPO 1–120 Гц', '2520 × 1080, до 2600 нит', 'Драйвер дисплея на гибком шлейфе'] },
-  innerScreen:{ n: 3,  name: 'Внутренний гибкий экран', specs: ['7.8″ LTPO OLED, 1–120 Гц', 'UTG — ультратонкое стекло 30 мкм', 'CPI — прозрачный полиимидный слой', 'Опорная пластина с решёткой в зоне сгиба', 'Подэкранная фронтальная камера 18 МП'] },
+  innerScreen:{ n: 3,  name: 'Внутренний гибкий экран', specs: ['7.8″ LTPO OLED, 1–120 Гц', 'UTG — ультратонкое стекло 30 мкм', 'CPI — прозрачный полиимидный слой', 'Опорная пластина с решёткой в зоне сгиба', 'Под экраном — две невидимые камеры 18 МП'] },
   hinge:      { n: 4,  name: 'Каплевидная петля (waterdrop)', specs: ['Шестерёнчатая синхронизация половин', 'Пружины и кулачки фиксируют любой угол', 'Экран складывается «каплей» — складка почти незаметна', 'Ресурс 500 000 сгибов'] },
   frame:      { n: 5,  name: 'Рама из титана', specs: ['Титан Grade 5, бордовое анодирование', 'Средние пластины жёсткости', 'Антенные разрезы на торцах', 'Сложенный: 73 × 158 × 9.5 мм · раскрытый: 146 × 158 × 4.5 мм'] },
   board:      { n: 6,  name: 'Главная плата', specs: ['L-образная многослойная HDI-плата', 'Экраны (shield) над чипами', 'Межплатные разъёмы BTB', 'Гибкий шлейф через петлю'] },
@@ -1572,7 +1684,7 @@ const PART_INFO = {
   modem:      { n: 6,  name: 'Модем 5G', specs: ['5G SA/NSA', 'Wi-Fi 7 · Bluetooth 5.4', 'NFC · UWB'] },
   vapor:      { n: 7,  name: 'Испарительная камера охлаждения', specs: ['Медная пластина + тепловая трубка', 'Площадь ≈ 4000 мм²', 'Графитовая плёнка в правой половине'] },
   battery:    { n: 8,  name: 'Две батареи Si-C', specs: ['По одной ячейке в каждой половине', 'Суммарно 5600 мАч', 'Кремний-углеродный анод, свой контроллер BMS', '66 Вт проводная / 50 Вт беспроводная'] },
-  cameras:    { n: 9,  name: 'Модули камер', specs: ['Основная 48 МП, f/1.7, оптическая стабилизация', 'Сверхширокая 48 МП, 120°', 'ToF-датчик глубины и вспышка', 'Фронтальная 18 МП — подэкранная'] },
+  cameras:    { n: 9,  name: 'Модули камер', specs: ['Основная 48 МП, f/1.7, оптическая стабилизация', 'Сверхширокая 48 МП, 120°', 'ToF-датчик глубины и вспышка', 'Фронтальные 2 × 18 МП рядом — подэкранные, невидимые'] },
   modules:    { n: 10, name: 'Динамики, вибромотор, зарядка, USB-C', specs: ['Стереодинамики', 'Линейный вибромотор', 'Катушка беспроводной зарядки 50 Вт + NFC-антенна', 'Порт USB-C, 66 Вт · лоток nano-SIM'] },
   seals:      { n: 11, name: 'Уплотнители IP68', specs: ['Резиновые прокладки по периметру', 'Отдельные уплотнители камер, кнопок, порта и SIM', 'Вода: 1.5 м / 30 мин · пыль: IP6X'] },
 };
@@ -1890,10 +2002,13 @@ function buildInternals(){
     const tofL = pmesh('cameras', g, new THREE.CylinderGeometry(0.17, 0.17, 0.04, 24), MAT.lensCoat, TOF.x, TOF.y, -0.12);
     tofL.rotation.x = Math.PI / 2;
     pmesh('cameras', g, new THREE.BoxGeometry(0.5, 0.5, 0.12), MAT.flash, FLASH.x, FLASH.y, 0);
-    // фронтальная подэкранная 18 МП
-    pmesh('cameras', g, padGeo(0.6, 0.6, 0.22, 0.1, 0.02), body, -HALF_W / 2, PH / 2 - 0.8, 0.1);
-    const fl = pmesh('cameras', g, new THREE.CylinderGeometry(0.16, 0.16, 0.06, 24), MAT.lensCoat, -HALF_W / 2, PH / 2 - 0.8, 0.23);
-    fl.rotation.x = Math.PI / 2;
+    // две фронтальные подэкранные камеры 18 МП рядом (стерео)
+    [-0.42, 0.42].forEach(dx => {
+      pmesh('cameras', g, padGeo(0.6, 0.6, 0.22, 0.1, 0.02), body, -HALF_W / 2 + dx, PH / 2 - 0.8, 0.1);
+      const fl = pmesh('cameras', g, new THREE.CylinderGeometry(0.16, 0.16, 0.06, 24), MAT.lensCoat, -HALF_W / 2 + dx, PH / 2 - 0.8, 0.23);
+      fl.rotation.x = Math.PI / 2;
+    });
+    pmesh('cameras', g, new THREE.BoxGeometry(1.5, 0.3, 0.012), flexMat, -HALF_W / 2, PH / 2 - 1.25, 0.1);
   }
 
   // 10. Динамики, вибромотор, катушка зарядки + NFC, USB-C, SIM, микрофоны
@@ -1967,12 +2082,34 @@ function buildInternals(){
   }
 }
 
+/* Поэтапное раскрытие: дальние слои вылетают первыми, каждый с перелётом и лёгким покачиванием;
+   компонент под курсором выдвигается из стопки */
+let explodeE = 0, explodeOrder = null;
+const backOut = k => { const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(k - 1, 3) + c1 * Math.pow(k - 1, 2); };
 function applyExplode(e){
-  for (const id in parts){
+  explodeE = e;
+  if (!explodeOrder) explodeOrder = Object.keys(parts).filter(id => parts[id].group).sort((a, b) => Math.abs(parts[b].exp) - Math.abs(parts[a].exp));
+  const n = explodeOrder.length, st = 0.075, span = 1 + st * (n - 1);
+  explodeOrder.forEach((id, rank) => {
     const p = parts[id];
-    if (p.group) p.group.position.z = lerp(p.base, p.exp, e);
-    p.meshes.forEach(m => { if (m.userData.spread) m.position.z = lerp(m.userData.spread[0], m.userData.spread[1], e); });
+    const local = clamp(e * span - rank * st, 0, 1);
+    const k = local <= 0 ? 0 : local >= 1 ? 1 : backOut(local);
+    p.group.position.z = lerp(p.base, p.exp, k) + (p.hover || 0) * 0.45 * Math.sign(p.exp || 1);
+    p.group.rotation.x = Math.sin(local * Math.PI) * 0.1 * (rank % 2 ? 1 : -1);
+    p.group.rotation.y = Math.sin(local * Math.PI) * 0.06 * (rank % 2 ? -1 : 1);
+    p.meshes.forEach(m => { if (m.userData.spread) m.position.z = lerp(m.userData.spread[0], m.userData.spread[1], k); });
+  });
+}
+function updateExplodeHover(dt){
+  if (!internals.visible) return;
+  let moved = false;
+  for (const id in parts){
+    const p = parts[id]; if (!p.group) continue;
+    const tgt = (hoverPart === id || (hoverPart && !parts[hoverPart].group && id === 'board')) ? 1 : 0;
+    const nv = (p.hover || 0) + (tgt - (p.hover || 0)) * Math.min(1, dt * 9);
+    if (Math.abs(nv - (p.hover || 0)) > 1e-4){ p.hover = nv; moved = true; }
   }
+  if (moved) applyExplode(explodeE);
 }
 
 let exploded = false, explodeBusy = false;
@@ -1985,13 +2122,13 @@ async function setExplode(on){
     phoneRoot.visible = false;
     internals.visible = true;
     applyExplode(0);
-    tweenCamera(new THREE.Vector3(26, 12, 13), new THREE.Vector3(0, -0.8, 0), 1.3);
-    await tween(1.2, k => applyExplode(k));
+    tweenCamera(new THREE.Vector3(33, 14, 17), new THREE.Vector3(0, -1.2, 0), 1.3);
+    await tween(1.8, k => applyExplode(k), ease.linear);
     exploded = true;
   } else {
     hideCard(); setHighlight(null);
     VIEW_HOME();
-    await tween(1.2, k => applyExplode(1 - k));
+    await tween(1.6, k => applyExplode(1 - k), ease.linear);
     internals.visible = false;
     phoneRoot.visible = true;
     exploded = false;
@@ -2498,6 +2635,7 @@ function applySettings(){
   $('#hzLive').textContent = st.hz === 'ltpo' ? 'LTPO 1–120 Гц' : `${st.hz} Гц`;
 }
 os.onChange = applySettings;
+os.onShutter = () => { flashPulse = 1; };   // снимок основной камерой → вспышка на острове
 
 /* =====================================================================
    ПАНЕЛЬ И КНОПКИ
@@ -2544,6 +2682,26 @@ function updateFrontCam(){
   const d = _wp.distanceTo(camera.position);
   frontCamDot.material.opacity = clamp(1 - (d - 5) / 12, 0, 1) * 0.35 * (1 - foldT);
 }
+/* «Парение» телефона в покое (выключается во время тестов, раскрытия и вращения) */
+let floatAmp = 0, dragging = false;
+controls.addEventListener('start', () => { dragging = true; });
+controls.addEventListener('end', () => { dragging = false; });
+function updateFloat(dt){
+  const target = (testBusy || exploded || explodeBusy || dragging) ? 0 : 1;
+  floatAmp += (target - floatAmp) * Math.min(1, dt * 2);
+  const t = performance.now() / 1000;
+  floatGroup.position.y = Math.sin(t * 1.1) * 0.22 * floatAmp;
+  floatGroup.rotation.z = Math.sin(t * 0.7) * 0.014 * floatAmp;
+  floatGroup.rotation.y = Math.sin(t * 0.45) * 0.035 * floatAmp;
+}
+/* Вспышка: яркий импульс на острове камер и затухание */
+function updateFlash(dt){
+  if (flashPulse <= 0) return;
+  flashPulse = Math.max(0, flashPulse - dt * 2.2);
+  const k = flashPulse * flashPulse;
+  MAT.flash.emissiveIntensity = 0.25 + k * 14;
+  if (flashLight) flashLight.intensity = k * 60;
+}
 function updateGears(dt){
   if (!internals.visible) return;
   gears.forEach(g => { g.rotation.z += g.userData.spin * dt * 1.4; });
@@ -2560,6 +2718,9 @@ function loop(now){
   os.update(dt);
   updateParticles(dt);
   updateGears(dt);
+  updateFloat(dt);
+  updateFlash(dt);
+  updateExplodeHover(dt);
   updateScreens(frame);
   processHover();
   controls.update();
@@ -2579,12 +2740,32 @@ function onResize(){
 }
 addEventListener('resize', onResize);
 
+/* Вступление: телефон влетает сложенным, поворачивается спиной (видно камеры), затем лицом и раскрывается */
+async function playIntro(){
+  testBusy = true; document.body.classList.add('busy');
+  $('#fold').value = 100;
+  VIEW_HOME();
+  await tween(1.8, k => {
+    phoneRoot.rotation.set(0.3 * (1 - k), Math.PI * 1.2 * (1 - k), -0.12 * (1 - k));
+    phoneRoot.position.y = 7 * (1 - k) * (1 - k);
+    phoneRoot.scale.setScalar(lerp(0.5, 1, backOut(k)));
+  }, ease.out);
+  await wait(0.25);
+  await animateFold(0);
+  testBusy = false; document.body.classList.remove('busy');
+}
+
 /* =====================================================================
    ЗАПУСК
    ===================================================================== */
 setProgress(0.35, 'Моделирование корпуса…');
 buildPhone();
 setFold(0);
+// стартовое положение для вступительной анимации
+forceFold(1); foldSp.snap(1); foldTarget = 1;
+phoneRoot.rotation.set(0.3, Math.PI * 1.2, -0.12);
+phoneRoot.position.y = 7;
+phoneRoot.scale.setScalar(0.5);
 setProgress(0.6, 'Сборка внутренних компонентов…');
 buildInternals();
 applyExplode(0);
@@ -2599,7 +2780,7 @@ requestAnimationFrame(() => {
   window.__duoReady = true;
   setTimeout(() => {
     $('#loader').classList.add('hide');
-    VIEW_HOME();
+    playIntro();
   }, 350);
   setTimeout(() => $('#hint').classList.add('off'), 9000);
 });
